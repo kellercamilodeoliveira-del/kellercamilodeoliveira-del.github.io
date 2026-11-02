@@ -1,0 +1,17 @@
+# Keller IA
+
+> Keller IA cria atendentes de inteligência artificial no WhatsApp e sistemas sob medida para pequenas e médias empresas. Base em Areiópolis (SP). Atendimento presencial em Marília, Garça, Ourinhos, Álvaro de Carvalho, São Manuel, Botucatu, Avaré, Tupã, Assis e Lins; implantação online para todo o Brasil e o exterior.
+
+## Serviços
+- Atendente de IA no WhatsApp: responde clientes e marca horário sozinho (oficina, lava-car, salão, clínica).
+- Painel de vendas e estoque.
+- Automação de processos: relatórios, comprovantes, avisos e cobranças.
+- Checklist de Frota: inspeção de veículos e tratores pelo celular, funciona sem internet, alerta no WhatsApp.
+- Ponto Eletrônico: entrada e saída de funcionários pelo celular.
+- Gestão de EPI: controle de entrega por funcionário, com comprovante.
+- Sistema sob medida.
+
+## Contato
+- WhatsApp: +55 14 98832-4456 (https://wa.me/5514988324456)
+- Instagram: https://www.instagram.com/keller_camilo/
+- Site: https://kellercamilodeoliveira-del.github.io/
