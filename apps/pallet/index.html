@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Conferência de Pallet</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f3f4f6;color:#111}
+  header{background:#111;color:#fff;padding:18px 20px}
+  header small{display:block;font-size:13px;letter-spacing:2px;opacity:.75}
+  header h1{margin:4px 0 0;font-size:40px;letter-spacing:1px}
+  main{max-width:820px;margin:0 auto;padding:16px}
+  .alerta{background:#fff7e6;border:2px solid #b45309;color:#7c2d12;border-radius:10px;padding:14px 16px;font-size:16px;line-height:1.45;margin-bottom:16px}
+  .alerta strong{display:block;font-size:18px;margin-bottom:4px}
+  .card{background:#fff;border:1px solid #d1d5db;border-radius:12px;margin-bottom:16px;overflow:hidden}
+  .card h2{margin:0;padding:14px 16px;font-size:26px;border-bottom:1px solid #e5e7eb}
+  .card img{display:block;width:100%;height:auto;background:#fff}
+  .pendente{padding:40px 16px;text-align:center;color:#4b5563;font-size:16px;background:repeating-linear-gradient(45deg,#fafafa,#fafafa 10px,#f3f4f6 10px,#f3f4f6 20px)}
+  .erro{background:#fee2e2;border:2px solid #b91c1c;color:#7f1d1d;border-radius:10px;padding:16px;font-size:17px}
+  footer{text-align:center;color:#6b7280;font-size:13px;padding:10px 0 30px}
+</style>
+</head>
+<body>
+<header>
+  <small>CONFERÊNCIA DE PALLET · LOCAL</small>
+  <h1 id="titulo">—</h1>
+</header>
+<main id="conteudo"></main>
+<footer>Toque no desenho para ampliar</footer>
+<script>
+(async function(){
+  const params = new URLSearchParams(location.search);
+  const codigo = (params.get('p') || '').toUpperCase().trim();
+  const main = document.getElementById('conteudo');
+  const titulo = document.getElementById('titulo');
+  let dados = {};
+  try {
+    const r = await fetch('pallets.json?v=' + Date.now());
+    dados = await r.json();
+  } catch(e) {}
+  const pallet = dados[codigo];
+  if (!pallet) {
+    titulo.textContent = codigo || '—';
+    main.innerHTML = '<div class="erro"><strong>Pallet não cadastrado.</strong><br>Confira a etiqueta ou avise o responsável.</div>';
+    return;
+  }
+  titulo.textContent = pallet.local + (pallet.posicao ? ' · ' + pallet.posicao : '');
+  document.title = 'Pallet ' + pallet.local;
+  const alerta = document.createElement('div');
+  alerta.className = 'alerta';
+  alerta.innerHTML = '<strong>Ferramental que deve estar neste pallet</strong>Se encontrar ferramental diferente dos desenhos abaixo, registre como <b>NÃO CONFORMIDADE</b>.';
+  main.appendChild(alerta);
+  pallet.ferramentais.forEach(function(f){
+    const card = document.createElement('section');
+    card.className = 'card';
+    const h = document.createElement('h2');
+    h.textContent = f.codigo;
+    card.appendChild(h);
+    if (f.desenho) {
+      const a = document.createElement('a');
+      a.href = f.desenho; a.target = '_blank';
+      const img = document.createElement('img');
+      img.src = f.desenho; img.alt = 'Desenho do ferramental ' + f.codigo;
+      a.appendChild(img); card.appendChild(a);
+    } else {
+      const p = document.createElement('div');
+      p.className = 'pendente';
+      p.textContent = 'Desenho ainda não cadastrado';
+      card.appendChild(p);
+    }
+    main.appendChild(card);
+  });
+})();
+</script>
+</body>
+</html>
