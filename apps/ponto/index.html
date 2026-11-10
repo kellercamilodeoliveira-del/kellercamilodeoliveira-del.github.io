@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ponto Eletrônico</title>
+<meta name="description" content="Entrada e saída dos funcionários pelo celular, com relatório por pessoa e por mês. Keller IA.">
+<meta name="theme-color" content="#07080a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ponto">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<style>
+@font-face{font-family:'Inter';src:url(../../fonts/inter-400.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Inter';src:url(../../fonts/inter-500.woff2) format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Inter';src:url(../../fonts/inter-600.woff2) format('woff2');font-weight:600 700;font-display:swap}
+:root{
+  --bg:#07080a;--panel:#15171b;--panel2:#1c1f25;--fg:#f6f4ee;--muted:#9aa1ab;--muted2:#6b7280;
+  --line:#2a2d33;--indigo:#4f46e5;--indigo2:#6a60f0;--amber:#f5a623;--green:#34c77b;--red:#e2402f;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--fg);font:15px/1.45 'Inter',system-ui,-apple-system,sans-serif;
+  padding:env(safe-area-inset-top,0) max(14px,env(safe-area-inset-right,0)) env(safe-area-inset-bottom,0) max(14px,env(safe-area-inset-left,0));
+  -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,.num,.eyebrow,.tab,.clock,.key,.code-pill{font-family:'Barlow Condensed',system-ui,sans-serif}
+.app{max-width:720px;margin:0 auto;padding:20px 0 60px;display:flex;flex-direction:column;gap:16px}
+.tela[hidden],[hidden]{display:none!important}
+.tela{display:flex;flex-direction:column;gap:16px}
+.eyebrow{font-weight:700;font-size:13px;letter-spacing:.09em;color:var(--amber);text-transform:uppercase}
+h1{font-size:32px;line-height:1.05;margin:2px 0 0;font-weight:700}
+h2{font-size:22px;margin:0 0 10px;font-weight:700}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;position:sticky;top:env(safe-area-inset-top,0);z-index:5}
+.tab{border:0;background:transparent;color:var(--muted);font-size:17px;font-weight:700;padding:9px 4px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.tab[aria-selected=true]{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+select,input{width:100%;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px}
+select:focus,input:focus{outline:2px solid var(--indigo);outline-offset:-1px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:12px 16px;font:600 15px 'Inter',sans-serif;cursor:pointer;text-align:center;text-decoration:none;color:var(--fg)}
+.btn.p{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff}
+.btn.s{background:var(--panel2);border:1px solid var(--line)}
+.btn.a{background:var(--amber);color:#1a1200}
+.btn.d{background:transparent;border:1px solid rgba(226,64,47,.5);color:#ff8a7d}
+.btn.w{width:100%}
+.btn.sm{padding:7px 11px;font-size:13px;border-radius:9px}
+.btn:disabled{opacity:.5;cursor:default}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btns .btn{flex:1;min-width:140px}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:14px;cursor:pointer;padding:6px}
+.erro{color:#ff8a7d;font-size:14px;min-height:20px;margin-top:8px}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+.banner{border-radius:12px;padding:10px 14px;font-size:14px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.4)}
+.banner.master{background:rgba(79,70,229,.15);border-color:rgba(106,96,240,.5);display:flex;justify-content:space-between;align-items:center;gap:10px}
+
+/* terminal */
+.terminal{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.clock{font-size:64px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.date{color:var(--muted);margin-top:-4px}
+.code{display:flex;gap:10px;justify-content:center;margin:4px 0}
+.code span{width:46px;height:56px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);display:grid;place-items:center;font:700 30px 'Barlow Condensed',sans-serif}
+.code span.on{border-color:var(--indigo2)}
+.code.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:330px}
+.key{height:60px;border-radius:14px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-size:30px;font-weight:700;cursor:pointer;touch-action:manipulation}
+.key:active{transform:scale(.97);background:#252932}
+.key.ok{background:linear-gradient(135deg,var(--indigo),var(--indigo2));border:0;font-size:20px}
+.key.del{font-size:20px;color:var(--muted)}
+.big{width:100%;max-width:330px;padding:22px;font-size:22px;border-radius:16px}
+.msg{min-height:84px;width:100%;display:flex;align-items:center;justify-content:center}
+.okbox{width:100%;border-radius:14px;padding:14px;background:rgba(52,199,123,.1);border:1px solid rgba(52,199,123,.4)}
+.okbox b{font-size:19px}
+.errbox{color:#ff8a7d;font-weight:600}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);cursor:pointer}
+.check input{width:20px;height:20px}
+
+/* painel */
+.chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.chip .num{font-size:30px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.chip .lbl{font-size:12px;color:var(--muted);margin-top:4px}
+.chip.g .num{color:var(--green)}.chip.a .num{color:var(--amber)}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row.click{cursor:pointer}
+.av{width:38px;height:38px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;font-weight:600;color:var(--amber);flex:none}
+.grow{flex:1;min-width:0}
+.nm{font-weight:600}
+.fn{font-size:12px;color:var(--muted)}
+.st{font-size:13px;font-weight:600;text-align:right}
+.st.in{color:var(--green)}.st.out{color:var(--muted)}.st.none{color:var(--muted2)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;vertical-align:1px}
+.filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:12px}
+.tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.tot div{background:var(--panel2);border-radius:12px;padding:10px}
+.tot .num{font-size:24px;font-weight:700;line-height:1}
+.tot .lbl{font-size:11px;color:var(--muted);margin-top:3px}
+.tot .x .num{color:var(--amber)}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:6px 4px;border-bottom:1px solid var(--line)}
+td{padding:9px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+tbody tr.click{cursor:pointer}
+tbody tr.click:active{background:var(--panel2)}
+tr.ext td{background:rgba(245,166,35,.07)}
+.tag{display:inline-block;font-size:10px;font-weight:700;color:#1a1200;background:var(--amber);border-radius:5px;padding:1px 5px;margin-left:4px;text-transform:uppercase;vertical-align:1px}
+.tag.r{background:var(--red);color:#fff}
+.tag.g{background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.wd{color:var(--muted);font-size:11px}
+.code-pill{font-weight:700;font-size:16px;color:var(--amber);background:rgba(245,166,35,.1);border-radius:8px;padding:3px 8px;letter-spacing:.08em}
+.badge{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;text-transform:uppercase;letter-spacing:.04em}
+.badge.teste{background:rgba(245,166,35,.15);color:var(--amber)}
+.badge.ativo{background:rgba(52,199,123,.15);color:var(--green)}
+.badge.bloqueado,.badge.vencido{background:rgba(226,64,47,.15);color:#ff8a7d}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 10px}
+.urlbox{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;word-break:break-all;color:var(--muted)}
+.foot{text-align:center;font-size:12px;color:var(--muted2)}
+.foot b{color:var(--muted)}
+
+/* modal + toast */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50;padding:12px}
+.modal .card{width:100%;max-width:520px;max-height:88vh;overflow:auto;margin-bottom:env(safe-area-inset-bottom,0)}
+@media(min-width:600px){.modal{align-items:center}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:#fff;color:#111;border-radius:12px;padding:11px 16px;font-weight:600;font-size:14px;z-index:60;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:90vw;text-align:center}
+.toast.err{background:#ffdcd7}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--indigo2);animation:sp 1s linear infinite;margin:60px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (max-width:420px){.clock{font-size:54px}.grid2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.code.shake{animation:none}.spin{animation-duration:3s}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- CARREGANDO -->
+  <section class="tela" id="t-load"><div class="spin" role="status" aria-label="Carregando"></div></section>
+
+  <!-- AVISO DE CONFIGURAÇÃO -->
+  <section class="tela" id="t-config" hidden>
+    <div class="card"><h2>Quase pronto</h2><p class="sub">O app ainda não foi ligado ao banco de dados.</p></div>
+  </section>
+
+  <!-- TERMINAL DO FUNCIONÁRIO -->
+  <section class="tela" id="t-terminal" hidden>
+    <header>
+      <div class="eyebrow" id="tm-emp">Ponto Eletrônico</div>
+      <h1>Bater ponto</h1>
+    </header>
+    <div class="card terminal">
+      <div class="clock" id="tm-clock">--:--</div>
+      <div class="date" id="tm-date"></div>
+      <div id="tm-lembrado" hidden style="width:100%;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <button class="btn p big" id="tm-btn-lembrado">Bater ponto</button>
+        <button class="link" id="tm-trocar">Não é você? Digitar outro código</button>
+      </div>
+      <div id="tm-teclado" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div class="sub" style="margin:0">Digite seu código de 4 números</div>
+        <div class="code" id="tm-code"><span></span><span></span><span></span><span></span></div>
+        <div class="pad" id="tm-pad"></div>
+        <label class="check"><input type="checkbox" id="tm-lembrar"> Lembrar meu código neste celular</label>
+      </div>
+      <div class="msg" id="tm-msg" aria-live="polite"></div>
+    </div>
+    <div class="foot"><button class="link" id="tm-gestor">Área do gestor</button><br>Ponto Eletrônico por <b>Keller IA</b></div>
+  </section>
+
+  <!-- LOGIN -->
+  <section class="tela" id="t-login" hidden>
+    <header>
+      <div class="eyebrow">Keller IA</div>
+      <h1>Ponto Eletrônico</h1>
+      <div class="sub">Entrada e saída dos funcionários pelo celular, com relatório por pessoa e por mês.</div>
+    </header>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-lt="entrar">Entrar</button>
+      <button class="tab" role="tab" aria-selected="false" data-lt="cadastro">Cadastrar empresa</button>
+    </div>
+    <form class="card" id="f-login">
+      <label for="l-email">E-mail</label><input id="l-email" type="email" autocomplete="username" required>
+      <label for="l-senha">Senha</label><input id="l-senha" type="password" autocomplete="current-password" required>
+      <div class="erro" id="l-erro"></div>
+      <button class="btn p w" type="submit" id="l-btn">Entrar</button>
+      <div style="text-align:center;margin-top:6px"><button type="button" class="link" id="l-esqueci">Esqueci a senha</button></div>
+    </form>
+    <form class="card" id="f-cad" hidden>
+      <div class="sub" style="margin:0 0 4px">7 dias grátis, sem cartão. Depois é só falar com a Keller IA.</div>
+      <label for="c-emp">Nome da empresa</label><input id="c-emp" required>
+      <div class="grid2">
+        <div><label for="c-cnpj">CNPJ</label><input id="c-cnpj" inputmode="numeric"></div>
+        <div><label for="c-resp">Seu nome</label><input id="c-resp" required></div>
+      </div>
+      <label for="c-end">Endereço</label><input id="c-end">
+      <label for="c-email">E-mail (para entrar no painel)</label><input id="c-email" type="email" autocomplete="username" required>
+      <label for="c-senha">Crie uma senha (mínimo 6)</label><input id="c-senha" type="password" autocomplete="new-password" minlength="6" required>
+      <div class="erro" id="c-erro"></div>
+      <button class="btn p w" type="submit" id="c-btn">Começar teste grátis</button>
+    </form>
+    <div class="foot">Dúvidas? WhatsApp <b>(14) 98832-4456</b></div>
+  </section>
+
+  <!-- VERIFICAR E-MAIL (MASTER) -->
+  <section class="tela" id="t-verif" hidden>
+    <div class="card">
+      <h2>Confirme seu e-mail</h2>
+      <p class="sub">Mandamos um link de confirmação para <b id="v-email"></b>. Abra o e-mail, toque no link e volte aqui.</p>
+      <div class="btns"><button class="btn p" id="v-ok">Já confirmei</button><button class="btn s" id="v-reenviar">Reenviar e-mail</button></div>
+      <div class="btns"><button class="btn s" id="v-sair">Sair</button></div>
+      <div class="erro" id="v-erro"></div>
+    </div>
+  </section>
+
+  <!-- BLOQUEADO -->
+  <section class="tela" id="t-bloq" hidden>
+    <div class="card">
+      <h2 id="b-tit">Período de teste encerrado</h2>
+      <p class="sub" id="b-txt">Para continuar usando o Ponto Eletrônico, fale com a Keller IA.</p>
+      <div class="btns"><a class="btn a" id="b-wa" target="_blank" rel="noopener">Falar no WhatsApp</a><button class="btn s" data-sair>Sair</button></div>
+    </div>
+  </section>
+
+  <!-- MASTER -->
+  <section class="tela" id="t-master" hidden>
+    <header class="top">
+      <div><div class="eyebrow">Keller IA · Administrador</div><h1>Empresas</h1></div>
+      <button class="btn s sm" data-sair>Sair</button>
+    </header>
+    <div class="chips">
+      <div class="chip"><div class="num" id="m-total">0</div><div class="lbl">Empresas</div></div>
+      <div class="chip g"><div class="num" id="m-ativas">0</div><div class="lbl">Ativas</div></div>
+      <div class="chip a"><div class="num" id="m-teste">0</div><div class="lbl">Em teste</div></div>
+    </div>
+    <div class="card"><div id="m-lista"></div></div>
+    <form class="card" id="f-nova">
+      <h2>Nova empresa</h2>
+      <label for="n-emp">Nome da empresa</label><input id="n-emp" required>
+      <div class="grid2">
+        <div><label for="n-cnpj">CNPJ</label><input id="n-cnpj" inputmode="numeric"></div>
+        <div><label for="n-resp">Responsável</label><input id="n-resp"></div>
+      </div>
+      <label for="n-end">Endereço</label><input id="n-end">
+      <div class="grid2">
+        <div><label for="n-email">E-mail do gestor</label><input id="n-email" type="email" required></div>
+        <div><label for="n-senha">Senha inicial</label><input id="n-senha" minlength="6" required></div>
+      </div>
+      <label for="n-status">Situação</label>
+      <select id="n-status"><option value="teste">Teste grátis (7 dias)</option><option value="ativo">Ativo (cliente pagante)</option></select>
+      <div class="erro" id="n-erro"></div>
+      <button class="btn a w" type="submit" id="n-btn">Cadastrar empresa</button>
+    </form>
+  </section>
+
+  <!-- PAINEL DO GESTOR -->
+  <section class="tela" id="t-painel" hidden>
+    <div class="banner master" id="p-master" hidden><span>Você está no painel desta empresa como administrador.</span><button class="btn s sm" id="p-voltar">Voltar</button></div>
+    <header class="top">
+      <div><div class="eyebrow">Ponto Eletrônico</div><h1 id="p-nome">Empresa</h1></div>
+    </header>
+    <div class="banner" id="p-aviso" hidden></div>
+    <div class="tabs" role="tablist" id="p-tabs">
+      <button class="tab" role="tab" aria-selected="true" data-pt="hoje">Hoje</button>
+      <button class="tab" role="tab" aria-selected="false" data-pt="rel">Relatório</button>
+      <button class="tab" role="tab" aria-selected="false" data-pt="equipe">Equipe</button>
+      <button class="tab" role="tab" aria-selected="false" data-pt="empresa">Empresa</button>
+    </div>
+
+    <div class="pv" id="pv-hoje">
+      <div class="chips">
+        <div class="chip g"><div class="num" id="h-agora">0</div><div class="lbl">Trabalhando agora</div></div>
+        <div class="chip"><div class="num" id="h-regs">0</div><div class="lbl">Registros hoje</div></div>
+        <div class="chip a"><div class="num" id="h-extra">0h</div><div class="lbl">Hora extra no mês</div></div>
+      </div>
+      <div class="card" style="margin-top:14px"><h2>Hoje</h2><div id="h-lista"></div></div>
+      <div class="card" style="margin-top:14px">
+        <h2>Onde os funcionários batem o ponto</h2>
+        <p class="sub" style="margin-top:0">Mande o link para cada funcionário abrir no celular dele, ou deixe um celular/tablet fixo na empresa como terminal.</p>
+        <div class="urlbox" id="h-url"></div>
+        <div class="btns">
+          <a class="btn p" id="h-wa" target="_blank" rel="noopener">Enviar link no WhatsApp</a>
+          <button class="btn s" id="h-copiar">Copiar link</button>
+        </div>
+        <div class="btns"><button class="btn s w" id="h-terminal">Usar este aparelho como terminal</button></div>
+      </div>
+    </div>
+
+    <div class="pv" id="pv-rel" hidden>
+      <div class="card">
+        <div class="filters">
+          <select id="r-func" aria-label="Funcionário"></select>
+          <select id="r-mes" aria-label="Mês"></select>
+        </div>
+        <div id="r-conteudo"></div>
+      </div>
+    </div>
+
+    <div class="pv" id="pv-equipe" hidden>
+      <div class="card">
+        <h2>Equipe</h2>
+        <div id="e-lista"></div>
+        <form id="f-func" style="margin-top:12px">
+          <div class="grid2">
+            <div><label for="ef-nome">Nome</label><input id="ef-nome" required></div>
+            <div><label for="ef-func">Função</label><input id="ef-func"></div>
+          </div>
+          <button class="btn a w" type="submit" style="margin-top:12px" id="ef-btn">Adicionar funcionário</button>
+        </form>
+        <div class="note">Cada funcionário recebe um código de 4 números para bater o ponto. Toque no nome para editar.</div>
+      </div>
+    </div>
+
+    <div class="pv" id="pv-empresa" hidden>
+      <form class="card" id="f-emp">
+        <h2>Dados da empresa</h2>
+        <div class="sub" style="margin-top:0">Saem no comprovante em PDF.</div>
+        <label for="em-nome">Nome</label><input id="em-nome" required>
+        <label for="em-cnpj">CNPJ</label><input id="em-cnpj">
+        <label for="em-end">Endereço</label><input id="em-end">
+        <button class="btn p w" type="submit" style="margin-top:14px">Salvar</button>
+      </form>
+      <div class="card" style="margin-top:14px">
+        <h2>Feriados</h2>
+        <div class="sub" style="margin-top:0">Sábado, domingo e feriados contam como hora extra. Os feriados nacionais já estão incluídos; adicione os da sua cidade.</div>
+        <div id="fe-lista" style="margin-top:8px"></div>
+        <form class="grid2" id="f-fer" style="margin-top:6px">
+          <div><label for="fe-data">Data</label><input id="fe-data" type="date" required></div>
+          <div><label for="fe-nome">Nome</label><input id="fe-nome" placeholder="Ex: Aniversário da cidade" required></div>
+          <button class="btn a" type="submit" style="grid-column:1/-1;margin-top:10px">Adicionar feriado</button>
+        </form>
+        <details style="margin-top:12px"><summary class="sub" style="cursor:pointer">Ver feriados nacionais deste ano</summary><div id="fe-nac" class="note"></div></details>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2>Conta</h2>
+        <div class="sub" style="margin-top:0" id="ct-email"></div>
+        <div class="btns"><button class="btn s" id="ct-senha">Trocar senha</button><button class="btn d" data-sair>Sair</button></div>
+      </div>
+    </div>
+    <div class="foot">Ponto Eletrônico por <b>Keller IA</b> · (14) 98832-4456</div>
+  </section>
+</div>
+
+<div class="modal" id="modal" hidden><div class="card" id="modal-c"></div></div>
+
+<script type="module">
+import {initializeApp,deleteApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail,sendEmailVerification} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,getDoc,getDocFromServer,getDocs,setDoc,updateDoc,deleteDoc,addDoc,onSnapshot,query,where,orderBy,writeBatch,serverTimestamp,Timestamp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+// ====== CONFIGURAÇÃO ======
+const firebaseConfig = {apiKey: 'AIzaSyBZyZ4Dqs0BI5VSsm3HB2TNGpk7Z7330CE', authDomain: 'escritorio-c3acb.firebaseapp.com', projectId: 'escritorio-c3acb', storageBucket: 'escritorio-c3acb.firebasestorage.app', messagingSenderId: '752996396852', appId: '1:752996396852:web:13569631f01d301d5a3f61'};
+const MASTER = ['keller_camilo@hotmail.com', 'kellercamilodeoliveira@gmail.com'];
+const WHATS_KELLER = '5514988324456';
+const DIAS_TESTE = 7;
+// ==========================
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const p2 = n => String(n).padStart(2, '0');
+const dkey = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+const hm = d => p2(d.getHours()) + ':' + p2(d.getMinutes());
+const dataBR = k => k.slice(8,10) + '/' + k.slice(5,7) + '/' + k.slice(0,4);
+const fmtH = min => { min = Math.max(0, Math.round(min)); const h = Math.floor(min/60), m = min % 60; return m ? `${h}h${p2(m)}` : `${h}h`; };
+const DSEM = ['dom','seg','ter','qua','qui','sex','sáb'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const BASE_URL = location.origin + location.pathname.replace(/index\.html$/, '');
+const ls = {get:k=>{try{return localStorage.getItem(k)}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}, del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+
+function toast(t, err) { const el = document.createElement('div'); el.className = 'toast' + (err ? ' err' : ''); el.textContent = t; document.body.appendChild(el); setTimeout(() => el.remove(), 3200); }
+function tela(id) { $$('.tela').forEach(s => s.hidden = s.id !== 't-' + id); window.scrollTo(0, 0); }
+function abrirModal(html) { $('#modal-c').innerHTML = html; $('#modal').hidden = false; }
+function fecharModal() { $('#modal').hidden = true; $('#modal-c').innerHTML = ''; }
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') fecharModal(); });
+function erroTxt(e) {
+  const c = (e && e.code) || '';
+  if (c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found')) return 'E-mail ou senha incorretos.';
+  if (c.includes('email-already-in-use')) return 'Esse e-mail já tem cadastro. Use "Entrar".';
+  if (c.includes('weak-password')) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if (c.includes('invalid-email')) return 'E-mail inválido.';
+  if (c.includes('network') || c.includes('unavailable')) return 'Sem internet. Tente de novo.';
+  if (c.includes('too-many-requests')) return 'Muitas tentativas. Espere um pouco.';
+  if (c.includes('permission-denied')) return 'Sem permissão para isso.';
+  return 'Algo deu errado. Tente de novo.';
+}
+
+// ====== FERIADOS ======
+function pascoa(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia);}
+const _nac = {};
+function feriadosNacionais(y) {
+  if (_nac[y]) return _nac[y];
+  const f = {}, add = (m, d, n) => f[`${y}-${p2(m)}-${p2(d)}`] = n;
+  add(1,1,'Confraternização Universal');
+  const sf = pascoa(y); sf.setDate(sf.getDate() - 2); f[dkey(sf)] = 'Sexta-feira Santa';
+  add(4,21,'Tiradentes'); add(5,1,'Dia do Trabalho'); add(9,7,'Independência'); add(10,12,'Nossa Senhora Aparecida');
+  add(11,2,'Finados'); add(11,15,'Proclamação da República'); add(11,20,'Consciência Negra'); add(12,25,'Natal');
+  return _nac[y] = f;
+}
+let feriadosEmp = {};
+const feriado = k => feriadosEmp[k] || feriadosNacionais(+k.slice(0,4))[k] || null;
+
+// ====== FIREBASE ======
+const configurado = !!firebaseConfig.apiKey;
+let app, auth, db;
+if (configurado) {
+  app = initializeApp(firebaseConfig); auth = getAuth(app);
+  try { db = initializeFirestore(app, {localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})}); }
+  catch (e) { db = initializeFirestore(app, {}); }
+}
+let unsubs = [];
+function limpar() { unsubs.forEach(u => { try { u() } catch (e) {} }); unsubs = []; clearInterval(timerTerminal); }
+const isMaster = u => !!u && !u.isAnonymous && MASTER.includes((u.email || '').toLowerCase());
+
+// ====== ROTEAMENTO ======
+const params = new URLSearchParams(location.search);
+if (params.get('e')) ls.set('ponto.terminal', params.get('e'));
+let modoTerminal = params.get('e') || ls.get('ponto.terminal');
+let rotaSeq = 0;
+
+let cadastrando = false;
+async function rotear(u) {
+  if (cadastrando) return;
+  const seq = ++rotaSeq; limpar();
+  if (modoTerminal) {
+    return abrirTerminal(modoTerminal); // o funcionário não precisa de login
+  }
+  if (!u || u.isAnonymous) { tela('login'); return; }
+  if (isMaster(u)) {
+    if (!u.emailVerified) { $('#v-email').textContent = u.email; tela('verif'); return; }
+    if (painelEmpresaMaster) return abrirPainel(painelEmpresaMaster, true);
+    return abrirMaster();
+  }
+  try {
+    const p = await getDoc(doc(db, 'ponto_usuarios', u.uid));
+    if (seq !== rotaSeq) return;
+    if (!p.exists()) { await signOut(auth); $('#l-erro').textContent = 'Essa conta não está ligada a nenhuma empresa.'; return; }
+    abrirPainel(p.data().empresaId, false);
+  } catch (e) { tela('login'); $('#l-erro').textContent = erroTxt(e); }
+}
+let painelEmpresaMaster = null;
+
+$$('[data-sair]').forEach(b => b.addEventListener('click', sair));
+async function sair() { painelEmpresaMaster = null; limpar(); await signOut(auth); }
+
+// ====== LOGIN / CADASTRO ======
+$$('[data-lt]').forEach(b => b.addEventListener('click', () => {
+  $$('[data-lt]').forEach(x => x.setAttribute('aria-selected', x === b));
+  $('#f-login').hidden = b.dataset.lt !== 'entrar'; $('#f-cad').hidden = b.dataset.lt !== 'cadastro';
+}));
+$('#f-login').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const email = $('#l-email').value.trim().toLowerCase(), senha = $('#l-senha').value, b = $('#l-btn');
+  $('#l-erro').textContent = ''; b.disabled = true; b.textContent = 'Entrando...';
+  try { await signInWithEmailAndPassword(auth, email, senha); }
+  catch (e) {
+    // primeiro acesso do administrador: cria a conta automaticamente
+    if (MASTER.includes(email) && /invalid-credential|user-not-found/.test(e.code || '')) {
+      try { const c = await createUserWithEmailAndPassword(auth, email, senha); await sendEmailVerification(c.user); }
+      catch (e2) { $('#l-erro').textContent = erroTxt(e2.code === 'auth/email-already-in-use' ? e : e2); }
+    } else $('#l-erro').textContent = erroTxt(e);
+  }
+  b.disabled = false; b.textContent = 'Entrar';
+});
+$('#l-esqueci').addEventListener('click', async () => {
+  const email = $('#l-email').value.trim();
+  if (!email) { $('#l-erro').textContent = 'Digite seu e-mail acima e toque de novo em "Esqueci a senha".'; return; }
+  try { await sendPasswordResetEmail(auth, email); toast('Enviamos um link para trocar a senha no seu e-mail.'); } catch (e) { $('#l-erro').textContent = erroTxt(e); }
+});
+const slug = s => (s || 'empresa').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 16) || 'empresa';
+const novoId = nome => slug(nome) + '-' + Math.random().toString(36).slice(2, 6);
+$('#f-cad').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const b = $('#c-btn'); $('#c-erro').textContent = ''; b.disabled = true; b.textContent = 'Criando...';
+  const email = $('#c-email').value.trim().toLowerCase();
+  try {
+    if (MASTER.includes(email)) throw {code: 'master'};
+    cadastrando = true; // segura o roteamento até gravar a empresa
+    const cred = await createUserWithEmailAndPassword(auth, email, $('#c-senha').value);
+    const id = novoId($('#c-emp').value), batch = writeBatch(db);
+    batch.set(doc(db, 'ponto_empresas', id), {
+      nome: $('#c-emp').value.trim(), cnpj: $('#c-cnpj').value.trim(), endereco: $('#c-end').value.trim(),
+      responsavel: $('#c-resp').value.trim(), email, donoUid: cred.user.uid, status: 'teste',
+      fimTeste: Timestamp.fromDate(new Date(Date.now() + DIAS_TESTE * 864e5)), criadoEm: serverTimestamp(), origem: 'cadastro'
+    });
+    batch.set(doc(db, 'ponto_usuarios', cred.user.uid), {email, empresaId: id, papel: 'gestor', nome: $('#c-resp').value.trim()});
+    await batch.commit();
+    cadastrando = false;
+    toast('Empresa criada! Agora cadastre sua equipe.');
+    rotear(auth.currentUser);
+  } catch (e) {
+    $('#c-erro').textContent = e.code === 'master' ? 'Esse e-mail é do administrador. Use "Entrar".' : erroTxt(e);
+    const criada = cadastrando && auth.currentUser && !auth.currentUser.isAnonymous;
+    cadastrando = false;
+    if (criada) { try { await auth.currentUser.delete(); } catch (e2) { await signOut(auth); } }
+  }
+  b.disabled = false; b.textContent = 'Começar teste grátis';
+});
+$('#v-ok').addEventListener('click', async () => {
+  const u = auth.currentUser; if (!u) return;
+  await u.reload(); await u.getIdToken(true);
+  if (u.emailVerified) rotear(u); else $('#v-erro').textContent = 'Ainda não confirmado. Abra o link do e-mail (veja também o lixo eletrônico).';
+});
+$('#v-reenviar').addEventListener('click', async () => { try { await sendEmailVerification(auth.currentUser); toast('E-mail reenviado.'); } catch (e) { $('#v-erro').textContent = erroTxt(e); } });
+$('#v-sair').addEventListener('click', sair);
+
+// ====== TERMINAL ======
+let timerTerminal = null, digitado = '', tmEmp = null, tmEmpData = null, ocupado = false;
+async function abrirTerminal(empId) {
+  tela('terminal'); tmEmp = empId;
+  const tick = () => { const d = new Date(); $('#tm-clock').textContent = hm(d); $('#tm-date').textContent = d.toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long'}); };
+  tick(); timerTerminal = setInterval(tick, 10000);
+  try {
+    const s = await getDoc(doc(db, 'ponto_empresas', empId));
+    if (!s.exists()) { $('#tm-emp').textContent = 'Empresa não encontrada'; $('#tm-msg').innerHTML = '<div class="errbox">Link inválido. Peça um novo link ao seu gestor.</div>'; return; }
+    tmEmpData = s.data(); $('#tm-emp').textContent = tmEmpData.nome;
+    document.title = 'Ponto · ' + tmEmpData.nome;
+  } catch (e) { $('#tm-emp').textContent = 'Ponto Eletrônico'; }
+  mostrarLembrado();
+}
+function mostrarLembrado() {
+  const c = ls.get('ponto.codigo.' + tmEmp), n = ls.get('ponto.nome.' + tmEmp);
+  $('#tm-lembrado').hidden = !c; $('#tm-teclado').hidden = !!c;
+  if (c) $('#tm-btn-lembrado').textContent = 'Bater ponto · ' + (n || '').split(' ')[0];
+}
+$('#tm-btn-lembrado').addEventListener('click', () => registrar(ls.get('ponto.codigo.' + tmEmp)));
+$('#tm-trocar').addEventListener('click', () => { ls.del('ponto.codigo.' + tmEmp); ls.del('ponto.nome.' + tmEmp); mostrarLembrado(); });
+const codeEl = $('#tm-code');
+function desenharCodigo() { [...codeEl.children].forEach((s, i) => { s.textContent = digitado[i] ? '•' : ''; s.classList.toggle('on', i === digitado.length); }); }
+['1','2','3','4','5','6','7','8','9','del','0','ok'].forEach(k => {
+  const b = document.createElement('button'); b.type = 'button';
+  b.className = 'key' + (k === 'ok' ? ' ok' : k === 'del' ? ' del' : '');
+  b.textContent = k === 'del' ? 'Apagar' : k === 'ok' ? 'Registrar' : k;
+  b.addEventListener('click', () => {
+    if (k === 'del') digitado = digitado.slice(0, -1);
+    else if (k === 'ok') { if (digitado.length === 4) registrar(digitado); return; }
+    else if (digitado.length < 4) digitado += k;
+    desenharCodigo(); if (digitado.length === 4) registrar(digitado);
+  });
+  $('#tm-pad').appendChild(b);
+});
+document.addEventListener('keydown', ev => {
+  if ($('#t-terminal').hidden || $('#tm-teclado').hidden || /INPUT|SELECT/.test(ev.target.tagName)) return;
+  if (/^\d$/.test(ev.key) && digitado.length < 4) { digitado += ev.key; desenharCodigo(); if (digitado.length === 4) registrar(digitado); }
+  else if (ev.key === 'Backspace') { digitado = digitado.slice(0, -1); desenharCodigo(); }
+});
+function erroCodigo(t) {
+  codeEl.classList.remove('shake'); void codeEl.offsetWidth; codeEl.classList.add('shake');
+  $('#tm-msg').innerHTML = '<div class="errbox">' + esc(t) + '</div>';
+  if (navigator.vibrate) navigator.vibrate(200);
+}
+async function registrar(cod) {
+  if (ocupado || !cod) return; ocupado = true;
+  const msg = $('#tm-msg'); msg.innerHTML = '<div class="sub">Registrando...</div>';
+  try {
+    const ref = doc(db, 'ponto_empresas', tmEmp, 'codigos', cod);
+    let s; try { s = await getDocFromServer(ref); } catch (e) { s = await getDoc(ref); }
+    if (!s.exists()) { erroCodigo('Código não encontrado. Confira com seu gestor.'); return; }
+    const c = s.data(), agora = new Date(), hoje = dkey(agora);
+    const n = c.ultimaData === hoje ? (c.qtdDia || 0) : 0;
+    const tipo = n % 2 === 0 ? 'entrada' : 'saida';
+    const add = addDoc(collection(db, 'ponto_empresas', tmEmp, 'marcacoes'), {
+      funcionarioId: c.funcionarioId, nome: c.nome || '', codigo: cod, ts: Timestamp.fromDate(agora),
+      recebido: serverTimestamp(), origem: 'funcionario', tipo, aparelho: (navigator.userAgent || '').slice(0, 120)
+    });
+    const upd = updateDoc(ref, {ultimaData: hoje, qtdDia: n + 1, ultimaHora: hm(agora)});
+    const offline = !navigator.onLine;
+    if (offline) { add.catch(() => {}); upd.catch(() => {}); } else await Promise.all([add, upd]);
+    if ($('#tm-lembrar').checked) { ls.set('ponto.codigo.' + tmEmp, cod); ls.set('ponto.nome.' + tmEmp, c.nome || ''); }
+    msg.innerHTML = '<div class="okbox"><div>✓ <b>' + (tipo === 'entrada' ? 'Entrada' : 'Saída') + ' registrada</b></div><div>' + esc(c.nome) + ' · ' + hm(agora) + '</div>' +
+      (offline ? '<div class="note">Sem internet agora: o registro será enviado sozinho quando voltar o sinal.</div>' : '<div class="note">Registro enviado para o painel da empresa.</div>') + '</div>';
+    if (navigator.vibrate) navigator.vibrate(60);
+    mostrarLembrado();
+  } catch (e) {
+    erroCodigo(e.code && e.code.includes('permission') ? 'O ponto desta empresa está pausado. Avise seu gestor.' : 'Não deu para registrar: ' + erroTxt(e));
+  } finally {
+    digitado = ''; desenharCodigo(); ocupado = false;
+    clearTimeout(registrar.t); registrar.t = setTimeout(() => { $('#tm-msg').innerHTML = ''; }, 8000);
+  }
+}
+$('#tm-gestor').addEventListener('click', async () => {
+  ls.del('ponto.terminal'); modoTerminal = null; history.replaceState(null, '', location.pathname);
+  rotear(auth.currentUser);
+});
+
+// ====== MASTER ======
+let empresasMaster = [];
+function statusEmp(e) {
+  if (e.status === 'bloqueado') return 'bloqueado';
+  if (e.status === 'teste') return (e.fimTeste && e.fimTeste.toDate() < new Date()) ? 'vencido' : 'teste';
+  return 'ativo';
+}
+function abrirMaster() {
+  tela('master');
+  unsubs.push(onSnapshot(collection(db, 'ponto_empresas'), s => {
+    empresasMaster = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
+    renderMaster();
+  }, e => toast(erroTxt(e), true)));
+}
+function renderMaster() {
+  const st = empresasMaster.map(statusEmp);
+  $('#m-total').textContent = empresasMaster.length;
+  $('#m-ativas').textContent = st.filter(x => x === 'ativo').length;
+  $('#m-teste').textContent = st.filter(x => x === 'teste').length;
+  $('#m-lista').innerHTML = empresasMaster.length ? empresasMaster.map((e, i) => {
+    const s = st[i], fim = e.fimTeste ? e.fimTeste.toDate().toLocaleDateString('pt-BR') : '';
+    return `<div class="row" style="flex-wrap:wrap"><div class="av">${esc((e.nome || '?')[0])}</div>
+      <div class="grow"><div class="nm">${esc(e.nome)} <span class="badge ${s}">${s === 'vencido' ? 'teste vencido' : s}</span></div>
+      <div class="fn">${esc(e.email || '')}${e.cnpj ? ' · ' + esc(e.cnpj) : ''}${s === 'teste' || s === 'vencido' ? ' · teste até ' + fim : ''}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;padding-left:50px">
+        <button class="btn p sm" data-m="abrir" data-id="${e.id}">Abrir painel</button>
+        ${s !== 'ativo' ? `<button class="btn s sm" data-m="ativar" data-id="${e.id}">Ativar</button>` : ''}
+        ${s === 'teste' || s === 'vencido' ? `<button class="btn s sm" data-m="mais7" data-id="${e.id}">+7 dias</button>` : ''}
+        ${s !== 'bloqueado' ? `<button class="btn d sm" data-m="bloquear" data-id="${e.id}">Bloquear</button>` : ''}
+      </div></div>`;
+  }).join('') : '<div class="sub">Nenhuma empresa ainda.</div>';
+}
+$('#m-lista').addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-m]'); if (!b) return;
+  const id = b.dataset.id, ref = doc(db, 'ponto_empresas', id);
+  try {
+    if (b.dataset.m === 'abrir') { painelEmpresaMaster = id; return rotear(auth.currentUser); }
+    if (b.dataset.m === 'ativar') await updateDoc(ref, {status: 'ativo'});
+    if (b.dataset.m === 'bloquear' && confirm('Bloquear esta empresa? Os funcionários não conseguirão bater ponto.')) await updateDoc(ref, {status: 'bloqueado'});
+    if (b.dataset.m === 'mais7') { const e = empresasMaster.find(x => x.id === id); const base = Math.max(Date.now(), e.fimTeste ? e.fimTeste.toMillis() : 0); await updateDoc(ref, {status: 'teste', fimTeste: Timestamp.fromMillis(base + 7 * 864e5)}); }
+  } catch (e) { toast(erroTxt(e), true); }
+});
+$('#f-nova').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const b = $('#n-btn'); $('#n-erro').textContent = ''; b.disabled = true; b.textContent = 'Cadastrando...';
+  const email = $('#n-email').value.trim().toLowerCase(), nome = $('#n-emp').value.trim();
+  let app2;
+  try {
+    app2 = initializeApp(firebaseConfig, 'cad' + Date.now());
+    const a2 = getAuth(app2);
+    const cred = await createUserWithEmailAndPassword(a2, email, $('#n-senha').value);
+    await signOut(a2);
+    const id = novoId(nome), batch = writeBatch(db), status = $('#n-status').value;
+    batch.set(doc(db, 'ponto_empresas', id), {
+      nome, cnpj: $('#n-cnpj').value.trim(), endereco: $('#n-end').value.trim(), responsavel: $('#n-resp').value.trim(), email,
+      donoUid: cred.user.uid, status, fimTeste: Timestamp.fromDate(new Date(Date.now() + DIAS_TESTE * 864e5)), criadoEm: serverTimestamp(), origem: 'master'
+    });
+    batch.set(doc(db, 'ponto_usuarios', cred.user.uid), {email, empresaId: id, papel: 'gestor', nome: $('#n-resp').value.trim()});
+    await batch.commit();
+    ev.target.reset(); toast('Empresa cadastrada.');
+  } catch (e) { $('#n-erro').textContent = erroTxt(e); }
+  finally { if (app2) deleteApp(app2).catch(() => {}); b.disabled = false; b.textContent = 'Cadastrar empresa'; }
+});
+
+// ====== PAINEL DO GESTOR ======
+let EMP = null, empresa = null, funcs = [], marcsMes = [], mesAtual = '', viaMaster = false;
+const cacheMes = {};
+function abrirPainel(empId, master) {
+  EMP = empId; viaMaster = master; tela('load');
+  $('#p-master').hidden = !master;
+  const agora = new Date(); mesAtual = `${agora.getFullYear()}-${p2(agora.getMonth()+1)}`;
+  let prontoEmp = false, prontoF = false, prontoM = false;
+  const talvezMostrar = () => { if (prontoEmp && prontoF && prontoM && $('#t-painel').hidden && $('#t-bloq').hidden) { tela('painel'); trocarAba('hoje'); } };
+  unsubs.push(onSnapshot(doc(db, 'ponto_empresas', EMP), s => {
+    if (!s.exists()) { toast('Empresa não encontrada.', true); return; }
+    empresa = s.data(); prontoEmp = true;
+    const st = statusEmp(empresa);
+    if (!viaMaster && (st === 'bloqueado' || st === 'vencido')) {
+      $('#b-tit').textContent = st === 'bloqueado' ? 'Acesso pausado' : 'Período de teste encerrado';
+      $('#b-wa').href = 'https://wa.me/' + WHATS_KELLER + '?text=' + encodeURIComponent('Olá! Quero continuar usando o Ponto Eletrônico na ' + empresa.nome + '.');
+      tela('bloq'); return;
+    }
+    if (!$('#t-bloq').hidden) tela('painel');
+    $('#p-nome').textContent = empresa.nome;
+    const av = $('#p-aviso');
+    if (st === 'teste') { const d = Math.max(0, Math.ceil((empresa.fimTeste.toDate() - new Date()) / 864e5)); av.hidden = false; av.textContent = `Teste grátis: ${d} dia${d === 1 ? '' : 's'} restante${d === 1 ? '' : 's'}.`; }
+    else if (viaMaster && st !== 'ativo') { av.hidden = false; av.textContent = 'Situação: ' + st; }
+    else av.hidden = true;
+    renderEmpresa(); talvezMostrar();
+  }, e => { toast(erroTxt(e), true); tela('login'); }));
+  unsubs.push(onSnapshot(collection(db, 'ponto_empresas', EMP, 'funcionarios'), s => {
+    funcs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => (a.ativo === false) - (b.ativo === false) || (a.nome || '').localeCompare(b.nome || ''));
+    prontoF = true; renderTudo(); talvezMostrar();
+  }));
+  unsubs.push(onSnapshot(collection(db, 'ponto_empresas', EMP, 'feriados'), s => {
+    feriadosEmp = {}; s.docs.forEach(d => feriadosEmp[d.id] = d.data().nome || 'Feriado');
+    renderTudo();
+  }));
+  const [y, m] = mesAtual.split('-').map(Number);
+  unsubs.push(onSnapshot(query(collection(db, 'ponto_empresas', EMP, 'marcacoes'), where('ts', '>=', Timestamp.fromDate(new Date(y, m-1, 1))), where('ts', '<', Timestamp.fromDate(new Date(y, m, 1))), orderBy('ts')), s => {
+    marcsMes = s.docs.map(d => ({id: d.id, ...d.data(), ts: d.data().ts.toDate()}));
+    prontoM = true; renderTudo(); talvezMostrar();
+  }, e => { prontoM = true; toast(erroTxt(e), true); talvezMostrar(); }));
+  const t = setInterval(() => { if (!$('#t-painel').hidden) { renderHoje(); if (abaAtual === 'rel') renderRel(); } }, 60000);
+  unsubs.push(() => clearInterval(t));
+  fillMeses();
+}
+$('#p-voltar').addEventListener('click', () => { painelEmpresaMaster = null; rotear(auth.currentUser); });
+let abaAtual = 'hoje';
+function trocarAba(a) {
+  abaAtual = a;
+  $$('[data-pt]').forEach(b => b.setAttribute('aria-selected', b.dataset.pt === a));
+  $$('.pv').forEach(v => v.hidden = v.id !== 'pv-' + a);
+  if (a === 'rel') renderRel();
+}
+$$('[data-pt]').forEach(b => b.addEventListener('click', () => trocarAba(b.dataset.pt)));
+function renderTudo() { if (!empresa) return; renderHoje(); renderEquipe(); fillFuncs(); if (abaAtual === 'rel') renderRel(); renderFeriados(); }
+
+function calcular(marcs, funcId) {
+  const porDia = {}, hoje = dkey(new Date());
+  marcs.filter(x => x.funcionarioId === funcId).forEach(x => { const k = dkey(x.ts); (porDia[k] = porDia[k] || []).push(x); });
+  let norm = 0, ext = 0, dias = 0, pend = 0; const rows = [];
+  Object.keys(porDia).sort().forEach(k => {
+    const l = porDia[k].sort((a, b) => a.ts - b.ts); let min = 0;
+    for (let i = 0; i < l.length; i += 2) { const a = l[i].ts, b = l[i+1] ? l[i+1].ts : (k === hoje ? new Date() : null); if (b) min += (b - a) / 6e4; }
+    const d = l[0].ts, dow = d.getDay(), hol = feriado(k), isExt = dow === 0 || dow === 6 || !!hol, aberto = l.length % 2 === 1;
+    if (aberto && k !== hoje) pend++;
+    dias++; if (isExt) ext += min; else norm += min;
+    rows.push({k, d, dow, hol, l, min, isExt, aberto, hoje: k === hoje});
+  });
+  return {rows, norm, ext, dias, pend};
+}
+
+function renderHoje() {
+  const hoje = dkey(new Date()); let agora = 0, regs = 0, extMes = 0;
+  const ativos = funcs.filter(f => f.ativo !== false);
+  $('#h-lista').innerHTML = ativos.length ? ativos.map(f => {
+    const l = marcsMes.filter(x => x.funcionarioId === f.id && dkey(x.ts) === hoje).sort((a, b) => a.ts - b.ts);
+    regs += l.length; extMes += calcular(marcsMes, f.id).ext;
+    let st;
+    if (!l.length) st = '<span class="st none">Sem registro hoje</span>';
+    else if (l.length % 2) { agora++; st = '<span class="st in"><span class="dot"></span>Trabalhando desde ' + hm(l[l.length-1].ts) + '</span>'; }
+    else st = '<span class="st out">Saiu às ' + hm(l[l.length-1].ts) + '</span>';
+    return `<div class="row click" data-ver="${f.id}"><div class="av">${esc((f.nome || '?')[0])}</div><div class="grow"><div class="nm">${esc(f.nome)}</div><div class="fn">${esc(f.funcao || '')}</div></div>${st}</div>`;
+  }).join('') : '<div class="sub">Nenhum funcionário ainda. Cadastre na aba <b>Equipe</b>.</div>';
+  $('#h-agora').textContent = agora; $('#h-regs').textContent = regs; $('#h-extra').textContent = fmtH(extMes);
+  const url = BASE_URL + '?e=' + EMP;
+  $('#h-url').textContent = url;
+  $('#h-wa').href = 'https://wa.me/?text=' + encodeURIComponent(`Ponto Eletrônico da ${empresa?.nome || 'empresa'} 🕐\n\nAbra este link no seu celular para bater o ponto:\n${url}\n\nDica: adicione à tela inicial para abrir como app. Seu código de 4 números é passado pelo gestor.`);
+}
+$('#h-lista').addEventListener('click', ev => { const r = ev.target.closest('[data-ver]'); if (!r) return; $('#r-func').value = r.dataset.ver; trocarAba('rel'); });
+$('#h-copiar').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('#h-url').textContent); toast('Link copiado.'); } catch (e) { toast('Não deu para copiar. Segure o link para copiar.', true); } });
+$('#h-terminal').addEventListener('click', () => {
+  if (!confirm('Transformar este aparelho em terminal de ponto? Para voltar ao painel, toque em "Área do gestor" na tela do ponto.')) return;
+  ls.set('ponto.terminal', EMP); modoTerminal = EMP; rotear(auth.currentUser);
+});
+
+// ----- relatório -----
+function fillMeses() {
+  const sel = $('#r-mes'); sel.innerHTML = ''; const n = new Date();
+  for (let i = 0; i < 12; i++) { const d = new Date(n.getFullYear(), n.getMonth() - i, 1); const o = document.createElement('option'); o.value = `${d.getFullYear()}-${p2(d.getMonth()+1)}`; o.textContent = MESES[d.getMonth()] + ' ' + d.getFullYear(); sel.appendChild(o); }
+}
+function fillFuncs() {
+  const sel = $('#r-func'), cur = sel.value;
+  sel.innerHTML = '<option value="__todos">Toda a equipe (resumo)</option>' + funcs.map(f => `<option value="${f.id}">${esc(f.nome)}${f.ativo === false ? ' (inativo)' : ''}</option>`).join('');
+  if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+async function marcsDoMes(ym) {
+  if (ym === mesAtual) return marcsMes;
+  if (cacheMes[ym]) return cacheMes[ym];
+  const [y, m] = ym.split('-').map(Number);
+  const s = await getDocs(query(collection(db, 'ponto_empresas', EMP, 'marcacoes'), where('ts', '>=', Timestamp.fromDate(new Date(y, m-1, 1))), where('ts', '<', Timestamp.fromDate(new Date(y, m, 1))), orderBy('ts')));
+  return cacheMes[ym] = s.docs.map(d => ({id: d.id, ...d.data(), ts: d.data().ts.toDate()}));
+}
+let relAtual = null;
+async function renderRel() {
+  const ym = $('#r-mes').value, fid = $('#r-func').value, box = $('#r-conteudo');
+  if (!ym) return;
+  const mesNome = $('#r-mes').selectedOptions[0].textContent;
+  let marcs; try { marcs = await marcsDoMes(ym); } catch (e) { box.innerHTML = '<div class="erro">' + erroTxt(e) + '</div>'; return; }
+  if (fid === '__todos' || !fid) {
+    const linhas = funcs.map(f => ({f, r: calcular(marcs, f.id)})).filter(x => x.f.ativo !== false || x.r.dias);
+    relAtual = {tipo: 'todos', linhas, mesNome, ym};
+    box.innerHTML = `<div class="scroll"><table><thead><tr><th>Funcionário</th><th class="r">Dias</th><th class="r">Normais</th><th class="r">Extra</th></tr></thead><tbody>` +
+      (linhas.length ? linhas.map(x => `<tr class="click" data-func="${x.f.id}"><td>${esc(x.f.nome)}${x.r.pend ? ' <span class="tag r">' + x.r.pend + ' sem saída</span>' : ''}</td><td class="r">${x.r.dias}</td><td class="r">${fmtH(x.r.norm)}</td><td class="r" style="color:var(--amber)">${fmtH(x.r.ext)}</td></tr>`).join('') : '<tr><td colspan="4" class="wd">Nenhum funcionário.</td></tr>') +
+      `</tbody></table></div><div class="btns"><button class="btn p" id="r-pdf">Baixar resumo (PDF)</button></div><div class="note">Toque num funcionário para ver o dia a dia.</div>`;
+  } else {
+    const f = funcs.find(x => x.id === fid); if (!f) return;
+    const r = calcular(marcs, fid);
+    relAtual = {tipo: 'func', f, r, mesNome, ym};
+    const txt = `*Ponto Eletrônico · ${empresa.nome}*\n${f.nome}${f.funcao ? ' (' + f.funcao + ')' : ''}\n${mesNome}\n\nDias trabalhados: ${r.dias}\nHoras normais: ${fmtH(r.norm)}\nHora extra (sáb/dom/feriado): ${fmtH(r.ext)}`;
+    box.innerHTML = `<div class="tot"><div><div class="num">${r.dias}</div><div class="lbl">Dias trabalhados</div></div><div><div class="num">${fmtH(r.norm)}</div><div class="lbl">Horas normais</div></div><div class="x"><div class="num">${fmtH(r.ext)}</div><div class="lbl">Hora extra (sáb, dom, feriado)</div></div></div>` +
+      (r.pend ? `<div class="banner" style="margin-bottom:10px">${r.pend} dia${r.pend > 1 ? 's' : ''} sem marcação de saída. Toque no dia para corrigir.</div>` : '') +
+      `<div class="scroll"><table><thead><tr><th>Dia</th><th>Marcações</th><th class="r">Total</th></tr></thead><tbody>` +
+      (r.rows.length ? r.rows.map(x => {
+        const tag = x.hol ? '<span class="tag">Feriado</span>' : x.isExt ? '<span class="tag">Extra</span>' : '';
+        const aj = x.l.some(m => m.origem === 'gestor') ? '<span class="tag g">ajuste</span>' : '';
+        const ab = x.aberto ? (x.hoje ? ' · <span class="wd">em andamento</span>' : ' <span class="tag r">sem saída</span>') : '';
+        return `<tr class="click ${x.isExt ? 'ext' : ''}" data-dia="${x.k}"><td>${x.k.slice(8)}/${x.k.slice(5,7)} <span class="wd">${DSEM[x.dow]}</span>${tag}</td><td>${x.l.map(m => hm(m.ts)).join(' · ')}${ab}${aj}</td><td class="r">${fmtH(x.min)}</td></tr>`;
+      }).join('') : '<tr><td colspan="3" class="wd">Nenhum registro neste mês.</td></tr>') +
+      `</tbody></table></div>
+      <div class="btns"><button class="btn s" id="r-incluir">+ Incluir marcação</button></div>
+      <div class="btns"><button class="btn p" id="r-pdf">Baixar comprovante (PDF)</button><a class="btn s" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(txt)}">Resumo no WhatsApp</a></div>
+      <div class="note">Toque num dia para corrigir ou apagar uma marcação.</div>`;
+  }
+}
+$('#r-mes').addEventListener('change', renderRel);
+$('#r-func').addEventListener('change', renderRel);
+$('#r-conteudo').addEventListener('click', ev => {
+  const t = ev.target;
+  if (t.id === 'r-pdf') return gerarPdf();
+  if (t.id === 'r-incluir') return modalIncluir(relAtual.f, null);
+  const fr = t.closest('[data-func]'); if (fr) { $('#r-func').value = fr.dataset.func; return renderRel(); }
+  const dr = t.closest('[data-dia]'); if (dr) return modalDia(relAtual.f, dr.dataset.dia);
+});
+function modalDia(f, k) {
+  const row = relAtual.r.rows.find(x => x.k === k); if (!row) return;
+  abrirModal(`<h2>${esc(f.nome)} · ${dataBR(k)}</h2>
+    <div>${row.l.map(m => `<div class="row"><div class="grow"><div class="nm">${hm(m.ts)}</div><div class="fn">${m.origem === 'gestor' ? 'Incluída pelo gestor' + (m.motivo ? ': ' + esc(m.motivo) : '') : 'Batida pelo funcionário'}</div></div><button class="btn d sm" data-apagar="${m.id}">Apagar</button></div>`).join('')}</div>
+    <div class="btns"><button class="btn a" id="md-incluir">+ Incluir marcação</button><button class="btn s" id="md-fechar">Fechar</button></div>`);
+  $('#md-fechar').onclick = fecharModal;
+  $('#md-incluir').onclick = () => modalIncluir(f, k);
+  $$('[data-apagar]').forEach(b => b.onclick = async () => {
+    if (!confirm('Apagar esta marcação?')) return;
+    try { await deleteDoc(doc(db, 'ponto_empresas', EMP, 'marcacoes', b.dataset.apagar)); delete cacheMes[relAtual.ym]; fecharModal(); renderRel(); toast('Marcação apagada.'); } catch (e) { toast(erroTxt(e), true); }
+  });
+}
+function modalIncluir(f, k) {
+  const hoje = dkey(new Date());
+  abrirModal(`<h2>Incluir marcação</h2><div class="sub" style="margin-top:0">${esc(f.nome)} · use quando o funcionário esqueceu de bater o ponto.</div>
+    <form id="fi"><div class="grid2"><div><label for="fi-d">Data</label><input id="fi-d" type="date" required value="${k || hoje}" max="${hoje}"></div><div><label for="fi-h">Hora</label><input id="fi-h" type="time" required></div></div>
+    <label for="fi-m">Motivo</label><input id="fi-m" placeholder="Ex: esqueceu de bater a saída" required>
+    <div class="btns"><button class="btn p" type="submit">Salvar</button><button class="btn s" type="button" id="fi-c">Cancelar</button></div></form>`);
+  $('#fi-c').onclick = fecharModal;
+  $('#fi').onsubmit = async ev => {
+    ev.preventDefault();
+    const [Y, M, D] = $('#fi-d').value.split('-').map(Number), [h, mi] = $('#fi-h').value.split(':').map(Number);
+    const ts = new Date(Y, M-1, D, h, mi);
+    try {
+      await addDoc(collection(db, 'ponto_empresas', EMP, 'marcacoes'), {funcionarioId: f.id, nome: f.nome, codigo: f.codigo || '', ts: Timestamp.fromDate(ts), recebido: serverTimestamp(), origem: 'gestor', motivo: $('#fi-m').value.trim(), tipo: 'ajuste'});
+      delete cacheMes[`${Y}-${p2(M)}`]; fecharModal(); renderRel(); toast('Marcação incluída.');
+    } catch (e) { toast(erroTxt(e), true); }
+  };
+}
+
+// ----- PDF -----
+async function gerarPdf() {
+  if (!window.jspdf) { toast('Carregando gerador de PDF... tente de novo em instantes.', true); return; }
+  const {jsPDF} = window.jspdf, docp = new jsPDF({unit: 'mm', format: 'a4'}), W = 210; let y = 18;
+  const R = relAtual;
+  docp.setFillColor(79, 70, 229); docp.rect(0, 0, W, 6, 'F');
+  docp.setFont('helvetica', 'bold'); docp.setFontSize(16); docp.text(empresa.nome || '', 14, y); y += 6;
+  docp.setFont('helvetica', 'normal'); docp.setFontSize(9); docp.setTextColor(90);
+  if (empresa.cnpj) { docp.text('CNPJ: ' + empresa.cnpj, 14, y); y += 4.5; }
+  if (empresa.endereco) { docp.text(empresa.endereco, 14, y); y += 4.5; }
+  y += 5; docp.setTextColor(0);
+  const nova = () => { if (y > 270) { docp.addPage(); y = 20; } };
+  if (R.tipo === 'todos') {
+    docp.setFont('helvetica', 'bold'); docp.setFontSize(13); docp.text('Resumo de Ponto da Equipe - ' + R.mesNome, 14, y); y += 9;
+    docp.setFillColor(240, 240, 245); docp.rect(14, y-4.5, W-28, 7, 'F'); docp.setFontSize(9);
+    docp.text('Funcionário', 16, y); docp.text('Dias', 120, y, {align: 'right'}); docp.text('Horas normais', 158, y, {align: 'right'}); docp.text('Hora extra', W-16, y, {align: 'right'}); y += 6;
+    docp.setFont('helvetica', 'normal');
+    R.linhas.forEach(x => { nova(); docp.text(x.f.nome + (x.f.funcao ? ' (' + x.f.funcao + ')' : ''), 16, y); docp.text(String(x.r.dias), 120, y, {align: 'right'}); docp.text(fmtH(x.r.norm), 158, y, {align: 'right'}); docp.text(fmtH(x.r.ext), W-16, y, {align: 'right'}); y += 6; });
+  } else {
+    const {f, r} = R;
+    docp.setFont('helvetica', 'bold'); docp.setFontSize(13); docp.text('Comprovante de Ponto - ' + R.mesNome, 14, y); y += 7;
+    docp.setFont('helvetica', 'normal'); docp.setFontSize(10); docp.text('Funcionário: ' + f.nome + (f.funcao ? '   |   Função: ' + f.funcao : ''), 14, y); y += 8;
+    docp.setFillColor(240, 240, 245); docp.rect(14, y-4.5, W-28, 7, 'F'); docp.setFont('helvetica', 'bold'); docp.setFontSize(9);
+    docp.text('Data', 16, y); docp.text('Dia', 40, y); docp.text('Marcações', 62, y); docp.text('Total', W-16, y, {align: 'right'}); y += 6;
+    docp.setFont('helvetica', 'normal');
+    r.rows.forEach(x => {
+      nova();
+      if (x.isExt) { docp.setFillColor(255, 244, 222); docp.rect(14, y-4, W-28, 6, 'F'); }
+      docp.text(dataBR(x.k), 16, y);
+      docp.text(DSEM[x.dow] + (x.hol ? ' (feriado)' : ''), 40, y);
+      docp.text(x.l.map(m => hm(m.ts) + (m.origem === 'gestor' ? '*' : '')).join('  -  ') + (x.aberto ? (x.hoje ? '  (em andamento)' : '  (sem saída)') : ''), 62, y);
+      docp.text(fmtH(x.min) + (x.isExt ? ' extra' : ''), W-16, y, {align: 'right'}); y += 6;
+    });
+    y += 4; nova();
+    docp.setFont('helvetica', 'bold'); docp.setFontSize(10);
+    docp.text('Dias trabalhados: ' + r.dias, 14, y); docp.text('Horas normais: ' + fmtH(r.norm), 75, y); docp.text('Hora extra: ' + fmtH(r.ext), 140, y); y += 5;
+    docp.setFont('helvetica', 'normal'); docp.setFontSize(8); docp.setTextColor(110);
+    docp.text('Hora extra = horas registradas em sábado, domingo e feriado.  * = marcação incluída pelo gestor.', 14, y); y += 20;
+    if (y > 275) { docp.addPage(); y = 30; }
+    docp.setTextColor(0); docp.setDrawColor(120); docp.line(14, y, 94, y); docp.line(116, y, 196, y); y += 4.5; docp.setFontSize(9);
+    docp.text('Assinatura do funcionário', 14, y); docp.text('Assinatura da empresa', 116, y);
+  }
+  docp.setFontSize(7); docp.setTextColor(140); docp.text('Gerado em ' + new Date().toLocaleString('pt-BR') + ' - Ponto Eletrônico por Keller IA', 14, 290);
+  const nomeArq = ('ponto-' + (R.tipo === 'todos' ? 'equipe' : slug(R.f.nome)) + '-' + R.ym + '.pdf');
+  const blob = docp.output('blob');
+  try {
+    const file = new File([blob], nomeArq, {type: 'application/pdf'});
+    if (navigator.canShare && navigator.canShare({files: [file]}) && /Android|iPhone|iPad/i.test(navigator.userAgent)) { await navigator.share({files: [file], title: nomeArq}); return; }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  docp.save(nomeArq);
+}
+
+// ----- equipe -----
+function renderEquipe() {
+  $('#e-lista').innerHTML = funcs.length ? funcs.map(f => `<div class="row click" data-edit="${f.id}" style="${f.ativo === false ? 'opacity:.5' : ''}"><div class="av">${esc((f.nome || '?')[0])}</div><div class="grow"><div class="nm">${esc(f.nome)}</div><div class="fn">${esc(f.funcao || '')}${f.ativo === false ? ' · inativo' : ''}</div></div>${f.ativo === false ? '' : `<span class="code-pill">${esc(f.codigo)}</span>`}</div>`).join('') : '<div class="sub">Nenhum funcionário ainda.</div>';
+}
+async function novoCodigo() {
+  for (let i = 0; i < 25; i++) {
+    const c = String(1000 + Math.floor(Math.random() * 9000));
+    if (funcs.some(f => f.codigo === c)) continue;
+    const s = await getDocFromServer(doc(db, 'ponto_empresas', EMP, 'codigos', c)).catch(() => null);
+    if (s && !s.exists()) return c;
+    if (!s) return c; // sem internet: confia na lista local
+  }
+  throw new Error('sem código');
+}
+$('#f-func').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const b = $('#ef-btn'); b.disabled = true;
+  try {
+    const cod = await novoCodigo(), nome = $('#ef-nome').value.trim(), funcao = $('#ef-func').value.trim();
+    const fref = doc(collection(db, 'ponto_empresas', EMP, 'funcionarios')), batch = writeBatch(db);
+    batch.set(fref, {nome, funcao, codigo: cod, ativo: true, criadoEm: serverTimestamp()});
+    batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', cod), {funcionarioId: fref.id, nome});
+    await batch.commit(); ev.target.reset();
+    abrirModal(`<h2>${esc(nome)} cadastrado</h2><p class="sub">Código para bater o ponto:</p><div style="text-align:center;margin:10px 0"><span class="code-pill" style="font-size:40px;padding:6px 18px">${cod}</span></div>
+      <div class="btns"><a class="btn p" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`Olá, ${nome.split(' ')[0]}! Seu código do ponto da ${empresa.nome} é *${cod}*.\nBata o ponto por este link: ${BASE_URL}?e=${EMP}`)}">Enviar ao funcionário</a><button class="btn s" onclick="document.getElementById('modal').hidden=true">Fechar</button></div>`);
+  } catch (e) { toast(erroTxt(e), true); }
+  b.disabled = false;
+});
+$('#e-lista').addEventListener('click', ev => {
+  const r = ev.target.closest('[data-edit]'); if (!r) return;
+  const f = funcs.find(x => x.id === r.dataset.edit); if (!f) return;
+  const ativo = f.ativo !== false;
+  abrirModal(`<h2>Editar funcionário</h2><form id="fe"><label for="fe-n">Nome</label><input id="fe-n" value="${esc(f.nome)}" required><label for="fe-f">Função</label><input id="fe-f" value="${esc(f.funcao || '')}">
+    ${ativo ? `<label>Código</label><div style="display:flex;align-items:center;gap:10px"><span class="code-pill" style="font-size:22px">${esc(f.codigo)}</span><button type="button" class="btn s sm" id="fe-novo">Gerar novo código</button></div>` : ''}
+    <div class="btns"><button class="btn p" type="submit">Salvar</button><button class="btn s" type="button" id="fe-c">Cancelar</button></div>
+    <div class="btns">${ativo ? '<button type="button" class="btn d" id="fe-off">Desativar (saiu da empresa)</button>' : '<button type="button" class="btn a" id="fe-on">Reativar</button>'}</div></form>`);
+  $('#fe-c').onclick = fecharModal;
+  $('#fe').onsubmit = async ev2 => {
+    ev2.preventDefault();
+    const nome = $('#fe-n').value.trim(), batch = writeBatch(db);
+    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), {nome, funcao: $('#fe-f').value.trim()});
+    if (ativo && f.codigo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo), {funcionarioId: f.id, nome}, {merge: true});
+    try { await batch.commit(); fecharModal(); toast('Salvo.'); } catch (e) { toast(erroTxt(e), true); }
+  };
+  const trocarCodigo = async (novo) => {
+    const batch = writeBatch(db);
+    if (f.codigo) batch.delete(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo));
+    if (novo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', novo), {funcionarioId: f.id, nome: f.nome});
+    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), novo ? {codigo: novo, ativo: true} : {ativo: false});
+    await batch.commit();
+  };
+  if ($('#fe-novo')) $('#fe-novo').onclick = async () => { if (!confirm('Gerar um código novo? O código antigo para de funcionar.')) return; try { const c = await novoCodigo(); await trocarCodigo(c); fecharModal(); toast('Novo código: ' + c); } catch (e) { toast(erroTxt(e), true); } };
+  if ($('#fe-off')) $('#fe-off').onclick = async () => { if (!confirm('Desativar ' + f.nome + '? O histórico continua guardado.')) return; try { await trocarCodigo(null); fecharModal(); toast('Funcionário desativado.'); } catch (e) { toast(erroTxt(e), true); } };
+  if ($('#fe-on')) $('#fe-on').onclick = async () => { try { const c = await novoCodigo(); await trocarCodigo(c); fecharModal(); toast('Reativado. Código: ' + c); } catch (e) { toast(erroTxt(e), true); } };
+});
+
+// ----- empresa -----
+function renderEmpresa() {
+  if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#f-emp')) return;
+  $('#em-nome').value = empresa.nome || ''; $('#em-cnpj').value = empresa.cnpj || ''; $('#em-end').value = empresa.endereco || '';
+  $('#ct-email').textContent = 'Logado como ' + (auth.currentUser?.email || '');
+}
+$('#f-emp').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {nome: $('#em-nome').value.trim(), cnpj: $('#em-cnpj').value.trim(), endereco: $('#em-end').value.trim()}); toast('Dados salvos.'); document.activeElement.blur(); } catch (e) { toast(erroTxt(e), true); }
+});
+function renderFeriados() {
+  const ks = Object.keys(feriadosEmp).sort();
+  $('#fe-lista').innerHTML = ks.length ? ks.map(k => `<div class="row"><div class="grow"><div class="nm">${dataBR(k)}</div><div class="fn">${esc(feriadosEmp[k])}</div></div><button class="btn d sm" data-fer="${k}">Remover</button></div>`).join('') : '<div class="note">Nenhum feriado municipal cadastrado.</div>';
+  const y = new Date().getFullYear(), nac = feriadosNacionais(y);
+  $('#fe-nac').innerHTML = Object.keys(nac).sort().map(k => dataBR(k) + ' · ' + esc(nac[k])).join('<br>');
+}
+$('#fe-lista').addEventListener('click', async ev => { const b = ev.target.closest('[data-fer]'); if (!b) return; try { await deleteDoc(doc(db, 'ponto_empresas', EMP, 'feriados', b.dataset.fer)); } catch (e) { toast(erroTxt(e), true); } });
+$('#f-fer').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  try { await setDoc(doc(db, 'ponto_empresas', EMP, 'feriados', $('#fe-data').value), {nome: $('#fe-nome').value.trim()}); ev.target.reset(); toast('Feriado adicionado.'); } catch (e) { toast(erroTxt(e), true); }
+});
+$('#ct-senha').addEventListener('click', async () => { try { await sendPasswordResetEmail(auth, auth.currentUser.email); toast('Enviamos um link para trocar a senha no seu e-mail.'); } catch (e) { toast(erroTxt(e), true); } });
+
+// ====== INÍCIO ======
+if (!configurado) tela('config');
+else onAuthStateChanged(auth, u => rotear(u));
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>

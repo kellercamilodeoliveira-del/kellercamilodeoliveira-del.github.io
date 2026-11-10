@@ -14,3 +14,9 @@ Regras para o agente Mecânico:
 - Teste: https://kellercamilodeoliveira-del.github.io/apps/checklist-gers-teste/
 - Regra fixa da Bracell/Gers: o cabeçalho dos checklists tem que manter escrito "GERS FLORESTAL" (e "Bracell" nos checklists da Bracell), mesmo com logos.
 - Versão antiga ainda no ar (congelada, sem créditos no Netlify): https://checklist-frota-keller.netlify.app
+
+## Ponto Eletrônico (produto Keller IA, multiempresa)
+- App: https://kellercamilodeoliveira-del.github.io/apps/ponto/
+- Link do funcionário de cada empresa: `.../apps/ponto/?e=<id da empresa>` (aparece no painel do gestor).
+- Firebase: projeto `escritorio-c3acb` (compartilhado), coleções `ponto_empresas` e `ponto_usuarios`. As regras desse app estão em `apps/ponto/firestore.rules` e foram somadas às regras do projeto (não substituir as dos outros apps).
+- Administrador (master): keller_camilo@hotmail.com ou kellercamilodeoliveira@gmail.com, com e-mail confirmado.

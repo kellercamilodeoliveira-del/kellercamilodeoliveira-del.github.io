@@ -1,0 +1,59 @@
+    // --- Ponto Eletrônico (Keller IA) --- coleções ponto_empresas e ponto_usuarios
+    function pontoLogado() { return request.auth != null; }
+    function pontoMaster() {
+      return request.auth != null
+        && request.auth.token.email.lower() in ['keller_camilo@hotmail.com', 'kellercamilodeoliveira@gmail.com']
+        && request.auth.token.email_verified == true;
+    }
+    function pontoPerfil() { return /databases/$(database)/documents/ponto_usuarios/$(request.auth.uid); }
+    function pontoGestorDe(e) { return request.auth != null && exists(pontoPerfil()) && get(pontoPerfil()).data.empresaId == e; }
+    function pontoEquipe(e) { return pontoMaster() || pontoGestorDe(e); }
+    function pontoLiberada(e) {
+      let emp = get(/databases/$(database)/documents/ponto_empresas/$(e)).data;
+      return emp.status == 'ativo' || (emp.status == 'teste' && emp.fimTeste > request.time);
+    }
+    function pontoCodigo(e, c) { return /databases/$(database)/documents/ponto_empresas/$(e)/codigos/$(c); }
+
+    match /ponto_usuarios/{uid} {
+      allow get: if pontoLogado() && (request.auth.uid == uid || pontoMaster());
+      allow list: if pontoMaster();
+      allow create: if pontoMaster() || (pontoLogado() && request.auth.uid == uid
+        && request.resource.data.papel == 'gestor'
+        && getAfter(/databases/$(database)/documents/ponto_empresas/$(request.resource.data.empresaId)).data.donoUid == request.auth.uid);
+      allow update, delete: if pontoMaster();
+    }
+
+    match /ponto_empresas/{e} {
+      allow get: if true;
+      allow list: if pontoMaster();
+      allow create: if pontoMaster() || (pontoLogado()
+        && request.resource.data.donoUid == request.auth.uid
+        && request.resource.data.status == 'teste'
+        && request.resource.data.fimTeste <= request.time + duration.value(8, 'd')
+        && !exists(pontoPerfil()));
+      allow update: if pontoMaster() || (pontoGestorDe(e)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'fimTeste', 'donoUid']));
+      allow delete: if pontoMaster();
+
+      match /funcionarios/{f} { allow read, write: if pontoEquipe(e); }
+      match /feriados/{f} { allow read, write: if pontoEquipe(e); }
+
+      match /codigos/{c} {
+        allow get: if true;
+        allow list, create, delete: if pontoEquipe(e);
+        allow update: if pontoEquipe(e)
+          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ultimaData', 'qtdDia', 'ultimaHora']);
+      }
+
+      match /marcacoes/{m} {
+        allow read, update, delete: if pontoEquipe(e);
+        allow create: if pontoEquipe(e) || (
+          request.resource.data.origem == 'funcionario'
+          && request.resource.data.recebido == request.time
+          && request.resource.data.ts <= request.time + duration.value(5, 'm')
+          && exists(pontoCodigo(e, request.resource.data.codigo))
+          && get(pontoCodigo(e, request.resource.data.codigo)).data.funcionarioId == request.resource.data.funcionarioId
+          && pontoLiberada(e));
+      }
+    }
+    // --- fim Ponto Eletrônico ---
