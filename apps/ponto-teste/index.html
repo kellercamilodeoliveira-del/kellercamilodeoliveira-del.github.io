@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ponto Eletrônico — TESTE</title>
+<meta name="description" content="Entrada e saída dos funcionários pelo celular, com relatório por pessoa e por mês. Keller IA.">
+<meta name="theme-color" content="#07080a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ponto">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<style>
+@font-face{font-family:'Inter';src:url(../../fonts/inter-400.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Inter';src:url(../../fonts/inter-500.woff2) format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Inter';src:url(../../fonts/inter-600.woff2) format('woff2');font-weight:600 700;font-display:swap}
+:root{
+  --bg:#07080a;--panel:#15171b;--panel2:#1c1f25;--fg:#f6f4ee;--muted:#9aa1ab;--muted2:#6b7280;
+  --line:#2a2d33;--indigo:#4f46e5;--indigo2:#6a60f0;--amber:#f5a623;--green:#34c77b;--red:#e2402f;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--fg);font:15px/1.45 'Inter',system-ui,-apple-system,sans-serif;
+  padding:env(safe-area-inset-top,0) max(14px,env(safe-area-inset-right,0)) env(safe-area-inset-bottom,0) max(14px,env(safe-area-inset-left,0));
+  -webkit-tap-highlight-color:transparent;
+}
+h1,h2,h3,.num,.eyebrow,.tab,.clock,.key,.code-pill{font-family:'Barlow Condensed',system-ui,sans-serif}
+.app{max-width:720px;margin:0 auto;padding:20px 0 60px;display:flex;flex-direction:column;gap:16px}
+.tela[hidden],[hidden]{display:none!important}
+.tela{display:flex;flex-direction:column;gap:16px}
+.eyebrow{font-weight:700;font-size:13px;letter-spacing:.09em;color:var(--amber);text-transform:uppercase}
+h1{font-size:32px;line-height:1.05;margin:2px 0 0;font-weight:700}
+h2{font-size:22px;margin:0 0 10px;font-weight:700}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;position:sticky;top:env(safe-area-inset-top,0);z-index:5}
+.tab{border:0;background:transparent;color:var(--muted);font-size:16px;font-weight:700;padding:9px 2px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.tab[aria-selected=true]{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff}
+.logo-emp{display:block;max-width:min(320px,80%);max-height:96px;object-fit:contain;margin:2px 0 6px}
+.marca-prev{background:#141416;border-radius:12px;padding:12px;display:flex;justify-content:center;min-height:60px;align-items:center}.marca-prev img{max-width:100%;max-height:90px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+select,input{width:100%;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px}
+select:focus,input:focus{outline:2px solid var(--indigo);outline-offset:-1px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:12px 16px;font:600 15px 'Inter',sans-serif;cursor:pointer;text-align:center;text-decoration:none;color:var(--fg)}
+.btn.p{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff}
+.btn.s{background:var(--panel2);border:1px solid var(--line)}
+.btn.a{background:var(--amber);color:#1a1200}
+.btn.d{background:transparent;border:1px solid rgba(226,64,47,.5);color:#ff8a7d}
+.btn.w{width:100%}
+.btn.sm{padding:7px 11px;font-size:13px;border-radius:9px}
+.btn:disabled{opacity:.5;cursor:default}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btns .btn{flex:1;min-width:140px}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:14px;cursor:pointer;padding:6px}
+.erro{color:#ff8a7d;font-size:14px;min-height:20px;margin-top:8px}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+.banner{border-radius:12px;padding:10px 14px;font-size:14px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.4)}
+.banner.master{background:rgba(79,70,229,.15);border-color:rgba(106,96,240,.5);display:flex;justify-content:space-between;align-items:center;gap:10px}
+
+/* terminal */
+.terminal{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+.clock{font-size:64px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.date{color:var(--muted);margin-top:-4px}
+.code{display:flex;gap:10px;justify-content:center;margin:4px 0}
+.code span{width:46px;height:56px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);display:grid;place-items:center;font:700 30px 'Barlow Condensed',sans-serif}
+.code span.on{border-color:var(--indigo2)}
+.code.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:330px}
+.key{height:60px;border-radius:14px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-size:30px;font-weight:700;cursor:pointer;touch-action:manipulation}
+.key:active{transform:scale(.97);background:#252932}
+.key.ok{background:linear-gradient(135deg,var(--indigo),var(--indigo2));border:0;font-size:20px}
+.key.del{font-size:20px;color:var(--muted)}
+.big{width:100%;max-width:330px;padding:22px;font-size:22px;border-radius:16px}
+.msg{min-height:84px;width:100%;display:flex;align-items:center;justify-content:center}
+.okbox{width:100%;border-radius:14px;padding:14px;background:rgba(52,199,123,.1);border:1px solid rgba(52,199,123,.4)}
+.okbox b{font-size:19px}
+.errbox{color:#ff8a7d;font-weight:600}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);cursor:pointer}
+.check input{width:20px;height:20px}
+
+/* painel */
+.chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.chip .num{font-size:30px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.chip .lbl{font-size:12px;color:var(--muted);margin-top:4px}
+.chip.g .num{color:var(--green)}.chip.a .num{color:var(--amber)}.chip.r .num{color:#ff8a7d}
+.saldo{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.saldo.pos{color:var(--green)}.saldo.neg{color:#ff8a7d}.saldo.zero{color:var(--muted)}
+.tipo{font:700 30px 'Barlow Condensed',sans-serif;letter-spacing:.02em;text-transform:uppercase}
+.jor{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.jor label{text-align:center;margin:6px 0 4px}.jor input{padding:9px 2px;text-align:center;font-size:15px}
+@media(max-width:560px){.jor{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.sbox{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.12);font-size:15px}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row.click{cursor:pointer}
+.av{width:38px;height:38px;border-radius:50%;background:var(--panel2);display:grid;place-items:center;font-weight:600;color:var(--amber);flex:none}
+.grow{flex:1;min-width:0}
+.nm{font-weight:600}
+.fn{font-size:12px;color:var(--muted)}
+.st{font-size:13px;font-weight:600;text-align:right}
+.st.in{color:var(--green)}.st.out{color:var(--muted)}.st.none{color:var(--muted2)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;vertical-align:1px}
+.filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:12px}
+.tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.tot div{background:var(--panel2);border-radius:12px;padding:10px}
+.tot .num{font-size:24px;font-weight:700;line-height:1}
+.tot .lbl{font-size:11px;color:var(--muted);margin-top:3px}
+.tot .x .num{color:var(--amber)}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:6px 4px;border-bottom:1px solid var(--line)}
+td{padding:9px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+tbody tr.click{cursor:pointer}
+tbody tr.click:active{background:var(--panel2)}
+tr.ext td{background:rgba(245,166,35,.07)}
+.tag{display:inline-block;font-size:10px;font-weight:700;color:#1a1200;background:var(--amber);border-radius:5px;padding:1px 5px;margin-left:4px;text-transform:uppercase;vertical-align:1px}
+.tag.r{background:var(--red);color:#fff}
+.tag.g{background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.wd{color:var(--muted);font-size:11px}
+.code-pill{font-weight:700;font-size:16px;color:var(--amber);background:rgba(245,166,35,.1);border-radius:8px;padding:3px 8px;letter-spacing:.08em}
+.badge{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;text-transform:uppercase;letter-spacing:.04em}
+.badge.teste{background:rgba(245,166,35,.15);color:var(--amber)}
+.badge.ativo{background:rgba(52,199,123,.15);color:var(--green)}
+.badge.bloqueado,.badge.vencido{background:rgba(226,64,47,.15);color:#ff8a7d}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 10px}
+.urlbox{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;word-break:break-all;color:var(--muted)}
+.foot{text-align:center;font-size:12px;color:var(--muted2)}
+.foot b{color:var(--muted)}
+
+/* modal + toast */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50;padding:12px}
+.modal .card{width:100%;max-width:520px;max-height:88vh;overflow:auto;margin-bottom:env(safe-area-inset-bottom,0)}
+@media(min-width:600px){.modal{align-items:center}}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:#fff;color:#111;border-radius:12px;padding:11px 16px;font-weight:600;font-size:14px;z-index:60;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:90vw;text-align:center}
+.toast.err{background:#ffdcd7}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--indigo2);animation:sp 1s linear infinite;margin:60px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (max-width:420px){.clock{font-size:54px}.grid2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.code.shake{animation:none}.spin{animation-duration:3s}}
+</style>
+</head>
+<body>
+<div style="background:#f5d90a;color:#111;text-align:center;font:700 13px Inter,sans-serif;padding:6px;margin:0 -14px">VERSÃO DE TESTE — os dados são os mesmos do app oficial</div>
+<div class="app">
+
+  <!-- CARREGANDO -->
+  <section class="tela" id="t-load"><div class="spin" role="status" aria-label="Carregando"></div></section>
+
+  <!-- AVISO DE CONFIGURAÇÃO -->
+  <section class="tela" id="t-config" hidden>
+    <div class="card"><h2>Quase pronto</h2><p class="sub">O app ainda não foi ligado ao banco de dados.</p></div>
+  </section>
+
+  <!-- TERMINAL DO FUNCIONÁRIO -->
+  <section class="tela" id="t-terminal" hidden>
+    <header>
+      <img class="logo-emp" id="tm-logo" alt="" hidden>
+      <div class="eyebrow" id="tm-emp">Ponto Eletrônico</div>
+      <h1>Bater ponto</h1>
+    </header>
+    <div class="card terminal">
+      <div class="clock" id="tm-clock">--:--</div>
+      <div class="date" id="tm-date"></div>
+      <div id="tm-lembrado" hidden style="width:100%;display:flex;flex-direction:column;align-items:center;gap:10px">
+        <button class="btn p big" id="tm-btn-lembrado">Bater ponto</button>
+        <button class="link" id="tm-trocar">Não é você? Digitar outro código</button>
+      </div>
+      <div id="tm-teclado" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div class="sub" style="margin:0">Digite seu código de 4 números</div>
+        <div class="code" id="tm-code"><span></span><span></span><span></span><span></span></div>
+        <div class="pad" id="tm-pad"></div>
+        <label class="check" id="tm-lembrar-wrap"><input type="checkbox" id="tm-lembrar"> Lembrar meu código neste celular</label>
+      </div>
+      <div class="msg" id="tm-msg" aria-live="polite"></div>
+    </div>
+    <div class="foot"><button class="link" id="tm-gestor">Área do gestor</button><br>Ponto Eletrônico por <b>Keller IA</b></div>
+  </section>
+
+  <!-- LOGIN -->
+  <section class="tela" id="t-login" hidden>
+    <header>
+      <div class="eyebrow">Keller IA</div>
+      <h1>Ponto Eletrônico</h1>
+      <div class="sub">Entrada e saída dos funcionários pelo celular, com relatório por pessoa e por mês.</div>
+    </header>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-lt="entrar">Entrar</button>
+      <button class="tab" role="tab" aria-selected="false" data-lt="cadastro">Cadastrar empresa</button>
+    </div>
+    <form class="card" id="f-login">
+      <label for="l-email">E-mail</label><input id="l-email" type="email" autocomplete="username" required>
+      <label for="l-senha">Senha</label><input id="l-senha" type="password" autocomplete="current-password" required>
+      <div class="erro" id="l-erro"></div>
+      <button class="btn p w" type="submit" id="l-btn">Entrar</button>
+      <div style="text-align:center;margin-top:6px"><button type="button" class="link" id="l-esqueci">Esqueci a senha</button></div>
+    </form>
+    <form class="card" id="f-cad" hidden>
+      <div class="sub" style="margin:0 0 4px">7 dias grátis, sem cartão. Depois é só falar com a Keller IA.</div>
+      <label for="c-emp">Nome da empresa</label><input id="c-emp" required>
+      <div class="grid2">
+        <div><label for="c-cnpj">CNPJ</label><input id="c-cnpj" inputmode="numeric"></div>
+        <div><label for="c-resp">Seu nome</label><input id="c-resp" required></div>
+      </div>
+      <label for="c-end">Endereço</label><input id="c-end">
+      <label for="c-wa">WhatsApp do gestor (recebe os comprovantes)</label><input id="c-wa" inputmode="tel" placeholder="(14) 99999-9999">
+      <label for="c-email">E-mail (para entrar no painel)</label><input id="c-email" type="email" autocomplete="username" required>
+      <label for="c-senha">Crie uma senha (mínimo 6)</label><input id="c-senha" type="password" autocomplete="new-password" minlength="6" required>
+      <div class="erro" id="c-erro"></div>
+      <button class="btn p w" type="submit" id="c-btn">Começar teste grátis</button>
+    </form>
+    <div class="foot">Dúvidas? WhatsApp <b>(14) 98832-4456</b></div>
+  </section>
+
+  <!-- VERIFICAR E-MAIL (MASTER) -->
+  <section class="tela" id="t-verif" hidden>
+    <div class="card">
+      <h2>Confirme seu e-mail</h2>
+      <p class="sub">Mandamos um link de confirmação para <b id="v-email"></b>. Abra o e-mail, toque no link e volte aqui.</p>
+      <div class="btns"><button class="btn p" id="v-ok">Já confirmei</button><button class="btn s" id="v-reenviar">Reenviar e-mail</button></div>
+      <div class="btns"><button class="btn s" id="v-sair">Sair</button></div>
+      <div class="erro" id="v-erro"></div>
+    </div>
+  </section>
+
+  <!-- BLOQUEADO -->
+  <section class="tela" id="t-bloq" hidden>
+    <div class="card">
+      <h2 id="b-tit">Período de teste encerrado</h2>
+      <p class="sub" id="b-txt">Para continuar usando o Ponto Eletrônico, fale com a Keller IA.</p>
+      <div class="btns"><a class="btn a" id="b-wa" target="_blank" rel="noopener">Falar no WhatsApp</a><button class="btn s" data-sair>Sair</button></div>
+    </div>
+  </section>
+
+  <!-- MASTER -->
+  <section class="tela" id="t-master" hidden>
+    <header class="top">
+      <div><div class="eyebrow">Keller IA · Administrador</div><h1>Empresas</h1></div>
+      <button class="btn s sm" data-sair>Sair</button>
+    </header>
+    <div class="chips">
+      <div class="chip"><div class="num" id="m-total">0</div><div class="lbl">Empresas</div></div>
+      <div class="chip g"><div class="num" id="m-ativas">0</div><div class="lbl">Ativas</div></div>
+      <div class="chip a"><div class="num" id="m-teste">0</div><div class="lbl">Em teste</div></div>
+    </div>
+    <div class="card"><div id="m-lista"></div></div>
+    <form class="card" id="f-nova">
+      <h2>Nova empresa</h2>
+      <label for="n-emp">Nome da empresa</label><input id="n-emp" required>
+      <div class="grid2">
+        <div><label for="n-cnpj">CNPJ</label><input id="n-cnpj" inputmode="numeric"></div>
+        <div><label for="n-resp">Responsável</label><input id="n-resp"></div>
+      </div>
+      <label for="n-end">Endereço</label><input id="n-end">
+      <label for="n-wa">WhatsApp do gestor (recebe os comprovantes)</label><input id="n-wa" inputmode="tel" placeholder="(14) 99999-9999">
+      <div class="grid2">
+        <div><label for="n-email">E-mail de login do gestor</label><input id="n-email" type="email" required></div>
+        <div><label for="n-senha">Senha inicial</label><input id="n-senha" minlength="6"></div>
+      </div>
+      <div class="note">Se for você mesmo quem vai cuidar da empresa, use o seu e-mail de administrador e deixe a senha em branco.</div>
+      <label for="n-status">Situação</label>
+      <select id="n-status"><option value="teste">Teste grátis (7 dias)</option><option value="ativo">Ativo (cliente pagante)</option></select>
+      <div class="erro" id="n-erro"></div>
+      <button class="btn a w" type="submit" id="n-btn">Cadastrar empresa</button>
+    </form>
+  </section>
+
+  <!-- PAINEL DO GESTOR -->
+  <section class="tela" id="t-painel" hidden>
+    <div class="banner master" id="p-master" hidden><span>Você está no painel desta empresa como administrador.</span><button class="btn s sm" id="p-voltar">Voltar</button></div>
+    <header class="top">
+      <div><img class="logo-emp" id="p-logo" alt="" hidden><div class="eyebrow">Ponto Eletrônico</div><h1 id="p-nome">Empresa</h1><div class="sub" id="p-quem"></div></div>
+      <button class="btn s sm" data-sair id="p-sair">Sair</button>
+    </header>
+    <div class="banner" id="p-aviso" hidden></div>
+    <div class="banner" id="p-zap" hidden>Coloque o <b>WhatsApp do gestor</b> na aba <b>Empresa</b> para receber o comprovante de cada batida.</div>
+    <div class="tabs" role="tablist" id="p-tabs">
+      <button class="tab" role="tab" aria-selected="true" data-pt="hoje">Hoje</button>
+      <button class="tab" role="tab" aria-selected="false" data-pt="rel">Relatório</button>
+      <button class="tab" role="tab" aria-selected="false" data-pt="equipe">Equipe</button>
+      <button class="tab" role="tab" aria-selected="false" data-pt="empresa">Empresa</button>
+    </div>
+
+    <div class="pv" id="pv-hoje">
+      <div class="chips">
+        <div class="chip g"><div class="num" id="h-agora">0</div><div class="lbl">Trabalhando agora</div></div>
+        <div class="chip"><div class="num" id="h-regs">0</div><div class="lbl">Registros hoje</div></div>
+        <div class="chip r"><div class="num" id="h-dev">0</div><div class="lbl">Devendo horas no mês</div></div>
+      </div>
+      <div class="card" style="margin-top:14px"><h2>Hoje</h2><div id="h-lista"></div></div>
+      <div class="card" style="margin-top:14px">
+        <h2>Tablet do ponto</h2>
+        <p class="sub" style="margin-top:0">Abra este link no tablet da empresa e deixe na tela. O funcionário só digita o código: o tablet registra Entrada, Saída para almoço, Volta do almoço e Saída, nessa ordem.</p>
+        <div class="urlbox" id="h-url"></div>
+        <div class="btns">
+          <button class="btn s" id="h-copiar">Copiar link</button>
+          <a class="btn s" id="h-wa" target="_blank" rel="noopener">Mandar no WhatsApp</a>
+        </div>
+        <div class="btns"><button class="btn p w" id="h-terminal">Transformar este aparelho no tablet do ponto</button></div>
+        <div class="note">Dica: no tablet, use "Adicionar à tela inicial" para abrir em tela cheia, como app.</div>
+      </div>
+    </div>
+
+    <div class="pv" id="pv-rel" hidden>
+      <div class="card">
+        <div class="filters">
+          <select id="r-func" aria-label="Funcionário"></select>
+          <select id="r-mes" aria-label="Mês"></select>
+        </div>
+        <div id="r-conteudo"></div>
+      </div>
+    </div>
+
+    <div class="pv" id="pv-equipe" hidden>
+      <div class="card">
+        <h2>Equipe</h2>
+        <div id="e-lista"></div>
+        <form id="f-func" style="margin-top:12px">
+          <h2 style="margin-top:8px">Cadastrar colaborador</h2>
+          <label for="ef-nome">Nome completo</label><input id="ef-nome" required autocomplete="off">
+          <div class="grid2">
+            <div><label for="ef-rg">RG</label><input id="ef-rg" autocomplete="off"></div>
+            <div><label for="ef-wa">WhatsApp do colaborador</label><input id="ef-wa" inputmode="tel" placeholder="(14) 99999-9999" autocomplete="off"></div>
+          </div>
+          <button class="btn a w" type="submit" style="margin-top:12px" id="ef-btn">Cadastrar colaborador</button>
+        </form>
+        <div class="note">Cada colaborador recebe um código de 4 números para bater o ponto no tablet. A cada batida, o comprovante em PDF vai sozinho para o WhatsApp dele e do gestor. Toque no nome para editar.</div>
+      </div>
+    </div>
+
+    <div class="pv" id="pv-empresa" hidden>
+      <form class="card" id="f-emp">
+        <h2>Dados da empresa</h2>
+        <div class="sub" style="margin-top:0">Saem no comprovante em PDF.</div>
+        <label for="em-nome">Nome</label><input id="em-nome" required>
+        <label for="em-cnpj">CNPJ</label><input id="em-cnpj">
+        <label for="em-end">Endereço</label><input id="em-end">
+        <label for="em-wa">WhatsApp do gestor (recebe os comprovantes)</label><input id="em-wa" inputmode="tel" placeholder="(14) 99999-9999">
+        <label class="check" style="margin-top:12px"><input type="checkbox" id="em-nf"> Mandar o comprovante de cada batida no WhatsApp do colaborador</label>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="em-ng"> Mandar o comprovante de cada batida no WhatsApp do gestor</label>
+        <button class="btn p w" type="submit" style="margin-top:14px">Salvar</button>
+      </form>
+      <div class="card" style="margin-top:14px">
+        <h2>Marca da empresa</h2>
+        <div class="sub" style="margin-top:0">O logo e a cor aparecem no painel, no tablet e nos PDFs.</div>
+        <div class="marca-prev" id="mc-prev"><span class="note">Sem logo</span></div>
+        <div class="grid2" style="margin-top:8px">
+          <div><label for="mc-logo">Logo (imagem)</label><input id="mc-logo" type="file" accept="image/*"></div>
+          <div><label for="mc-cor">Cor principal</label><input id="mc-cor" type="color" value="#4f46e5" style="height:46px;padding:4px"></div>
+        </div>
+        <div class="btns"><button class="btn p" id="mc-salvar" type="button">Salvar marca</button><button class="btn s" id="mc-tirar" type="button">Voltar ao padrão</button></div>
+      </div>
+      <form class="card" id="f-jor" style="margin-top:14px">
+        <h2>Jornada de trabalho</h2>
+        <div class="sub" style="margin-top:0">Horas previstas por dia (sem contar o almoço). É com ela que o app calcula quem está devendo horas e quem tem horas a mais. Diferença de até 10 minutos no dia não conta.</div>
+        <div class="jor" id="jor-emp"></div>
+        <button class="btn p w" type="submit" style="margin-top:12px">Salvar jornada</button>
+      </form>
+      <div class="card" style="margin-top:14px">
+        <h2>Feriados</h2>
+        <div class="sub" style="margin-top:0">Em feriado não há horas previstas: quem trabalhar ganha horas a mais. Os feriados nacionais já estão incluídos; adicione os da sua cidade.</div>
+        <div id="fe-lista" style="margin-top:8px"></div>
+        <form class="grid2" id="f-fer" style="margin-top:6px">
+          <div><label for="fe-data">Data</label><input id="fe-data" type="date" required></div>
+          <div><label for="fe-nome">Nome</label><input id="fe-nome" placeholder="Ex: Aniversário da cidade" required></div>
+          <button class="btn a" type="submit" style="grid-column:1/-1;margin-top:10px">Adicionar feriado</button>
+        </form>
+        <details style="margin-top:12px"><summary class="sub" style="cursor:pointer">Ver feriados nacionais deste ano</summary><div id="fe-nac" class="note"></div></details>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h2>Conta</h2>
+        <div class="sub" style="margin-top:0" id="ct-email"></div>
+        <div class="btns"><button class="btn s" id="ct-senha">Trocar senha</button><button class="btn d" data-sair>Sair</button></div>
+      </div>
+    </div>
+    <div class="foot">Ponto Eletrônico por <b>Keller IA</b> · (14) 98832-4456</div>
+  </section>
+</div>
+
+<div class="modal" id="modal" hidden><div class="card" id="modal-c"></div></div>
+
+<script type="module">
+import {initializeApp,deleteApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail,sendEmailVerification} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,getDoc,getDocFromServer,getDocs,setDoc,updateDoc,deleteDoc,addDoc,onSnapshot,query,where,orderBy,writeBatch,serverTimestamp,Timestamp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+// ====== CONFIGURAÇÃO ======
+const firebaseConfig = {apiKey: 'AIzaSyBZyZ4Dqs0BI5VSsm3HB2TNGpk7Z7330CE', authDomain: 'escritorio-c3acb.firebaseapp.com', projectId: 'escritorio-c3acb', storageBucket: 'escritorio-c3acb.firebasestorage.app', messagingSenderId: '752996396852', appId: '1:752996396852:web:13569631f01d301d5a3f61'};
+const MASTER = ['keller_camilo@hotmail.com', 'kellercamilodeoliveira@gmail.com'];
+const WHATS_KELLER = '5514988324456';
+const MOTOR_WHATSAPP = 'https://motor-whatsapp-keller-ia.onrender.com'; // manda o comprovante de cada batida no WhatsApp
+const DIAS_TESTE = 7;
+// ==========================
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const p2 = n => String(n).padStart(2, '0');
+const dkey = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+const hm = d => p2(d.getHours()) + ':' + p2(d.getMinutes());
+const dataBR = k => k.slice(8,10) + '/' + k.slice(5,7) + '/' + k.slice(0,4);
+const fmtH = min => { min = Math.max(0, Math.round(min)); const h = Math.floor(min/60), m = min % 60; return m ? `${h}h${p2(m)}` : `${h}h`; };
+const DSEM = ['dom','seg','ter','qua','qui','sex','sáb'];
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const BASE_URL = location.origin + location.pathname.replace(/index\.html$/, '');
+const ls = {get:k=>{try{return localStorage.getItem(k)}catch(e){return null}}, set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}, del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+
+function toast(t, err) { const el = document.createElement('div'); el.className = 'toast' + (err ? ' err' : ''); el.textContent = t; document.body.appendChild(el); setTimeout(() => el.remove(), 3200); }
+function tela(id) { $$('.tela').forEach(s => s.hidden = s.id !== 't-' + id); window.scrollTo(0, 0); }
+function abrirModal(html) { $('#modal-c').innerHTML = html; $('#modal').hidden = false; }
+function fecharModal() { $('#modal').hidden = true; $('#modal-c').innerHTML = ''; }
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') fecharModal(); });
+function erroTxt(e) {
+  const c = (e && e.code) || '';
+  if (c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found')) return 'E-mail ou senha incorretos.';
+  if (c.includes('email-already-in-use')) return 'Esse e-mail já tem cadastro. Use "Entrar".';
+  if (c.includes('weak-password')) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if (c.includes('invalid-email')) return 'E-mail inválido.';
+  if (c.includes('network') || c.includes('unavailable')) return 'Sem internet. Tente de novo.';
+  if (c.includes('too-many-requests')) return 'Muitas tentativas. Espere um pouco.';
+  if (c.includes('permission-denied')) return 'Sem permissão para isso.';
+  return 'Algo deu errado. Tente de novo.';
+}
+
+// ====== FERIADOS ======
+function pascoa(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;return new Date(y,mes-1,dia);}
+const _nac = {};
+function feriadosNacionais(y) {
+  if (_nac[y]) return _nac[y];
+  const f = {}, add = (m, d, n) => f[`${y}-${p2(m)}-${p2(d)}`] = n;
+  add(1,1,'Confraternização Universal');
+  const sf = pascoa(y); sf.setDate(sf.getDate() - 2); f[dkey(sf)] = 'Sexta-feira Santa';
+  add(4,21,'Tiradentes'); add(5,1,'Dia do Trabalho'); add(9,7,'Independência'); add(10,12,'Nossa Senhora Aparecida');
+  add(11,2,'Finados'); add(11,15,'Proclamação da República'); add(11,20,'Consciência Negra'); add(12,25,'Natal');
+  return _nac[y] = f;
+}
+let feriadosEmp = {};
+const feriado = k => feriadosEmp[k] || feriadosNacionais(+k.slice(0,4))[k] || null;
+
+// ====== JORNADA E BANCO DE HORAS ======
+const JORNADA_PADRAO = {0: 0, 1: 480, 2: 480, 3: 480, 4: 480, 5: 480, 6: 240}; // minutos por dia da semana (0 = domingo)
+const TOLERANCIA = 10; // CLT: até 10 min de diferença no dia não conta
+const DIAS_JOR = [[1,'Seg'],[2,'Ter'],[3,'Qua'],[4,'Qui'],[5,'Sex'],[6,'Sáb'],[0,'Dom']];
+const dataDe = k => new Date(+k.slice(0,4), +k.slice(5,7) - 1, +k.slice(8,10));
+const previstoDia = (k, jor) => feriado(k) ? 0 : (+((jor || JORNADA_PADRAO)[dataDe(k).getDay()]) || 0);
+const difDia = (trab, prev) => { const d = trab - prev; return Math.abs(d) <= TOLERANCIA ? 0 : d; };
+// o dia de hoje só entra no saldo quando o expediente fechou (4 batidas, ou 2 em dia curto como sábado)
+const hojeFechado = (n, k, jor) => n > 0 && n % 2 === 0 && (n >= 4 || previstoDia(k, jor) <= 360);
+const fmtSaldo = min => { min = Math.round(min); return (min > 0 ? '+' : min < 0 ? '−' : '') + fmtH(Math.abs(min)); };
+const clsSaldo = min => Math.round(min) > 0 ? 'pos' : Math.round(min) < 0 ? 'neg' : 'zero';
+const txtSaldo = min => Math.round(min) > 0 ? 'horas a mais' : Math.round(min) < 0 ? 'devendo' : 'em dia';
+const hmParaMin = v => { const m = /^(\d{1,2}):?(\d{2})?$/.exec(String(v || '').trim()); return m ? (+m[1]) * 60 + (+(m[2] || 0)) : 0; };
+const minParaHm = m => p2(Math.floor(m / 60)) + ':' + p2(m % 60);
+// saldo do mês a partir dos minutos trabalhados por dia {AAAA-MM-DD: minutos}
+function saldoDoMes(diasMin, jor, inicio, ym, fechouHoje) {
+  const [y, m] = ym.split('-').map(Number), hoje = dkey(new Date()), ult = new Date(y, m, 0).getDate();
+  let saldo = 0, prev = 0, trab = 0;
+  for (let d = 1; d <= ult; d++) {
+    const k = `${y}-${p2(m)}-${p2(d)}`;
+    if (k > hoje || (k === hoje && !fechouHoje)) break;
+    if (inicio && k < inicio) continue;
+    const p = previstoDia(k, jor), w = diasMin[k] || 0;
+    saldo += difDia(w, p); prev += p; trab += w;
+  }
+  return {saldo, prev, trab};
+}
+// nome de cada batida pela ordem do dia
+function nomeBatida(n, k, jor) {
+  const curto = previstoDia(k, jor) <= 360;
+  if (n === 0) return 'Entrada';
+  if (curto && n === 1) return 'Saída';
+  if (n === 1) return 'Saída para almoço';
+  if (n === 2) return 'Volta do almoço';
+  if (n === 3) return 'Saída';
+  return n % 2 === 0 ? 'Entrada extra' : 'Saída extra';
+}
+
+// ====== FIREBASE ======
+const configurado = !!firebaseConfig.apiKey;
+let app, auth, db;
+if (configurado) {
+  app = initializeApp(firebaseConfig); auth = getAuth(app);
+  try { db = initializeFirestore(app, {localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()})}); }
+  catch (e) { db = initializeFirestore(app, {}); }
+}
+let unsubs = [];
+function limpar() { unsubs.forEach(u => { try { u() } catch (e) {} }); unsubs = []; clearInterval(timerTerminal); }
+const isMaster = u => !!u && !u.isAnonymous && MASTER.includes((u.email || '').toLowerCase());
+
+// ====== ROTEAMENTO ======
+const params = new URLSearchParams(location.search);
+if (params.get('e')) { ls.set('ponto.terminal', params.get('e')); if (params.get('tablet')) ls.set('ponto.kiosk', params.get('e')); }
+let modoTerminal = params.get('e') || ls.get('ponto.terminal');
+let rotaSeq = 0;
+
+let cadastrando = false;
+async function rotear(u) {
+  if (cadastrando) return;
+  const seq = ++rotaSeq; limpar();
+  if (modoTerminal) {
+    return abrirTerminal(modoTerminal); // o funcionário não precisa de login
+  }
+  if (!u || u.isAnonymous) { aplicarMarca(null, null); tela('login'); return; }
+  if (isMaster(u)) {
+    if (!u.emailVerified) { $('#v-email').textContent = u.email; tela('verif'); return; }
+    if (painelEmpresaMaster) return abrirPainel(painelEmpresaMaster, true);
+    return abrirMaster();
+  }
+  try {
+    const p = await getDoc(doc(db, 'ponto_usuarios', u.uid));
+    if (seq !== rotaSeq) return;
+    if (!p.exists()) { await signOut(auth); $('#l-erro').textContent = 'Essa conta não está ligada a nenhuma empresa.'; return; }
+    abrirPainel(p.data().empresaId, false);
+  } catch (e) { tela('login'); $('#l-erro').textContent = erroTxt(e); }
+}
+let painelEmpresaMaster = null;
+
+$$('[data-sair]').forEach(b => b.addEventListener('click', sair));
+async function sair() { painelEmpresaMaster = null; limpar(); await signOut(auth); }
+
+// ====== LOGIN / CADASTRO ======
+$$('[data-lt]').forEach(b => b.addEventListener('click', () => {
+  $$('[data-lt]').forEach(x => x.setAttribute('aria-selected', x === b));
+  $('#f-login').hidden = b.dataset.lt !== 'entrar'; $('#f-cad').hidden = b.dataset.lt !== 'cadastro';
+}));
+$('#f-login').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const email = $('#l-email').value.trim().toLowerCase(), senha = $('#l-senha').value, b = $('#l-btn');
+  $('#l-erro').textContent = ''; b.disabled = true; b.textContent = 'Entrando...';
+  try { await signInWithEmailAndPassword(auth, email, senha); }
+  catch (e) {
+    // primeiro acesso do administrador: cria a conta automaticamente
+    if (MASTER.includes(email) && /invalid-credential|user-not-found/.test(e.code || '')) {
+      try { const c = await createUserWithEmailAndPassword(auth, email, senha); await sendEmailVerification(c.user); }
+      catch (e2) { $('#l-erro').textContent = erroTxt(e2.code === 'auth/email-already-in-use' ? e : e2); }
+    } else $('#l-erro').textContent = erroTxt(e);
+  }
+  b.disabled = false; b.textContent = 'Entrar';
+});
+$('#l-esqueci').addEventListener('click', async () => {
+  const email = $('#l-email').value.trim();
+  if (!email) { $('#l-erro').textContent = 'Digite seu e-mail acima e toque de novo em "Esqueci a senha".'; return; }
+  try { await sendPasswordResetEmail(auth, email); toast('Enviamos um link para trocar a senha no seu e-mail.'); } catch (e) { $('#l-erro').textContent = erroTxt(e); }
+});
+const slug = s => (s || 'empresa').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 16) || 'empresa';
+const soNumeros = v => String(v || '').replace(/\D/g, '');
+const fmtFone = v => { const n = soNumeros(v).replace(/^55(?=\d{10,11}$)/, ''); return n.length === 11 ? `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}` : n.length === 10 ? `(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}` : v || ''; };
+
+// ====== MARCA DA EMPRESA (logo e cor no painel, no tablet e nos PDFs) ======
+const MARCAS = {
+  'betolubservicosa-cmcx': {cor: '#e3262b', logo: 'marcas/betolub.png', destaque: '#f6e01e'},
+};
+const marcaDe = (id, e) => { const m = (e && e.marca) || {}, f = MARCAS[id] || {}; return {cor: m.cor || f.cor || null, logo: m.logo || f.logo || null, destaque: m.destaque || f.destaque || null}; };
+function escurecer(hex, f) { const n = parseInt(hex.slice(1), 16), c = x => Math.max(0, Math.min(255, Math.round(x))); const r = c((n >> 16) * f), g = c(((n >> 8) & 255) * f), b = c((n & 255) * f); return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join(''); }
+function aplicarMarca(id, e) {
+  const m = marcaDe(id, e), st = document.documentElement.style;
+  if (m.cor) { st.setProperty('--indigo', escurecer(m.cor, .85)); st.setProperty('--indigo2', m.cor); } else { st.removeProperty('--indigo'); st.removeProperty('--indigo2'); }
+  if (m.destaque) st.setProperty('--amber', m.destaque); else st.removeProperty('--amber');
+  ['#p-logo', '#tm-logo'].forEach(sel => { const img = $(sel); if (m.logo) { img.src = m.logo; img.hidden = false; } else { img.hidden = true; img.removeAttribute('src'); } });
+  return m;
+}
+const _logoCache = {};
+async function logoParaPdf(src) {
+  if (!src) return null; if (_logoCache[src]) return _logoCache[src];
+  try {
+    const img = await new Promise((ok, erro) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = erro; i.src = src; });
+    const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0);
+    return _logoCache[src] = {data: cv.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight};
+  } catch (e) { return null; }
+}
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+const novoId = nome => slug(nome) + '-' + Math.random().toString(36).slice(2, 6);
+$('#f-cad').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const b = $('#c-btn'); $('#c-erro').textContent = ''; b.disabled = true; b.textContent = 'Criando...';
+  const email = $('#c-email').value.trim().toLowerCase();
+  try {
+    if (MASTER.includes(email)) throw {code: 'master'};
+    cadastrando = true; // segura o roteamento até gravar a empresa
+    const cred = await createUserWithEmailAndPassword(auth, email, $('#c-senha').value);
+    const id = novoId($('#c-emp').value), batch = writeBatch(db);
+    batch.set(doc(db, 'ponto_empresas', id), {
+      nome: $('#c-emp').value.trim(), cnpj: $('#c-cnpj').value.trim(), endereco: $('#c-end').value.trim(),
+      responsavel: $('#c-resp').value.trim(), email, donoUid: cred.user.uid, status: 'teste',
+      whatsappGestor: soNumeros($('#c-wa').value), notificar: {funcionario: true, gestor: true},
+      fimTeste: Timestamp.fromDate(new Date(Date.now() + DIAS_TESTE * 864e5)), criadoEm: serverTimestamp(), origem: 'cadastro'
+    });
+    batch.set(doc(db, 'ponto_usuarios', cred.user.uid), {email, empresaId: id, papel: 'gestor', nome: $('#c-resp').value.trim()});
+    await batch.commit();
+    cadastrando = false;
+    toast('Empresa criada! Agora cadastre sua equipe.');
+    rotear(auth.currentUser);
+  } catch (e) {
+    $('#c-erro').textContent = e.code === 'master' ? 'Esse e-mail é do administrador. Use "Entrar".' : erroTxt(e);
+    const criada = cadastrando && auth.currentUser && !auth.currentUser.isAnonymous;
+    cadastrando = false;
+    if (criada) { try { await auth.currentUser.delete(); } catch (e2) { await signOut(auth); } }
+  }
+  b.disabled = false; b.textContent = 'Começar teste grátis';
+});
+$('#v-ok').addEventListener('click', async () => {
+  const u = auth.currentUser; if (!u) return;
+  await u.reload(); await u.getIdToken(true);
+  if (u.emailVerified) rotear(u); else $('#v-erro').textContent = 'Ainda não confirmado. Abra o link do e-mail (veja também o lixo eletrônico).';
+});
+$('#v-reenviar').addEventListener('click', async () => { try { await sendEmailVerification(auth.currentUser); toast('E-mail reenviado.'); } catch (e) { $('#v-erro').textContent = erroTxt(e); } });
+$('#v-sair').addEventListener('click', sair);
+
+// ====== TERMINAL ======
+let timerTerminal = null, digitado = '', tmEmp = null, tmEmpData = null, ocupado = false, wakeLock = null;
+const kiosk = () => ls.get('ponto.kiosk') === tmEmp;
+async function manterTelaAcesa() {
+  try { if ('wakeLock' in navigator && document.visibilityState === 'visible' && !$('#t-terminal').hidden) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') manterTelaAcesa(); });
+async function abrirTerminal(empId) {
+  tela('terminal'); tmEmp = empId;
+  const tick = () => { const d = new Date(); $('#tm-clock').textContent = hm(d); $('#tm-date').textContent = d.toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long'}); };
+  tick(); timerTerminal = setInterval(tick, 10000); $('#tm-teclado').hidden = false;
+  $('#tm-lembrar-wrap').hidden = kiosk();
+  manterTelaAcesa();
+  try {
+    const s = await getDoc(doc(db, 'ponto_empresas', empId));
+    if (!s.exists()) { $('#tm-emp').textContent = 'Empresa não encontrada'; $('#tm-teclado').hidden = true; $('#tm-lembrado').hidden = true; $('#tm-msg').innerHTML = '<div class="errbox">Link inválido. Peça um novo link ao seu gestor.</div>'; return; }
+    tmEmpData = s.data(); $('#tm-emp').textContent = tmEmpData.nome; aplicarMarca(empId, tmEmpData);
+    document.title = 'Ponto · ' + tmEmpData.nome;
+  } catch (e) { $('#tm-emp').textContent = 'Ponto Eletrônico'; }
+  try { const fs = await getDocs(collection(db, 'ponto_empresas', empId, 'feriados')); feriadosEmp = {}; fs.docs.forEach(d => feriadosEmp[d.id] = d.data().nome || 'Feriado'); } catch (e) {}
+  mostrarLembrado();
+}
+function mostrarLembrado() {
+  const c = kiosk() ? null : ls.get('ponto.codigo.' + tmEmp), n = ls.get('ponto.nome.' + tmEmp);
+  $('#tm-lembrado').hidden = !c; $('#tm-teclado').hidden = !!c;
+  if (c) $('#tm-btn-lembrado').textContent = 'Bater ponto · ' + (n || '').split(' ')[0];
+}
+$('#tm-btn-lembrado').addEventListener('click', () => registrar(ls.get('ponto.codigo.' + tmEmp)));
+$('#tm-trocar').addEventListener('click', () => { ls.del('ponto.codigo.' + tmEmp); ls.del('ponto.nome.' + tmEmp); mostrarLembrado(); });
+const codeEl = $('#tm-code');
+function desenharCodigo() { [...codeEl.children].forEach((s, i) => { s.textContent = digitado[i] ? '•' : ''; s.classList.toggle('on', i === digitado.length); }); }
+['1','2','3','4','5','6','7','8','9','del','0','ok'].forEach(k => {
+  const b = document.createElement('button'); b.type = 'button';
+  b.className = 'key' + (k === 'ok' ? ' ok' : k === 'del' ? ' del' : '');
+  b.textContent = k === 'del' ? 'Apagar' : k === 'ok' ? 'Registrar' : k;
+  b.addEventListener('click', () => {
+    if (k === 'del') digitado = digitado.slice(0, -1);
+    else if (k === 'ok') { if (digitado.length === 4) registrar(digitado); return; }
+    else if (digitado.length < 4) digitado += k;
+    desenharCodigo(); if (digitado.length === 4) registrar(digitado);
+  });
+  $('#tm-pad').appendChild(b);
+});
+document.addEventListener('keydown', ev => {
+  if ($('#t-terminal').hidden || $('#tm-teclado').hidden || /INPUT|SELECT/.test(ev.target.tagName)) return;
+  if (/^\d$/.test(ev.key) && digitado.length < 4) { digitado += ev.key; desenharCodigo(); if (digitado.length === 4) registrar(digitado); }
+  else if (ev.key === 'Backspace') { digitado = digitado.slice(0, -1); desenharCodigo(); }
+});
+function erroCodigo(t) {
+  codeEl.classList.remove('shake'); void codeEl.offsetWidth; codeEl.classList.add('shake');
+  $('#tm-msg').innerHTML = '<div class="errbox">' + esc(t) + '</div>';
+  if (navigator.vibrate) navigator.vibrate(200);
+}
+function avisarWhatsApp(marcacao) {
+  try { fetch(MOTOR_WHATSAPP + '/ponto/comprovante', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({empresa: tmEmp, marcacao}), keepalive: true}).catch(() => {}); } catch (e) {}
+}
+function limparMsgDepois(ms) { clearTimeout(registrar.t); registrar.t = setTimeout(() => { $('#tm-msg').innerHTML = ''; }, ms); }
+async function registrar(cod, confirmado) {
+  if (ocupado || !cod) return; ocupado = true;
+  const msg = $('#tm-msg'); msg.innerHTML = '<div class="sub">Registrando...</div>';
+  try {
+    const ref = doc(db, 'ponto_empresas', tmEmp, 'codigos', cod);
+    let s; try { s = await getDocFromServer(ref); } catch (e) { s = await getDoc(ref); }
+    if (!s.exists()) { erroCodigo('Código não encontrado. Confira com seu gestor.'); return; }
+    const c = s.data(), agora = new Date(), hoje = dkey(agora), ym = hoje.slice(0, 7);
+    const jor = c.jornada || tmEmpData?.jornada || JORNADA_PADRAO;
+    const n = c.ultimaData === hoje ? (c.qtdDia || 0) : 0;
+    // proteção contra batida repetida sem querer
+    if (!confirmado && c.ultimaTs && agora - c.ultimaTs.toDate() < 3 * 60000 && c.ultimaData === hoje) {
+      msg.innerHTML = `<div class="okbox" style="background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.5)"><b>${esc((c.nome || '').split(' ')[0])}, você já bateu às ${esc(c.ultimaHora || '')}.</b><div class="note">Quer registrar de novo?</div><div class="btns"><button class="btn a" id="tm-sim">Sim, registrar</button><button class="btn s" id="tm-nao">Cancelar</button></div></div>`;
+      $('#tm-sim').onclick = () => { ocupado = false; registrar(cod, true); };
+      $('#tm-nao').onclick = () => { msg.innerHTML = ''; };
+      limparMsgDepois(15000);
+      return;
+    }
+    const tipo = nomeBatida(n, hoje, jor);
+    const dias = c.mes === ym && c.dias ? {...c.dias} : {};
+    if (n % 2 === 1 && c.ultimaTs) dias[hoje] = Math.round((dias[hoje] || 0) + (agora - c.ultimaTs.toDate()) / 6e4);
+    const add = addDoc(collection(db, 'ponto_empresas', tmEmp, 'marcacoes'), {
+      funcionarioId: c.funcionarioId, nome: c.nome || '', codigo: cod, ts: Timestamp.fromDate(agora),
+      recebido: serverTimestamp(), origem: 'funcionario', tipo, aparelho: (navigator.userAgent || '').slice(0, 120)
+    });
+    const basico = {ultimaData: hoje, qtdDia: n + 1, ultimaHora: hm(agora)};
+    const upd = updateDoc(ref, {...basico, ultimaTs: Timestamp.fromDate(agora), mes: ym, dias})
+      .catch(e => { if (String(e.code || '').includes('permission')) return updateDoc(ref, basico); throw e; }); // regras antigas: grava só o básico
+    const offline = !navigator.onLine;
+    let marcRef = null;
+    if (offline) { add.catch(() => {}); upd.catch(() => {}); } else [marcRef] = await Promise.all([add, upd]);
+    if (marcRef) avisarWhatsApp(marcRef.id);
+    if (!kiosk() && $('#tm-lembrar').checked) { ls.set('ponto.codigo.' + tmEmp, cod); ls.set('ponto.nome.' + tmEmp, c.nome || ''); }
+    // saldo do mês (banco de horas)
+    const fechou = hojeFechado(n + 1, hoje, jor);
+    const sd = saldoDoMes(dias, jor, c.inicio, ym, fechou);
+    let hojeTxt = (n + 1) % 2 === 0 ? `<div class="note">Hoje: ${fmtH(dias[hoje] || 0)} trabalhadas</div>` : '';
+    if (fechou) { const dh = difDia(dias[hoje] || 0, previstoDia(hoje, jor)); hojeTxt = `<div style="margin-top:6px">Hoje: ${fmtH(dias[hoje] || 0)} trabalhadas · <span class="saldo ${clsSaldo(dh)}">${dh < 0 ? 'faltaram ' + fmtH(-dh) : dh > 0 ? 'sobraram ' + fmtH(dh) : 'em dia'}</span></div>`; }
+    const zap = marcRef && c.whatsapp && (tmEmpData?.notificar?.funcionario !== false) ? '<div class="note">📲 Comprovante enviado no seu WhatsApp.</div>' : '';
+    msg.innerHTML = `<div class="okbox"><div class="tipo">✓ ${esc(tipo)}</div><div style="font-size:18px">${esc(c.nome)} · ${hm(agora)}</div>${hojeTxt}
+      <div class="sbox">Saldo do mês${fechou ? '' : ' (até ontem)'}: <span class="saldo ${clsSaldo(sd.saldo)}">${fmtSaldo(sd.saldo)}</span> <span class="note">${txtSaldo(sd.saldo)}</span></div>
+      ${zap}${offline ? '<div class="note">Sem internet agora: o registro será enviado sozinho quando voltar o sinal.</div>' : ''}</div>`;
+    if (navigator.vibrate) navigator.vibrate(60);
+    mostrarLembrado();
+    limparMsgDepois(kiosk() ? 7000 : 10000);
+  } catch (e) {
+    erroCodigo(e.code && e.code.includes('permission') ? 'O ponto desta empresa está pausado. Avise seu gestor.' : 'Não deu para registrar: ' + erroTxt(e));
+    limparMsgDepois(8000);
+  } finally {
+    digitado = ''; desenharCodigo(); ocupado = false;
+  }
+}
+$('#tm-gestor').addEventListener('click', async () => {
+  if (kiosk() && !confirm('Sair do modo tablet? Para voltar, o gestor precisa abrir o link do tablet de novo.')) return;
+  ls.del('ponto.terminal'); ls.del('ponto.kiosk'); modoTerminal = null; history.replaceState(null, '', location.pathname);
+  try { if (wakeLock) await wakeLock.release(); } catch (e) {}
+  rotear(auth.currentUser);
+});
+
+// ====== MASTER ======
+let empresasMaster = [];
+function statusEmp(e) {
+  if (e.status === 'bloqueado') return 'bloqueado';
+  if (e.status === 'teste') return (e.fimTeste && e.fimTeste.toDate() < new Date()) ? 'vencido' : 'teste';
+  return 'ativo';
+}
+function abrirMaster() {
+  tela('master'); aplicarMarca(null, null);
+  unsubs.push(onSnapshot(collection(db, 'ponto_empresas'), s => {
+    empresasMaster = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
+    renderMaster();
+  }, e => toast(erroTxt(e), true)));
+}
+function renderMaster() {
+  const st = empresasMaster.map(statusEmp);
+  $('#m-total').textContent = empresasMaster.length;
+  $('#m-ativas').textContent = st.filter(x => x === 'ativo').length;
+  $('#m-teste').textContent = st.filter(x => x === 'teste').length;
+  $('#m-lista').innerHTML = empresasMaster.length ? empresasMaster.map((e, i) => {
+    const s = st[i], fim = e.fimTeste ? e.fimTeste.toDate().toLocaleDateString('pt-BR') : '';
+    return `<div class="row" style="flex-wrap:wrap"><div class="av">${esc((e.nome || '?')[0])}</div>
+      <div class="grow"><div class="nm">${esc(e.nome)} <span class="badge ${s}">${s === 'vencido' ? 'teste vencido' : s}</span></div>
+      <div class="fn">${esc(e.email || '')}${e.cnpj ? ' · ' + esc(e.cnpj) : ''}${s === 'teste' || s === 'vencido' ? ' · teste até ' + fim : ''}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;padding-left:50px">
+        <button class="btn p sm" data-m="abrir" data-id="${e.id}">Abrir painel</button>
+        ${s !== 'ativo' ? `<button class="btn s sm" data-m="ativar" data-id="${e.id}">Ativar</button>` : ''}
+        ${s === 'teste' || s === 'vencido' ? `<button class="btn s sm" data-m="mais7" data-id="${e.id}">+7 dias</button>` : ''}
+        ${s !== 'bloqueado' ? `<button class="btn d sm" data-m="bloquear" data-id="${e.id}">Bloquear</button>` : ''}
+      </div></div>`;
+  }).join('') : '<div class="sub">Nenhuma empresa ainda.</div>';
+}
+$('#m-lista').addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-m]'); if (!b) return;
+  const id = b.dataset.id, ref = doc(db, 'ponto_empresas', id);
+  try {
+    if (b.dataset.m === 'abrir') { painelEmpresaMaster = id; return rotear(auth.currentUser); }
+    if (b.dataset.m === 'ativar') await updateDoc(ref, {status: 'ativo'});
+    if (b.dataset.m === 'bloquear' && confirm('Bloquear esta empresa? Os funcionários não conseguirão bater ponto.')) await updateDoc(ref, {status: 'bloqueado'});
+    if (b.dataset.m === 'mais7') { const e = empresasMaster.find(x => x.id === id); const base = Math.max(Date.now(), e.fimTeste ? e.fimTeste.toMillis() : 0); await updateDoc(ref, {status: 'teste', fimTeste: Timestamp.fromMillis(base + 7 * 864e5)}); }
+  } catch (e) { toast(erroTxt(e), true); }
+});
+$('#f-nova').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const b = $('#n-btn'); $('#n-erro').textContent = ''; b.disabled = true; b.textContent = 'Cadastrando...';
+  const email = $('#n-email').value.trim().toLowerCase(), nome = $('#n-emp').value.trim();
+  let app2;
+  try {
+    const souEu = MASTER.includes(email); // o próprio administrador cuida da empresa: não cria outra conta
+    let uid = auth.currentUser.uid;
+    if (!souEu) {
+      if (($('#n-senha').value || '').length < 6) throw {code: 'auth/weak-password'};
+      app2 = initializeApp(firebaseConfig, 'cad' + Date.now());
+      const a2 = getAuth(app2);
+      const cred = await createUserWithEmailAndPassword(a2, email, $('#n-senha').value);
+      await signOut(a2); uid = cred.user.uid;
+    }
+    const id = novoId(nome), batch = writeBatch(db), status = $('#n-status').value;
+    batch.set(doc(db, 'ponto_empresas', id), {
+      nome, cnpj: $('#n-cnpj').value.trim(), endereco: $('#n-end').value.trim(), responsavel: $('#n-resp').value.trim(), email,
+      whatsappGestor: soNumeros($('#n-wa').value), notificar: {funcionario: true, gestor: true},
+      donoUid: uid, status, fimTeste: Timestamp.fromDate(new Date(Date.now() + DIAS_TESTE * 864e5)), criadoEm: serverTimestamp(), origem: 'master'
+    });
+    if (!souEu) batch.set(doc(db, 'ponto_usuarios', uid), {email, empresaId: id, papel: 'gestor', nome: $('#n-resp').value.trim()});
+    await batch.commit();
+    ev.target.reset(); toast('Empresa cadastrada. Abrindo o painel...');
+    painelEmpresaMaster = id; rotear(auth.currentUser);
+  } catch (e) { $('#n-erro').textContent = erroTxt(e); }
+  finally { if (app2) deleteApp(app2).catch(() => {}); b.disabled = false; b.textContent = 'Cadastrar empresa'; }
+});
+
+// ====== PAINEL DO GESTOR ======
+let EMP = null, empresa = null, funcs = [], marcsMes = [], mesAtual = '', viaMaster = false;
+const cacheMes = {}, codigosGravados = {};
+function abrirPainel(empId, master) {
+  EMP = empId; viaMaster = master; tela('load');
+  $('#p-master').hidden = !master;
+  const agora = new Date(); mesAtual = `${agora.getFullYear()}-${p2(agora.getMonth()+1)}`;
+  let prontoEmp = false, prontoF = false, prontoM = false;
+  const talvezMostrar = () => { if (prontoEmp && prontoF && prontoM && $('#t-painel').hidden && $('#t-bloq').hidden) { tela('painel'); trocarAba('hoje'); } };
+  unsubs.push(onSnapshot(doc(db, 'ponto_empresas', EMP), s => {
+    if (!s.exists()) { toast('Empresa não encontrada.', true); return; }
+    empresa = s.data(); prontoEmp = true;
+    const st = statusEmp(empresa);
+    if (!viaMaster && (st === 'bloqueado' || st === 'vencido')) {
+      $('#b-tit').textContent = st === 'bloqueado' ? 'Acesso pausado' : 'Período de teste encerrado';
+      $('#b-wa').href = 'https://wa.me/' + WHATS_KELLER + '?text=' + encodeURIComponent('Olá! Quero continuar usando o Ponto Eletrônico na ' + empresa.nome + '.');
+      tela('bloq'); return;
+    }
+    if (!$('#t-bloq').hidden) tela('painel');
+    $('#p-nome').textContent = empresa.nome; aplicarMarca(EMP, empresa);
+    const av = $('#p-aviso');
+    if (st === 'teste') { const d = Math.max(0, Math.ceil((empresa.fimTeste.toDate() - new Date()) / 864e5)); av.hidden = false; av.textContent = `Teste grátis: ${d} dia${d === 1 ? '' : 's'} restante${d === 1 ? '' : 's'}.`; }
+    else if (viaMaster && st !== 'ativo') { av.hidden = false; av.textContent = 'Situação: ' + st; }
+    else av.hidden = true;
+    $('#p-zap').hidden = !!(empresa.whatsappGestor && empresa.whatsappGestor.length >= 10);
+    $('#p-quem').textContent = viaMaster ? '' : 'Entrou como ' + (auth.currentUser?.email || '');
+    $('#p-sair').hidden = viaMaster;
+    renderEmpresa(); renderTudo(); talvezMostrar();
+  }, e => { toast(erroTxt(e), true); tela('login'); }));
+  unsubs.push(onSnapshot(collection(db, 'ponto_empresas', EMP, 'funcionarios'), s => {
+    funcs = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => (a.ativo === false) - (b.ativo === false) || (a.nome || '').localeCompare(b.nome || ''));
+    prontoF = true; renderTudo(); talvezMostrar();
+  }));
+  unsubs.push(onSnapshot(collection(db, 'ponto_empresas', EMP, 'feriados'), s => {
+    feriadosEmp = {}; s.docs.forEach(d => feriadosEmp[d.id] = d.data().nome || 'Feriado');
+    renderTudo();
+  }));
+  const [y, m] = mesAtual.split('-').map(Number);
+  unsubs.push(onSnapshot(query(collection(db, 'ponto_empresas', EMP, 'marcacoes'), where('ts', '>=', Timestamp.fromDate(new Date(y, m-1, 1))), where('ts', '<', Timestamp.fromDate(new Date(y, m, 1))), orderBy('ts')), s => {
+    marcsMes = s.docs.map(d => ({id: d.id, ...d.data(), ts: d.data().ts.toDate()}));
+    prontoM = true; renderTudo(); talvezMostrar();
+  }, e => { prontoM = true; toast(erroTxt(e), true); talvezMostrar(); }));
+  const t = setInterval(() => { if (!$('#t-painel').hidden) { renderHoje(); if (abaAtual === 'rel') renderRel(); } }, 60000);
+  unsubs.push(() => clearInterval(t));
+  fillMeses();
+}
+$('#p-voltar').addEventListener('click', () => { painelEmpresaMaster = null; rotear(auth.currentUser); });
+let abaAtual = 'hoje';
+function trocarAba(a) {
+  abaAtual = a;
+  $$('[data-pt]').forEach(b => b.setAttribute('aria-selected', b.dataset.pt === a));
+  $$('.pv').forEach(v => v.hidden = v.id !== 'pv-' + a);
+  if (a === 'rel') renderRel();
+}
+$$('[data-pt]').forEach(b => b.addEventListener('click', () => trocarAba(b.dataset.pt)));
+let timerSync = null;
+function renderTudo() {
+  if (!empresa) return;
+  renderHoje(); renderEquipe(); fillFuncs(); if (abaAtual === 'rel') renderRel(); renderFeriados();
+  clearTimeout(timerSync); timerSync = setTimeout(sincronizarCodigos, 1500);
+}
+const jornadaDe = f => (f && f.jornada) || (empresa && empresa.jornada) || JORNADA_PADRAO;
+const inicioDe = f => f.inicio || (f.criadoEm && f.criadoEm.toDate ? dkey(f.criadoEm.toDate()) : null);
+
+// cálculo do mês de um funcionário: dias trabalhados, previsto e saldo (banco de horas)
+function calcular(marcs, f, ym) {
+  const porDia = {}, hoje = dkey(new Date()), jor = jornadaDe(f), inicio = inicioDe(f);
+  marcs.filter(x => x.funcionarioId === f.id).forEach(x => { const k = dkey(x.ts); (porDia[k] = porDia[k] || []).push(x); });
+  const [y, m] = ym.split('-').map(Number), ult = new Date(y, m, 0).getDate();
+  let trab = 0, prev = 0, saldo = 0, dias = 0, pend = 0, domFer = 0; const rows = [], diasMin = {};
+  for (let d = 1; d <= ult; d++) {
+    const k = `${y}-${p2(m)}-${p2(d)}`; if (k > hoje) break;
+    const l = (porDia[k] || []).sort((a, b) => a.ts - b.ts);
+    const dt = dataDe(k), dow = dt.getDay(), hol = feriado(k);
+    const antes = inicio && k < inicio;
+    let min = 0, minFechado = 0;
+    for (let i = 0; i < l.length; i += 2) {
+      const a = l[i].ts, b = l[i+1] ? l[i+1].ts : (k === hoje ? new Date() : null);
+      if (b) min += (b - a) / 6e4;
+      if (l[i+1]) minFechado += (l[i+1].ts - a) / 6e4;
+    }
+    if (minFechado) diasMin[k] = Math.round(minFechado);
+    const p = antes ? 0 : previstoDia(k, jor);
+    const aberto = l.length % 2 === 1;
+    const conta = k !== hoje || hojeFechado(l.length, k, jor); // hoje só entra no saldo quando fechar
+    const dif = conta && !antes ? difDia(Math.round(min), p) : null;
+    if (!l.length && !p) continue; // dia sem batida e sem jornada (folga)
+    if (aberto && k !== hoje) pend++;
+    if (l.length) dias++;
+    if (conta && !antes) { trab += min; prev += p; saldo += dif; }
+    if (dow === 0 || hol) domFer += min;
+    rows.push({k, d: dt, dow, hol, l, min, prev: p, dif, aberto, hoje: k === hoje, falta: !l.length && p > 0 && conta, antes});
+  }
+  return {rows, trab, prev, saldo, dias, pend, domFer, diasMin};
+}
+
+// mantém no código do funcionário os minutos do mês, para o tablet mostrar o saldo na hora
+async function sincronizarCodigos() {
+  if (!EMP || !empresa) return;
+  const hoje = dkey(new Date());
+  for (const f of funcs) {
+    if (f.ativo === false || !f.codigo) continue;
+    const r = calcular(marcsMes, f, mesAtual);
+    const lHoje = marcsMes.filter(x => x.funcionarioId === f.id && dkey(x.ts) === hoje).sort((a, b) => a.ts - b.ts);
+    const dados = {funcionarioId: f.id, nome: f.nome, whatsapp: f.whatsapp || '', mes: mesAtual, dias: r.diasMin, jornada: f.jornada || null, inicio: inicioDe(f) || null};
+    if (lHoje.length) { const u = lHoje[lHoje.length - 1].ts; Object.assign(dados, {ultimaData: hoje, qtdDia: lHoje.length, ultimaHora: hm(u), ultimaTs: Timestamp.fromDate(u)}); }
+    const chave = JSON.stringify(dados, (k, v) => v instanceof Timestamp ? v.toMillis() : v);
+    if (codigosGravados[f.codigo] === chave) continue;
+    try { await setDoc(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo), dados, {merge: true}); codigosGravados[f.codigo] = chave; } catch (e) {}
+  }
+}
+
+function renderHoje() {
+  const hoje = dkey(new Date()); let agora = 0, regs = 0, dev = 0;
+  const ativos = funcs.filter(f => f.ativo !== false);
+  $('#h-lista').innerHTML = ativos.length ? ativos.map(f => {
+    const l = marcsMes.filter(x => x.funcionarioId === f.id && dkey(x.ts) === hoje).sort((a, b) => a.ts - b.ts);
+    const r = calcular(marcsMes, f, mesAtual);
+    regs += l.length; if (Math.round(r.saldo) < 0) dev++;
+    let st;
+    if (!l.length) st = '<span class="st none">Sem registro hoje</span>';
+    else if (l.length % 2) { agora++; st = `<span class="st in"><span class="dot"></span>${esc(nomeBatida(l.length - 1, hoje, jornadaDe(f)))} ${hm(l[l.length-1].ts)}</span>`; }
+    else st = `<span class="st out">${esc(nomeBatida(l.length - 1, hoje, jornadaDe(f)))} ${hm(l[l.length-1].ts)}</span>`;
+    return `<div class="row click" data-ver="${f.id}"><div class="av">${esc((f.nome || '?')[0])}</div><div class="grow"><div class="nm">${esc(f.nome)}</div><div class="fn">Saldo do mês: <span class="saldo ${clsSaldo(r.saldo)}">${fmtSaldo(r.saldo)}</span> · ${txtSaldo(r.saldo)}</div></div><div>${st}</div></div>`;
+  }).join('') : '<div class="sub">Nenhum funcionário ainda. Cadastre na aba <b>Equipe</b>.</div>';
+  $('#h-agora').textContent = agora; $('#h-regs').textContent = regs; $('#h-dev').textContent = dev;
+  const url = BASE_URL + '?e=' + EMP + '&tablet=1';
+  $('#h-url').textContent = url;
+  $('#h-wa').href = 'https://wa.me/?text=' + encodeURIComponent(`Link do tablet do ponto da ${empresa?.nome || 'empresa'} 🕐\n${url}`);
+}
+$('#h-lista').addEventListener('click', ev => { const r = ev.target.closest('[data-ver]'); if (!r) return; $('#r-func').value = r.dataset.ver; trocarAba('rel'); });
+$('#h-copiar').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('#h-url').textContent); toast('Link copiado.'); } catch (e) { toast('Não deu para copiar. Segure o link para copiar.', true); } });
+$('#h-terminal').addEventListener('click', async () => {
+  if (!confirm('Transformar este aparelho no tablet do ponto? Você vai sair da sua conta neste aparelho, para nenhum funcionário entrar no painel.')) return;
+  ls.set('ponto.terminal', EMP); ls.set('ponto.kiosk', EMP); modoTerminal = EMP;
+  painelEmpresaMaster = null; limpar(); await signOut(auth);
+});
+
+// ----- relatório -----
+function fillMeses() {
+  const sel = $('#r-mes'); sel.innerHTML = ''; const n = new Date();
+  for (let i = 0; i < 12; i++) { const d = new Date(n.getFullYear(), n.getMonth() - i, 1); const o = document.createElement('option'); o.value = `${d.getFullYear()}-${p2(d.getMonth()+1)}`; o.textContent = MESES[d.getMonth()] + ' ' + d.getFullYear(); sel.appendChild(o); }
+}
+function fillFuncs() {
+  const sel = $('#r-func'), cur = sel.value;
+  sel.innerHTML = '<option value="__todos">Toda a equipe (resumo)</option>' + funcs.map(f => `<option value="${f.id}">${esc(f.nome)}${f.ativo === false ? ' (inativo)' : ''}</option>`).join('');
+  if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+}
+async function marcsDoMes(ym) {
+  if (ym === mesAtual) return marcsMes;
+  if (cacheMes[ym]) return cacheMes[ym];
+  const [y, m] = ym.split('-').map(Number);
+  const s = await getDocs(query(collection(db, 'ponto_empresas', EMP, 'marcacoes'), where('ts', '>=', Timestamp.fromDate(new Date(y, m-1, 1))), where('ts', '<', Timestamp.fromDate(new Date(y, m, 1))), orderBy('ts')));
+  return cacheMes[ym] = s.docs.map(d => ({id: d.id, ...d.data(), ts: d.data().ts.toDate()}));
+}
+let relAtual = null;
+const sSpan = min => `<span class="saldo ${clsSaldo(min)}">${fmtSaldo(min)}</span>`;
+async function renderRel() {
+  const ym = $('#r-mes').value, fid = $('#r-func').value, box = $('#r-conteudo');
+  if (!ym || !empresa) return;
+  const mesNome = $('#r-mes').selectedOptions[0].textContent;
+  let marcs; try { marcs = await marcsDoMes(ym); } catch (e) { box.innerHTML = '<div class="erro">' + erroTxt(e) + '</div>'; return; }
+  if (fid === '__todos' || !fid) {
+    const linhas = funcs.map(f => ({f, r: calcular(marcs, f, ym)})).filter(x => x.f.ativo !== false || x.r.dias);
+    relAtual = {tipo: 'todos', linhas, mesNome, ym};
+    box.innerHTML = `<div class="scroll"><table><thead><tr><th>Funcionário</th><th class="r">Trabalhadas</th><th class="r">Previstas</th><th class="r">Saldo</th></tr></thead><tbody>` +
+      (linhas.length ? linhas.map(x => `<tr class="click" data-func="${x.f.id}"><td>${esc(x.f.nome)}${x.r.pend ? ' <span class="tag r">' + x.r.pend + ' sem saída</span>' : ''}</td><td class="r">${fmtH(x.r.trab)}</td><td class="r">${fmtH(x.r.prev)}</td><td class="r">${sSpan(x.r.saldo)}</td></tr>`).join('') : '<tr><td colspan="4" class="wd">Nenhum funcionário.</td></tr>') +
+      `</tbody></table></div><div class="btns"><button class="btn p" id="r-pdf-todos">Relatório completo do mês (PDF)</button><button class="btn s" id="r-pdf">Só o resumo (PDF)</button></div><div class="note">O relatório completo traz uma página por colaborador com todas as batidas do mês (entrada, almoço, volta e saída), o saldo de cada dia e o campo de assinatura.</div><div class="note">Saldo positivo = horas a mais. Negativo = devendo horas. O dia de hoje entra quando o funcionário bate a saída. Toque num nome para ver o dia a dia.</div>`;
+  } else {
+    const f = funcs.find(x => x.id === fid); if (!f) return;
+    const r = calcular(marcs, f, ym);
+    relAtual = {tipo: 'func', f, r, mesNome, ym};
+    const txt = `*Ponto Eletrônico · ${empresa.nome}*\n${f.nome}${f.funcao ? ' (' + f.funcao + ')' : ''}\n${mesNome}\n\nHoras trabalhadas: ${fmtH(r.trab)}\nHoras previstas: ${fmtH(r.prev)}\nSaldo: ${fmtSaldo(r.saldo)} (${txtSaldo(r.saldo)})`;
+    box.innerHTML = `<div class="note" style="margin:-4px 0 10px">${esc(f.nome)}${f.rg ? ' · RG ' + esc(f.rg) : ''}${f.funcao ? ' · ' + esc(f.funcao) : ''}${f.whatsapp ? ' · ' + esc(fmtFone(f.whatsapp)) : ''}</div><div class="tot"><div><div class="num">${fmtH(r.trab)}</div><div class="lbl">Trabalhadas</div></div><div><div class="num">${fmtH(r.prev)}</div><div class="lbl">Previstas</div></div><div><div class="num saldo ${clsSaldo(r.saldo)}">${fmtSaldo(r.saldo)}</div><div class="lbl">Saldo · ${txtSaldo(r.saldo)}</div></div></div>` +
+      (r.pend ? `<div class="banner" style="margin-bottom:10px">${r.pend} dia${r.pend > 1 ? 's' : ''} sem marcação de saída. Toque no dia para corrigir.</div>` : '') +
+      `<div class="scroll"><table><thead><tr><th>Dia</th><th>Marcações</th><th class="r">Total</th><th class="r">Saldo</th></tr></thead><tbody>` +
+      (r.rows.length ? r.rows.map(x => {
+        const tag = x.hol ? '<span class="tag">Feriado</span>' : (x.dow === 0 ? '<span class="tag">Dom</span>' : '');
+        const aj = x.l.some(m => m.origem === 'gestor') ? '<span class="tag g">ajuste</span>' : '';
+        const ab = x.aberto ? (x.hoje ? ' · <span class="wd">em andamento</span>' : ' <span class="tag r">sem saída</span>') : '';
+        const marc = x.falta ? '<span class="wd">sem registro</span>' : x.l.map(m => hm(m.ts)).join(' · ') + ab + aj;
+        return `<tr class="click ${x.prev === 0 && x.l.length ? 'ext' : ''}" data-dia="${x.k}"><td>${x.k.slice(8)}/${x.k.slice(5,7)} <span class="wd">${DSEM[x.dow]}</span>${tag}</td><td>${marc}</td><td class="r">${x.l.length ? fmtH(x.min) : '—'}</td><td class="r">${x.dif === null ? '<span class="wd">—</span>' : sSpan(x.dif)}</td></tr>`;
+      }).join('') : '<tr><td colspan="4" class="wd">Nenhum registro neste mês.</td></tr>') +
+      `</tbody></table></div>
+      <div class="note">Jornada: ${DIAS_JOR.map(([d, n]) => n + ' ' + fmtH(+jornadaDe(f)[d] || 0)).join(' · ')}${f.jornada ? ' (própria)' : ''}</div>
+      <div class="btns"><button class="btn s" id="r-incluir">+ Incluir marcação</button></div>
+      <div class="btns"><button class="btn p" id="r-pdf">Baixar comprovante (PDF)</button><a class="btn s" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(txt)}">Resumo no WhatsApp</a></div>
+      <div class="note">Toque num dia para corrigir, incluir ou apagar uma marcação.</div>`;
+  }
+}
+$('#r-mes').addEventListener('change', renderRel);
+$('#r-func').addEventListener('change', renderRel);
+$('#r-conteudo').addEventListener('click', ev => {
+  const t = ev.target;
+  if (t.id === 'r-pdf') return gerarPdf();
+  if (t.id === 'r-pdf-todos') return gerarPdf(true);
+  if (t.id === 'r-incluir') return modalIncluir(relAtual.f, null);
+  const fr = t.closest('[data-func]'); if (fr) { $('#r-func').value = fr.dataset.func; return renderRel(); }
+  const dr = t.closest('[data-dia]'); if (dr) return modalDia(relAtual.f, dr.dataset.dia);
+});
+function modalDia(f, k) {
+  const row = relAtual.r.rows.find(x => x.k === k); if (!row) return;
+  const jor = jornadaDe(f);
+  abrirModal(`<h2>${esc(f.nome)} · ${dataBR(k)}</h2>
+    <div class="sub" style="margin-top:0">Previsto: ${fmtH(row.prev)}${row.l.length ? ' · Trabalhado: ' + fmtH(row.min) : ''}</div>
+    <div>${row.l.length ? row.l.map((m, i) => `<div class="row"><div class="grow"><div class="nm">${hm(m.ts)} · ${esc(nomeBatida(i, k, jor))}</div><div class="fn">${m.origem === 'gestor' ? 'Incluída pelo gestor' + (m.motivo ? ': ' + esc(m.motivo) : '') : 'Batida no ponto'}</div></div><button class="btn d sm" data-apagar="${m.id}">Apagar</button></div>`).join('') : '<div class="note">Nenhuma marcação neste dia.</div>'}</div>
+    <div class="btns"><button class="btn a" id="md-incluir">+ Incluir marcação</button><button class="btn s" id="md-fechar">Fechar</button></div>`);
+  $('#md-fechar').onclick = fecharModal;
+  $('#md-incluir').onclick = () => modalIncluir(f, k);
+  $$('[data-apagar]').forEach(b => b.onclick = async () => {
+    if (!confirm('Apagar esta marcação?')) return;
+    try { await deleteDoc(doc(db, 'ponto_empresas', EMP, 'marcacoes', b.dataset.apagar)); delete cacheMes[relAtual.ym]; fecharModal(); renderRel(); toast('Marcação apagada.'); } catch (e) { toast(erroTxt(e), true); }
+  });
+}
+function modalIncluir(f, k) {
+  const hoje = dkey(new Date());
+  abrirModal(`<h2>Incluir marcação</h2><div class="sub" style="margin-top:0">${esc(f.nome)} · use quando o funcionário esqueceu de bater o ponto.</div>
+    <form id="fi"><div class="grid2"><div><label for="fi-d">Data</label><input id="fi-d" type="date" required value="${k || hoje}" max="${hoje}"></div><div><label for="fi-h">Hora</label><input id="fi-h" type="time" required></div></div>
+    <label for="fi-m">Motivo</label><input id="fi-m" placeholder="Ex: esqueceu de bater a saída" required>
+    <div class="btns"><button class="btn p" type="submit">Salvar</button><button class="btn s" type="button" id="fi-c">Cancelar</button></div></form>`);
+  $('#fi-c').onclick = fecharModal;
+  $('#fi').onsubmit = async ev => {
+    ev.preventDefault();
+    const [Y, M, D] = $('#fi-d').value.split('-').map(Number), [h, mi] = $('#fi-h').value.split(':').map(Number);
+    const ts = new Date(Y, M-1, D, h, mi);
+    try {
+      await addDoc(collection(db, 'ponto_empresas', EMP, 'marcacoes'), {funcionarioId: f.id, nome: f.nome, codigo: f.codigo || '', ts: Timestamp.fromDate(ts), recebido: serverTimestamp(), origem: 'gestor', motivo: $('#fi-m').value.trim(), tipo: 'ajuste'});
+      delete cacheMes[`${Y}-${p2(M)}`]; fecharModal(); renderRel(); toast('Marcação incluída.');
+    } catch (e) { toast(erroTxt(e), true); }
+  };
+}
+
+// ----- PDF -----
+async function gerarPdf(completo) {
+  if (!window.jspdf) { toast('Carregando gerador de PDF... tente de novo em instantes.', true); return; }
+  const {jsPDF} = window.jspdf, docp = new jsPDF({unit: 'mm', format: 'a4'}), W = 210; let y = 18;
+  const R = relAtual, sTxt = m => fmtSaldo(m).replace('−', '-');
+  const marca = marcaDe(EMP, empresa), lg = await logoParaPdf(marca.logo), corM = marca.cor ? hexRgb(marca.cor) : [79, 70, 229];
+  const corSaldo = m => Math.round(m) < 0 ? docp.setTextColor(190, 40, 30) : Math.round(m) > 0 ? docp.setTextColor(20, 130, 70) : docp.setTextColor(0);
+  const rodape = () => { docp.setFont('helvetica', 'normal'); docp.setFontSize(7); docp.setTextColor(140); docp.text('Gerado em ' + new Date().toLocaleString('pt-BR') + ' - Ponto Eletrônico por Keller IA', 14, 290); };
+  const cabecalho = () => {
+    docp.setFillColor(...corM); docp.rect(0, 0, W, 6, 'F');
+    let x = 14; y = 18;
+    if (lg) {
+      const lw = 52, lh = Math.min(26, lw * lg.h / lg.w);
+      docp.setFillColor(20, 20, 22); docp.roundedRect(14, 10, lw + 6, lh + 6, 2, 2, 'F');
+      docp.addImage(lg.data, 'PNG', 17, 13, lw, lh);
+      x = 14 + lw + 12; y = 17;
+      const fim = 10 + lh + 6;
+      docp.setTextColor(0); docp.setFont('helvetica', 'bold'); docp.setFontSize(14); docp.text(empresa.nome || '', x, y); y += 5.5;
+      docp.setFont('helvetica', 'normal'); docp.setFontSize(9); docp.setTextColor(90);
+      if (empresa.cnpj) { docp.text('CNPJ: ' + empresa.cnpj, x, y); y += 4.5; }
+      if (empresa.endereco) { docp.text(docp.splitTextToSize(empresa.endereco, W - x - 14)[0], x, y); y += 4.5; }
+      y = Math.max(y, fim) + 7; docp.setTextColor(0); return;
+    }
+    docp.setTextColor(0); docp.setFont('helvetica', 'bold'); docp.setFontSize(16); docp.text(empresa.nome || '', 14, y); y += 6;
+    docp.setFont('helvetica', 'normal'); docp.setFontSize(9); docp.setTextColor(90);
+    if (empresa.cnpj) { docp.text('CNPJ: ' + empresa.cnpj, 14, y); y += 4.5; }
+    if (empresa.endereco) { docp.text(empresa.endereco, 14, y); y += 4.5; }
+    y += 5; docp.setTextColor(0);
+  };
+  const nova = () => { if (y > 270) { rodape(); docp.addPage(); cabecalho(); } };
+  const resumo = (linhas) => {
+    docp.setFont('helvetica', 'bold'); docp.setFontSize(13); docp.text('Banco de Horas da Equipe - ' + R.mesNome, 14, y); y += 9;
+    docp.setFillColor(240, 240, 245); docp.rect(14, y-4.5, W-28, 7, 'F'); docp.setFontSize(9);
+    docp.text('Colaborador', 16, y); docp.text('Dias', 112, y, {align: 'right'}); docp.text('Trabalhadas', 138, y, {align: 'right'}); docp.text('Previstas', 164, y, {align: 'right'}); docp.text('Saldo', W-16, y, {align: 'right'}); y += 6;
+    docp.setFont('helvetica', 'normal');
+    linhas.forEach(x => { nova(); docp.setTextColor(0); docp.text(x.f.nome + (x.f.rg ? '  (RG ' + x.f.rg + ')' : ''), 16, y); docp.text(String(x.r.dias), 112, y, {align: 'right'}); docp.text(fmtH(x.r.trab), 138, y, {align: 'right'}); docp.text(fmtH(x.r.prev), 164, y, {align: 'right'}); corSaldo(x.r.saldo); docp.text(sTxt(x.r.saldo) + ' ' + txtSaldo(x.r.saldo), W-16, y, {align: 'right'}); y += 6; });
+    docp.setTextColor(110); docp.setFontSize(8); y += 2; docp.text('Saldo positivo = horas sobrando. Saldo negativo = horas faltando. Diferença de até 10 min no dia não conta.', 14, y); y += 6;
+  };
+  const espelho = (f, r) => {
+    const jor = jornadaDe(f);
+    docp.setFont('helvetica', 'bold'); docp.setFontSize(13); docp.text('Espelho de Ponto - ' + R.mesNome, 14, y); y += 7;
+    docp.setFont('helvetica', 'normal'); docp.setFontSize(10);
+    docp.text('Colaborador: ' + f.nome + (f.rg ? '   |   RG: ' + f.rg : ''), 14, y); y += 5;
+    if (f.funcao) { docp.text('Função: ' + f.funcao, 14, y); y += 5; }
+    y += 3;
+    const th = () => { docp.setFillColor(240, 240, 245); docp.rect(14, y-4.5, W-28, 7, 'F'); docp.setFont('helvetica', 'bold'); docp.setFontSize(8); docp.setTextColor(0);
+      docp.text('Data', 16, y); docp.text('Entrada', 44, y); docp.text('Saída alm.', 62, y); docp.text('Volta alm.', 82, y); docp.text('Saída', 102, y); docp.text('Trabalhado', 150, y, {align: 'right'}); docp.text('Previsto', 172, y, {align: 'right'}); docp.text('Saldo', W-16, y, {align: 'right'}); y += 6; docp.setFont('helvetica', 'normal'); };
+    th();
+    r.rows.forEach(x => {
+      if (y > 270) { rodape(); docp.addPage(); cabecalho(); th(); }
+      docp.setTextColor(0); docp.setFontSize(8);
+      if (x.prev === 0 && x.l.length) { docp.setFillColor(255, 244, 222); docp.rect(14, y-4, W-28, 6, 'F'); }
+      docp.text(dataBR(x.k).slice(0, 5) + ' ' + DSEM[x.dow] + (x.hol ? '*' : ''), 16, y);
+      if (x.falta) docp.text('sem registro', 44, y);
+      else {
+        const hs = x.l.map(m => hm(m.ts) + (m.origem === 'gestor' ? '¹' : ''));
+        const curto = x.prev && x.prev <= 360 && hs.length <= 2;
+        const cols = curto ? [hs[0], '', '', hs[1]] : [hs[0], hs[1], hs[2], hs[3]];
+        [44, 62, 82, 102].forEach((cx, i) => { if (cols[i]) docp.text(cols[i].replace('¹', '*'), cx, y); });
+        if (hs.length > 4) docp.text('+' + hs.slice(4).join(' ').replace(/¹/g, '*'), 118, y);
+        if (x.aberto && !x.hoje) { docp.setTextColor(190, 40, 30); docp.text('sem saída', 118, y); docp.setTextColor(0); }
+      }
+      docp.text(x.l.length ? fmtH(x.min) : '-', 150, y, {align: 'right'});
+      docp.text(fmtH(x.prev), 172, y, {align: 'right'});
+      if (x.dif !== null) { corSaldo(x.dif); docp.text(sTxt(x.dif), W-16, y, {align: 'right'}); }
+      y += 6;
+    });
+    y += 4; nova();
+    docp.setTextColor(0); docp.setFont('helvetica', 'bold'); docp.setFontSize(10);
+    docp.text('Trabalhadas: ' + fmtH(r.trab), 14, y); docp.text('Previstas: ' + fmtH(r.prev), 70, y); corSaldo(r.saldo); docp.text('Saldo do mês: ' + sTxt(r.saldo) + ' (' + txtSaldo(r.saldo) + ')', 120, y); y += 5;
+    docp.setFont('helvetica', 'normal'); docp.setFontSize(7.5); docp.setTextColor(110);
+    docp.text('Jornada: ' + DIAS_JOR.map(([d, n]) => n + ' ' + fmtH(+jor[d] || 0)).join(', ') + '.  Diferença de até 10 min no dia não conta.  * na data = feriado.  * na hora = incluída pelo gestor.', 14, y); y += 4;
+    if (r.domFer) { docp.text('Horas em domingo/feriado no mês: ' + fmtH(r.domFer) + '.', 14, y); y += 4; }
+    y += 16; if (y > 278) { rodape(); docp.addPage(); cabecalho(); y += 12; }
+    docp.setTextColor(0); docp.setDrawColor(120); docp.line(14, y, 94, y); docp.line(116, y, 196, y); y += 4.5; docp.setFontSize(9);
+    docp.text('Assinatura do colaborador', 14, y); docp.text('Assinatura da empresa', 116, y);
+  };
+  cabecalho();
+  if (R.tipo === 'todos') {
+    resumo(R.linhas);
+    if (completo) R.linhas.forEach(x => { rodape(); docp.addPage(); cabecalho(); espelho(x.f, x.r); });
+  } else espelho(R.f, R.r);
+  rodape();
+  const nomeArq = 'ponto-' + (R.tipo === 'todos' ? (completo ? 'relatorio-completo' : 'equipe') : slug(R.f.nome)) + '-' + R.ym + '.pdf';
+  const blob = docp.output('blob');
+  try {
+    const file = new File([blob], nomeArq, {type: 'application/pdf'});
+    if (navigator.canShare && navigator.canShare({files: [file]}) && /Android|iPhone|iPad/i.test(navigator.userAgent)) { await navigator.share({files: [file], title: nomeArq}); return; }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  docp.save(nomeArq);
+}
+
+// ----- equipe -----
+function renderEquipe() {
+  $('#e-lista').innerHTML = funcs.length ? funcs.map(f => `<div class="row click" data-edit="${f.id}" style="${f.ativo === false ? 'opacity:.5' : ''}"><div class="av">${esc((f.nome || '?')[0])}</div><div class="grow"><div class="nm">${esc(f.nome)}</div><div class="fn">${[f.funcao, f.rg ? 'RG ' + f.rg : '', f.whatsapp ? fmtFone(f.whatsapp) : 'sem WhatsApp'].filter(Boolean).map(esc).join(' · ')}${f.jornada ? ' · jornada própria' : ''}${f.ativo === false ? ' · inativo' : ''}</div></div>${f.ativo === false ? '' : `<span class="code-pill">${esc(f.codigo)}</span>`}</div>`).join('') : '<div class="sub">Nenhum funcionário ainda.</div>';
+}
+async function novoCodigo() {
+  for (let i = 0; i < 25; i++) {
+    const c = String(1000 + Math.floor(Math.random() * 9000));
+    if (funcs.some(f => f.codigo === c)) continue;
+    const s = await getDocFromServer(doc(db, 'ponto_empresas', EMP, 'codigos', c)).catch(() => null);
+    if (!s || !s.exists()) return c;
+  }
+  throw new Error('sem código');
+}
+$('#f-func').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const b = $('#ef-btn'); b.disabled = true;
+  try {
+    const cod = await novoCodigo(), nome = $('#ef-nome').value.trim(), funcao = '', inicio = dkey(new Date());
+    const rg = $('#ef-rg').value.trim(), whatsapp = soNumeros($('#ef-wa').value);
+    if (whatsapp.length < 10) { toast('Coloque o WhatsApp com DDD, pra ele receber os comprovantes.', true); b.disabled = false; return; }
+    const fref = doc(collection(db, 'ponto_empresas', EMP, 'funcionarios')), batch = writeBatch(db);
+    batch.set(fref, {nome, funcao, rg, whatsapp, codigo: cod, ativo: true, inicio, criadoEm: serverTimestamp()});
+    batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', cod), {funcionarioId: fref.id, nome, inicio, whatsapp});
+    await batch.commit(); ev.target.reset();
+    abrirModal(`<h2>${esc(nome)} cadastrado</h2><p class="sub">Código para bater o ponto no tablet:</p><div style="text-align:center;margin:10px 0"><span class="code-pill" style="font-size:40px;padding:6px 18px">${cod}</span></div>
+      <div class="btns"><a class="btn p" target="_blank" rel="noopener" href="https://wa.me/${whatsapp ? '55' + whatsapp.replace(/^55/, '') : ''}?text=${encodeURIComponent(`Olá, ${nome.split(' ')[0]}! Seu código do ponto da ${empresa.nome} é *${cod}*. Digite no tablet ao chegar, ao sair para o almoço, ao voltar e ao ir embora.`)}">Enviar código ao funcionário</a><button class="btn s" onclick="document.getElementById('modal').hidden=true">Fechar</button></div>`);
+  } catch (e) { toast(erroTxt(e), true); }
+  b.disabled = false;
+});
+function camposJornada(prefixo, jor) {
+  return DIAS_JOR.map(([d, n]) => `<div><label for="${prefixo}${d}">${n}</label><input id="${prefixo}${d}" inputmode="numeric" value="${minParaHm(+jor[d] || 0)}" placeholder="00:00"></div>`).join('');
+}
+function lerJornada(prefixo) { const j = {}; DIAS_JOR.forEach(([d]) => j[d] = hmParaMin($('#' + prefixo + d).value)); return j; }
+$('#e-lista').addEventListener('click', ev => {
+  const r = ev.target.closest('[data-edit]'); if (!r) return;
+  const f = funcs.find(x => x.id === r.dataset.edit); if (!f) return;
+  const ativo = f.ativo !== false;
+  abrirModal(`<h2>Editar colaborador</h2><form id="fe"><label for="fe-n">Nome completo</label><input id="fe-n" value="${esc(f.nome)}" required>
+    <div class="grid2"><div><label for="fe-rg">RG</label><input id="fe-rg" value="${esc(f.rg || '')}"></div><div><label for="fe-wa">WhatsApp</label><input id="fe-wa" inputmode="tel" value="${esc(fmtFone(f.whatsapp || ''))}"></div></div>
+
+    <label for="fe-i">Começou a usar o ponto em</label><input id="fe-i" type="date" value="${esc(inicioDe(f) || '')}">
+    <label class="check" style="margin-top:12px"><input type="checkbox" id="fe-jp" ${f.jornada ? 'checked' : ''}> Jornada diferente da empresa</label>
+    <div class="jor" id="fe-jor" ${f.jornada ? '' : 'hidden'}>${camposJornada('fj', jornadaDe(f))}</div>
+    ${ativo ? `<label>Código</label><div style="display:flex;align-items:center;gap:10px"><span class="code-pill" style="font-size:22px">${esc(f.codigo)}</span><button type="button" class="btn s sm" id="fe-novo">Gerar novo código</button></div>` : ''}
+    <div class="btns"><button class="btn p" type="submit">Salvar</button><button class="btn s" type="button" id="fe-c">Cancelar</button></div>
+    <div class="btns">${ativo ? '<button type="button" class="btn d" id="fe-off">Desativar (saiu da empresa)</button>' : '<button type="button" class="btn a" id="fe-on">Reativar</button>'}</div></form>`);
+  $('#fe-c').onclick = fecharModal;
+  $('#fe-jp').onchange = () => { $('#fe-jor').hidden = !$('#fe-jp').checked; };
+  $('#fe').onsubmit = async ev2 => {
+    ev2.preventDefault();
+    const nome = $('#fe-n').value.trim(), jornada = $('#fe-jp').checked ? lerJornada('fj') : null, inicio = $('#fe-i').value || null, batch = writeBatch(db);
+    const rg = $('#fe-rg').value.trim(), whatsapp = soNumeros($('#fe-wa').value);
+    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), {nome, rg, whatsapp, jornada, inicio});
+    if (ativo && f.codigo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo), {funcionarioId: f.id, nome, jornada, inicio, whatsapp}, {merge: true});
+    try { await batch.commit(); fecharModal(); toast('Salvo.'); } catch (e) { toast(erroTxt(e), true); }
+  };
+  const trocarCodigo = async (novo) => {
+    const batch = writeBatch(db);
+    if (f.codigo) batch.delete(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo));
+    if (novo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', novo), {funcionarioId: f.id, nome: f.nome, jornada: f.jornada || null, inicio: inicioDe(f) || null, whatsapp: f.whatsapp || ''});
+    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), novo ? {codigo: novo, ativo: true} : {ativo: false});
+    await batch.commit();
+    if (f.codigo) delete codigosGravados[f.codigo];
+  };
+  if ($('#fe-novo')) $('#fe-novo').onclick = async () => { if (!confirm('Gerar um código novo? O código antigo para de funcionar.')) return; try { const c = await novoCodigo(); await trocarCodigo(c); fecharModal(); toast('Novo código: ' + c); } catch (e) { toast(erroTxt(e), true); } };
+  if ($('#fe-off')) $('#fe-off').onclick = async () => { if (!confirm('Desativar ' + f.nome + '? O histórico continua guardado.')) return; try { await trocarCodigo(null); fecharModal(); toast('Funcionário desativado.'); } catch (e) { toast(erroTxt(e), true); } };
+  if ($('#fe-on')) $('#fe-on').onclick = async () => { try { const c = await novoCodigo(); await trocarCodigo(c); fecharModal(); toast('Reativado. Código: ' + c); } catch (e) { toast(erroTxt(e), true); } };
+});
+
+// ----- empresa -----
+function renderEmpresa() {
+  const ativo = document.activeElement;
+  if (!(ativo && ativo.closest && ativo.closest('#f-emp'))) {
+    $('#em-nome').value = empresa.nome || ''; $('#em-cnpj').value = empresa.cnpj || ''; $('#em-end').value = empresa.endereco || '';
+    $('#em-wa').value = fmtFone(empresa.whatsappGestor || ''); const nt = empresa.notificar || {}; $('#em-nf').checked = nt.funcionario !== false; $('#em-ng').checked = nt.gestor !== false;
+  }
+  if (!(ativo && ativo.closest && ativo.closest('#f-jor'))) $('#jor-emp').innerHTML = camposJornada('ej', empresa.jornada || JORNADA_PADRAO);
+  $('#ct-email').textContent = 'Logado como ' + (auth.currentUser?.email || '');
+  if (logoNovo === undefined) { const m = marcaDe(EMP, empresa); previaMarca(m.logo); if (document.activeElement !== $('#mc-cor')) $('#mc-cor').value = m.cor || '#4f46e5'; }
+}
+$('#f-emp').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {nome: $('#em-nome').value.trim(), cnpj: $('#em-cnpj').value.trim(), endereco: $('#em-end').value.trim(), whatsappGestor: soNumeros($('#em-wa').value), notificar: {funcionario: $('#em-nf').checked, gestor: $('#em-ng').checked}}); toast('Dados salvos.'); document.activeElement.blur(); } catch (e) { toast(erroTxt(e), true); }
+});
+let logoNovo = undefined;
+function previaMarca(logo) { $('#mc-prev').innerHTML = logo ? `<img src="${esc(logo)}" alt="Logo">` : '<span class="note">Sem logo</span>'; }
+$('#mc-logo').addEventListener('change', ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { const img = new Image(); img.onload = () => {
+    const k = Math.min(1, 600 / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    logoNovo = cv.toDataURL('image/png'); if (logoNovo.length > 700000) logoNovo = cv.toDataURL('image/jpeg', .85);
+    previaMarca(logoNovo);
+  }; img.src = rd.result; };
+  rd.readAsDataURL(f);
+});
+$('#mc-salvar').addEventListener('click', async () => {
+  const atual = empresa.marca || {};
+  const marca = {...atual, cor: $('#mc-cor').value};
+  if (logoNovo !== undefined) marca.logo = logoNovo;
+  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {marca}); logoNovo = undefined; toast('Marca salva.'); } catch (e) { toast(erroTxt(e), true); }
+});
+$('#mc-tirar').addEventListener('click', async () => {
+  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {marca: {cor: '#4f46e5', logo: ''}}); logoNovo = undefined; toast('Voltou ao padrão.'); } catch (e) { toast(erroTxt(e), true); }
+});
+$('#f-jor').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {jornada: lerJornada('ej')}); toast('Jornada salva.'); document.activeElement.blur(); } catch (e) { toast(erroTxt(e), true); }
+});
+function renderFeriados() {
+  const ks = Object.keys(feriadosEmp).sort();
+  $('#fe-lista').innerHTML = ks.length ? ks.map(k => `<div class="row"><div class="grow"><div class="nm">${dataBR(k)}</div><div class="fn">${esc(feriadosEmp[k])}</div></div><button class="btn d sm" data-fer="${k}">Remover</button></div>`).join('') : '<div class="note">Nenhum feriado municipal cadastrado.</div>';
+  const y = new Date().getFullYear(), nac = feriadosNacionais(y);
+  $('#fe-nac').innerHTML = Object.keys(nac).sort().map(k => dataBR(k) + ' · ' + esc(nac[k])).join('<br>');
+}
+$('#fe-lista').addEventListener('click', async ev => { const b = ev.target.closest('[data-fer]'); if (!b) return; try { await deleteDoc(doc(db, 'ponto_empresas', EMP, 'feriados', b.dataset.fer)); } catch (e) { toast(erroTxt(e), true); } });
+$('#f-fer').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  try { await setDoc(doc(db, 'ponto_empresas', EMP, 'feriados', $('#fe-data').value), {nome: $('#fe-nome').value.trim()}); ev.target.reset(); toast('Feriado adicionado.'); } catch (e) { toast(erroTxt(e), true); }
+});
+$('#ct-senha').addEventListener('click', async () => { try { await sendPasswordResetEmail(auth, auth.currentUser.email); toast('Enviamos um link para trocar a senha no seu e-mail.'); } catch (e) { toast(erroTxt(e), true); } });
+
+// ====== INÍCIO ======
+if (!configurado) tela('config');
+else onAuthStateChanged(auth, u => rotear(u));
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>

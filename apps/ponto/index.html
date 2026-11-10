@@ -46,6 +46,8 @@ h2{font-size:22px;margin:0 0 10px;font-weight:700}
 .tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;position:sticky;top:env(safe-area-inset-top,0);z-index:5}
 .tab{border:0;background:transparent;color:var(--muted);font-size:16px;font-weight:700;padding:9px 2px;border-radius:10px;cursor:pointer;white-space:nowrap}
 .tab[aria-selected=true]{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff}
+.logo-emp{display:block;max-width:min(320px,80%);max-height:96px;object-fit:contain;margin:2px 0 6px}
+.marca-prev{background:#141416;border-radius:12px;padding:12px;display:flex;justify-content:center;min-height:60px;align-items:center}.marca-prev img{max-width:100%;max-height:90px}
 label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
 select,input{width:100%;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px}
 select:focus,input:focus{outline:2px solid var(--indigo);outline-offset:-1px}
@@ -162,6 +164,7 @@ tr.ext td{background:rgba(245,166,35,.07)}
   <!-- TERMINAL DO FUNCIONÁRIO -->
   <section class="tela" id="t-terminal" hidden>
     <header>
+      <img class="logo-emp" id="tm-logo" alt="" hidden>
       <div class="eyebrow" id="tm-emp">Ponto Eletrônico</div>
       <h1>Bater ponto</h1>
     </header>
@@ -275,7 +278,7 @@ tr.ext td{background:rgba(245,166,35,.07)}
   <section class="tela" id="t-painel" hidden>
     <div class="banner master" id="p-master" hidden><span>Você está no painel desta empresa como administrador.</span><button class="btn s sm" id="p-voltar">Voltar</button></div>
     <header class="top">
-      <div><div class="eyebrow">Ponto Eletrônico</div><h1 id="p-nome">Empresa</h1><div class="sub" id="p-quem"></div></div>
+      <div><img class="logo-emp" id="p-logo" alt="" hidden><div class="eyebrow">Ponto Eletrônico</div><h1 id="p-nome">Empresa</h1><div class="sub" id="p-quem"></div></div>
       <button class="btn s sm" data-sair id="p-sair">Sair</button>
     </header>
     <div class="banner" id="p-aviso" hidden></div>
@@ -346,6 +349,16 @@ tr.ext td{background:rgba(245,166,35,.07)}
         <label class="check" style="margin-top:8px"><input type="checkbox" id="em-ng"> Mandar o comprovante de cada batida no WhatsApp do gestor</label>
         <button class="btn p w" type="submit" style="margin-top:14px">Salvar</button>
       </form>
+      <div class="card" style="margin-top:14px">
+        <h2>Marca da empresa</h2>
+        <div class="sub" style="margin-top:0">O logo e a cor aparecem no painel, no tablet e nos PDFs.</div>
+        <div class="marca-prev" id="mc-prev"><span class="note">Sem logo</span></div>
+        <div class="grid2" style="margin-top:8px">
+          <div><label for="mc-logo">Logo (imagem)</label><input id="mc-logo" type="file" accept="image/*"></div>
+          <div><label for="mc-cor">Cor principal</label><input id="mc-cor" type="color" value="#4f46e5" style="height:46px;padding:4px"></div>
+        </div>
+        <div class="btns"><button class="btn p" id="mc-salvar" type="button">Salvar marca</button><button class="btn s" id="mc-tirar" type="button">Voltar ao padrão</button></div>
+      </div>
       <form class="card" id="f-jor" style="margin-top:14px">
         <h2>Jornada de trabalho</h2>
         <div class="sub" style="margin-top:0">Horas previstas por dia (sem contar o almoço). É com ela que o app calcula quem está devendo horas e quem tem horas a mais. Diferença de até 10 minutos no dia não conta.</div>
@@ -496,7 +509,7 @@ async function rotear(u) {
   if (modoTerminal) {
     return abrirTerminal(modoTerminal); // o funcionário não precisa de login
   }
-  if (!u || u.isAnonymous) { tela('login'); return; }
+  if (!u || u.isAnonymous) { aplicarMarca(null, null); tela('login'); return; }
   if (isMaster(u)) {
     if (!u.emailVerified) { $('#v-email').textContent = u.email; tela('verif'); return; }
     if (painelEmpresaMaster) return abrirPainel(painelEmpresaMaster, true);
@@ -541,6 +554,30 @@ $('#l-esqueci').addEventListener('click', async () => {
 const slug = s => (s || 'empresa').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 16) || 'empresa';
 const soNumeros = v => String(v || '').replace(/\D/g, '');
 const fmtFone = v => { const n = soNumeros(v).replace(/^55(?=\d{10,11}$)/, ''); return n.length === 11 ? `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}` : n.length === 10 ? `(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}` : v || ''; };
+
+// ====== MARCA DA EMPRESA (logo e cor no painel, no tablet e nos PDFs) ======
+const MARCAS = {
+  'betolubservicosa-cmcx': {cor: '#e3262b', logo: 'marcas/betolub.png', destaque: '#f6e01e'},
+};
+const marcaDe = (id, e) => { const m = (e && e.marca) || {}, f = MARCAS[id] || {}; return {cor: m.cor || f.cor || null, logo: m.logo || f.logo || null, destaque: m.destaque || f.destaque || null}; };
+function escurecer(hex, f) { const n = parseInt(hex.slice(1), 16), c = x => Math.max(0, Math.min(255, Math.round(x))); const r = c((n >> 16) * f), g = c(((n >> 8) & 255) * f), b = c((n & 255) * f); return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join(''); }
+function aplicarMarca(id, e) {
+  const m = marcaDe(id, e), st = document.documentElement.style;
+  if (m.cor) { st.setProperty('--indigo', escurecer(m.cor, .85)); st.setProperty('--indigo2', m.cor); } else { st.removeProperty('--indigo'); st.removeProperty('--indigo2'); }
+  if (m.destaque) st.setProperty('--amber', m.destaque); else st.removeProperty('--amber');
+  ['#p-logo', '#tm-logo'].forEach(sel => { const img = $(sel); if (m.logo) { img.src = m.logo; img.hidden = false; } else { img.hidden = true; img.removeAttribute('src'); } });
+  return m;
+}
+const _logoCache = {};
+async function logoParaPdf(src) {
+  if (!src) return null; if (_logoCache[src]) return _logoCache[src];
+  try {
+    const img = await new Promise((ok, erro) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = erro; i.src = src; });
+    const cv = document.createElement('canvas'); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext('2d').drawImage(img, 0, 0);
+    return _logoCache[src] = {data: cv.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight};
+  } catch (e) { return null; }
+}
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
 const novoId = nome => slug(nome) + '-' + Math.random().toString(36).slice(2, 6);
 $('#f-cad').addEventListener('submit', async ev => {
   ev.preventDefault();
@@ -594,7 +631,7 @@ async function abrirTerminal(empId) {
   try {
     const s = await getDoc(doc(db, 'ponto_empresas', empId));
     if (!s.exists()) { $('#tm-emp').textContent = 'Empresa não encontrada'; $('#tm-teclado').hidden = true; $('#tm-lembrado').hidden = true; $('#tm-msg').innerHTML = '<div class="errbox">Link inválido. Peça um novo link ao seu gestor.</div>'; return; }
-    tmEmpData = s.data(); $('#tm-emp').textContent = tmEmpData.nome;
+    tmEmpData = s.data(); $('#tm-emp').textContent = tmEmpData.nome; aplicarMarca(empId, tmEmpData);
     document.title = 'Ponto · ' + tmEmpData.nome;
   } catch (e) { $('#tm-emp').textContent = 'Ponto Eletrônico'; }
   try { const fs = await getDocs(collection(db, 'ponto_empresas', empId, 'feriados')); feriadosEmp = {}; fs.docs.forEach(d => feriadosEmp[d.id] = d.data().nome || 'Feriado'); } catch (e) {}
@@ -702,7 +739,7 @@ function statusEmp(e) {
   return 'ativo';
 }
 function abrirMaster() {
-  tela('master');
+  tela('master'); aplicarMarca(null, null);
   unsubs.push(onSnapshot(collection(db, 'ponto_empresas'), s => {
     empresasMaster = s.docs.map(d => ({id: d.id, ...d.data()})).sort((a, b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
     renderMaster();
@@ -784,7 +821,7 @@ function abrirPainel(empId, master) {
       tela('bloq'); return;
     }
     if (!$('#t-bloq').hidden) tela('painel');
-    $('#p-nome').textContent = empresa.nome;
+    $('#p-nome').textContent = empresa.nome; aplicarMarca(EMP, empresa);
     const av = $('#p-aviso');
     if (st === 'teste') { const d = Math.max(0, Math.ceil((empresa.fimTeste.toDate() - new Date()) / 864e5)); av.hidden = false; av.textContent = `Teste grátis: ${d} dia${d === 1 ? '' : 's'} restante${d === 1 ? '' : 's'}.`; }
     else if (viaMaster && st !== 'ativo') { av.hidden = false; av.textContent = 'Situação: ' + st; }
@@ -1002,10 +1039,24 @@ async function gerarPdf(completo) {
   if (!window.jspdf) { toast('Carregando gerador de PDF... tente de novo em instantes.', true); return; }
   const {jsPDF} = window.jspdf, docp = new jsPDF({unit: 'mm', format: 'a4'}), W = 210; let y = 18;
   const R = relAtual, sTxt = m => fmtSaldo(m).replace('−', '-');
+  const marca = marcaDe(EMP, empresa), lg = await logoParaPdf(marca.logo), corM = marca.cor ? hexRgb(marca.cor) : [79, 70, 229];
   const corSaldo = m => Math.round(m) < 0 ? docp.setTextColor(190, 40, 30) : Math.round(m) > 0 ? docp.setTextColor(20, 130, 70) : docp.setTextColor(0);
   const rodape = () => { docp.setFont('helvetica', 'normal'); docp.setFontSize(7); docp.setTextColor(140); docp.text('Gerado em ' + new Date().toLocaleString('pt-BR') + ' - Ponto Eletrônico por Keller IA', 14, 290); };
   const cabecalho = () => {
-    y = 18; docp.setFillColor(79, 70, 229); docp.rect(0, 0, W, 6, 'F');
+    docp.setFillColor(...corM); docp.rect(0, 0, W, 6, 'F');
+    let x = 14; y = 18;
+    if (lg) {
+      const lw = 52, lh = Math.min(26, lw * lg.h / lg.w);
+      docp.setFillColor(20, 20, 22); docp.roundedRect(14, 10, lw + 6, lh + 6, 2, 2, 'F');
+      docp.addImage(lg.data, 'PNG', 17, 13, lw, lh);
+      x = 14 + lw + 12; y = 17;
+      const fim = 10 + lh + 6;
+      docp.setTextColor(0); docp.setFont('helvetica', 'bold'); docp.setFontSize(14); docp.text(empresa.nome || '', x, y); y += 5.5;
+      docp.setFont('helvetica', 'normal'); docp.setFontSize(9); docp.setTextColor(90);
+      if (empresa.cnpj) { docp.text('CNPJ: ' + empresa.cnpj, x, y); y += 4.5; }
+      if (empresa.endereco) { docp.text(docp.splitTextToSize(empresa.endereco, W - x - 14)[0], x, y); y += 4.5; }
+      y = Math.max(y, fim) + 7; docp.setTextColor(0); return;
+    }
     docp.setTextColor(0); docp.setFont('helvetica', 'bold'); docp.setFontSize(16); docp.text(empresa.nome || '', 14, y); y += 6;
     docp.setFont('helvetica', 'normal'); docp.setFontSize(9); docp.setTextColor(90);
     if (empresa.cnpj) { docp.text('CNPJ: ' + empresa.cnpj, 14, y); y += 4.5; }
@@ -1153,10 +1204,33 @@ function renderEmpresa() {
   }
   if (!(ativo && ativo.closest && ativo.closest('#f-jor'))) $('#jor-emp').innerHTML = camposJornada('ej', empresa.jornada || JORNADA_PADRAO);
   $('#ct-email').textContent = 'Logado como ' + (auth.currentUser?.email || '');
+  if (logoNovo === undefined) { const m = marcaDe(EMP, empresa); previaMarca(m.logo); if (document.activeElement !== $('#mc-cor')) $('#mc-cor').value = m.cor || '#4f46e5'; }
 }
 $('#f-emp').addEventListener('submit', async ev => {
   ev.preventDefault();
   try { await updateDoc(doc(db, 'ponto_empresas', EMP), {nome: $('#em-nome').value.trim(), cnpj: $('#em-cnpj').value.trim(), endereco: $('#em-end').value.trim(), whatsappGestor: soNumeros($('#em-wa').value), notificar: {funcionario: $('#em-nf').checked, gestor: $('#em-ng').checked}}); toast('Dados salvos.'); document.activeElement.blur(); } catch (e) { toast(erroTxt(e), true); }
+});
+let logoNovo = undefined;
+function previaMarca(logo) { $('#mc-prev').innerHTML = logo ? `<img src="${esc(logo)}" alt="Logo">` : '<span class="note">Sem logo</span>'; }
+$('#mc-logo').addEventListener('change', ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { const img = new Image(); img.onload = () => {
+    const k = Math.min(1, 600 / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    logoNovo = cv.toDataURL('image/png'); if (logoNovo.length > 700000) logoNovo = cv.toDataURL('image/jpeg', .85);
+    previaMarca(logoNovo);
+  }; img.src = rd.result; };
+  rd.readAsDataURL(f);
+});
+$('#mc-salvar').addEventListener('click', async () => {
+  const atual = empresa.marca || {};
+  const marca = {...atual, cor: $('#mc-cor').value};
+  if (logoNovo !== undefined) marca.logo = logoNovo;
+  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {marca}); logoNovo = undefined; toast('Marca salva.'); } catch (e) { toast(erroTxt(e), true); }
+});
+$('#mc-tirar').addEventListener('click', async () => {
+  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {marca: {cor: '#4f46e5', logo: ''}}); logoNovo = undefined; toast('Voltou ao padrão.'); } catch (e) { toast(erroTxt(e), true); }
 });
 $('#f-jor').addEventListener('submit', async ev => {
   ev.preventDefault();
