@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ponto Eletrônico Betolub — Como instalar e usar</title>
+<meta name="description" content="Passo a passo do Ponto Eletrônico da Betolub: instalar no celular, no tablet e no computador, cadastrar colaboradores e acompanhar o banco de horas.">
+<meta name="theme-color" content="#0b0b0c">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Inter';src:url(../../../fonts/inter-400.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Inter';src:url(../../../fonts/inter-600.woff2) format('woff2');font-weight:600 700;font-display:swap}
+:root{--bg:#0b0b0c;--card:#16171a;--line:#2a2c31;--fg:#f5f4f0;--muted:#a3a8b0;--red:#e3262b;--red2:#b81c21;--yellow:#f6e01e;--gray:#c4c6cb;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:16px/1.5 'Inter',system-ui,-apple-system,sans-serif;-webkit-text-size-adjust:100%}
+h1,h2,.num,.kicker,.btn{font-family:'Barlow Condensed',system-ui,sans-serif}
+.deck{height:100%;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.deck::-webkit-scrollbar{display:none}
+.slide{flex:0 0 100%;height:100%;scroll-snap-align:start;overflow-y:auto;padding:calc(22px + env(safe-area-inset-top,0)) 22px calc(96px + env(safe-area-inset-bottom,0))}
+.in{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:14px;min-height:100%;justify-content:center}
+.logo{width:min(300px,78%);display:block}
+.kicker{color:var(--yellow);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:14px}
+h1{font-size:44px;line-height:1;margin:0;font-weight:700}
+h2{font-size:34px;line-height:1.05;margin:0;font-weight:700}
+h2 em{font-style:normal;color:var(--red)}
+p{margin:0;color:var(--muted)}
+p b,li b{color:var(--fg)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+ol,ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+ol{counter-reset:p}
+ol li{counter-increment:p;display:flex;gap:12px;align-items:flex-start}
+ol li::before{content:counter(p);flex:none;width:28px;height:28px;border-radius:50%;background:var(--red);color:#fff;font:700 16px 'Barlow Condensed',sans-serif;display:grid;place-items:center;margin-top:1px}
+ul li{display:flex;gap:10px}
+ul li::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:var(--yellow);margin-top:9px}
+.tag{display:inline-block;background:rgba(227,38,43,.15);color:#ff8a80;border-radius:7px;padding:1px 8px;font-size:13px;font-weight:600}
+.link{display:block;background:#0f1012;border:1px dashed #44474e;border-radius:12px;padding:12px;word-break:break-all;color:var(--yellow);text-decoration:none;font-weight:600;font-size:15px}
+.btn{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--red2),var(--red));color:#fff;text-decoration:none;border-radius:12px;padding:12px 18px;font-size:20px;font-weight:700;border:0}
+.dois{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dois .card h3{margin:0 0 8px;font-size:15px}
+.fluxo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.fluxo div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 4px;font-size:13px}
+.fluxo b{display:block;font:700 22px 'Barlow Condensed',sans-serif;color:var(--yellow)}
+.saldo{display:flex;gap:10px}
+.saldo span{flex:1;border-radius:12px;padding:10px;text-align:center;font-weight:700}
+.pos{background:rgba(52,199,123,.12);color:#34c77b}.neg{background:rgba(227,38,43,.14);color:#ff8a80}
+.nav{position:fixed;left:0;right:0;bottom:0;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0));display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(transparent,var(--bg) 35%)}
+.nav button{background:var(--card);border:1px solid var(--line);color:var(--fg);border-radius:12px;width:52px;height:46px;font-size:22px;cursor:pointer}
+.nav button:disabled{opacity:.3}
+.dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.dots i{width:8px;height:8px;border-radius:50%;background:#3a3c42;display:block}
+.dots i.on{background:var(--red);width:20px;border-radius:5px}
+.foot{font-size:13px;color:#6f747c}
+@media(max-width:420px){h1{font-size:38px}h2{font-size:29px}.dois{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="deck" id="deck">
+
+  <section class="slide"><div class="in">
+    <img class="logo" src="../marcas/betolub.png" alt="Betolub centro automotivo">
+    <div class="kicker">Ponto Eletrônico</div>
+    <h1>Como instalar e usar o ponto da Betolub</h1>
+    <p>Passo a passo rápido: o painel no seu celular, o tablet da oficina e o dia a dia com a equipe.</p>
+    <p class="foot">Arraste para o lado →</p>
+  </div></section>
+
+  <section class="slide"><div class="in">
+    <div class="kicker">Como funciona</div>
+    <h2>O colaborador digita o código. <em>O resto é automático.</em></h2>
+    <div class="fluxo">
+      <div><b>1</b>Entrada</div><div><b>2</b>Saída almoço</div><div><b>3</b>Volta almoço</div><div><b>4</b>Saída</div>
+    </div>
+    <ul>
+      <li><span>Um <b>tablet fica na oficina</b>. Cada colaborador tem um <b>código de 4 números</b>.</span></li>
+      <li><span>A cada batida, o <b>comprovante em PDF</b> chega no WhatsApp do colaborador e no da Betolub.</span></li>
+      <li><span>No seu celular você vê <b>quem está trabalhando</b>, o <b>saldo de horas</b> de cada um e o <b>relatório do mês</b>.</span></li>
+    </ul>
+  </div></section>
+
+  <section class="slide"><div class="in">
+    <div class="kicker">Passo 1 · Seu celular</div>
+    <h2>Instale o painel no celular</h2>
+    <a class="link" href="https://kellercamilodeoliveira-del.github.io/apps/ponto/">kellercamilodeoliveira-del.github.io/apps/ponto/</a>
+    <div class="dois">
+      <div class="card"><h3>iPhone</h3><ol><li><span>Abra o link no <b>Safari</b>.</span></li><li><span>Toque em <b>Compartilhar</b> (quadrado com seta pra cima).</span></li><li><span>Toque em <b>Adicionar à Tela de Início</b> → <b>Adicionar</b>.</span></li></ol></div>
+      <div class="card"><h3>Android</h3><ol><li><span>Abra o link no <b>Chrome</b>.</span></li><li><span>Toque nos <b>3 pontinhos</b> lá em cima.</span></li><li><span>Toque em <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).</span></li></ol></div>
+    </div>
+    <p>Pronto: aparece o ícone <b>Ponto</b> na tela, igual a um aplicativo.</p>
+  </div></section>
+
+  <section class="slide"><div class="in">
+    <div class="kicker">Passo 2 · Entrar</div>
+    <h2>Entre com o e-mail da Betolub</h2>
+    <div class="card"><ol>
+      <li><span>Abra o app <b>Ponto</b>.</span></li>
+      <li><span>Em <b>Entrar</b>, use o e-mail <b>betolubca@hotmail.com</b> e a sua senha.</span></li>
+      <li><span>Esqueceu a senha? Digite o e-mail e toque em <b>Esqueci a senha</b>: chega um link no e-mail pra criar outra.</span></li>
+    </ol></div>
+    <p>O painel tem 4 abas: <b>Hoje</b>, <b>Relatório</b>, <b>Equipe</b> e <b>Empresa</b>.</p>
+  </div></section>
+
+  <section class="slide"><div class="in">
+    <div class="kicker">Passo 3 · Equipe</div>
+    <h2>Cadastre cada colaborador</h2>
+    <div class="card"><ol>
+      <li><span>Vá na aba <b>Equipe</b>.</span></li>
+      <li><span>Preencha <b>nome completo</b>, <b>RG</b> e <b>WhatsApp com DDD</b>.</span></li>
+      <li><span>Toque em <b>Cadastrar colaborador</b>: aparece o <b>código de 4 números</b> dele.</span></li>
+      <li><span>Toque em <b>Enviar código ao funcionário</b> pra mandar no WhatsApp dele.</span></li>
+    </ol></div>
+    <p>Saiu da empresa? Toque no nome → <b>Desativar</b>. O histórico fica guardado.</p>
+  </div></section>
+
+  <section class="slide"><div class="in">
+    <div class="kicker">Passo 4 · Tablet da oficina</div>
+    <h2>Deixe o tablet pronto pro ponto</h2>
+    <p>No tablet, abra este link:</p>
+    <a class="link" href="https://kellercamilodeoliveira-del.github.io/apps/ponto/?e=betolubservicosa-cmcx&amp;tablet=1">kellercamilodeoliveira-del.github.io/apps/ponto/?e=betolubservicosa-cmcx&amp;tablet=1</a>
+    <div class="card"><ol>
+      <li><span>Adicione à tela inicial do mesmo jeito do Passo 1 (iPad: Safari → Compartilhar → <b>Adicionar à Tela de Início</b>).</span></li>
+      <li><span>Abra pelo ícone. Aparece o <b>teclado com o relógio</b> e o logo da Betolub.</span></li>
+      <li><span>Deixe o tablet <b>na tomada e conectado no Wi-Fi</b>. A tela fica acesa sozinha.</span></li>
+    </ol></div>
+    <p>No tablet não precisa de senha: ele só serve pra bater o ponto.</p>
+  </div></section>
+
+  <section class="slide"><div class="in">
+    <div class="kicker">Passo 5 · Bater o ponto</div>
+    <h2>O colaborador só digita o código</h2>
+    <ul>
+      <li><span>Digita os <b>4 números</b> no tablet. O ponto registra sozinho, na ordem: <b>Entrada → Saída almoço → Volta almoço → Saída</b>.</span></li>
+      <li><span>A tela mostra o tipo da batida, a hora e o <b>saldo de horas do mês</b> dele.</span></li>
+      <li><span>Bateu duas vezes sem querer? O tablet pergunta antes de registrar de novo.</span></li>
+      <li><span>O <b>comprovante em PDF</b> chega no WhatsApp dele e no da Betolub.</span></li>
+    </ul>
+  </div></section>
+
+  <section class="slide"><div class="in">
+    <div class="kicker">Passo 6 · Acompanhar</div>
+    <h2>Saldo de horas de cada um</h2>
+    <div class="saldo"><span class="pos">+1h20<br><small>horas sobrando</small></span><span class="neg">−0h40<br><small>horas faltando</small></span></div>
+    <ul>
+      <li><span><b>Hoje:</b> quem está trabalhando, a última batida e o saldo do mês de cada colaborador.</span></li>
+      <li><span><b>Relatório:</b> toque no nome pra ver o dia a dia. Esqueceu de bater? Toque no dia → <b>Incluir marcação</b>.</span></li>
+      <li><span>No fim do mês: <b>Relatório → Toda a equipe → Relatório completo do mês (PDF)</b>, com uma página por colaborador e espaço pra assinatura.</span></li>
+      <li><span><b>Empresa:</b> jornada de trabalho (seg a sex 8h, sáb 4h), feriados da cidade e WhatsApp que recebe os comprovantes.</span></li>
+    </ul>
+  </div></section>
+
+  <section class="slide"><div class="in">
+    <img class="logo" src="../marcas/betolub.png" alt="Betolub">
+    <h2>Qualquer dúvida, <em>é só chamar</em></h2>
+    <p>Manda mensagem no WhatsApp <b>(14) 98832-4456</b> que a gente resolve.</p>
+    <a class="btn" href="https://wa.me/5514988324456?text=Oi!%20Sou%20da%20Betolub%20e%20tenho%20uma%20d%C3%BAvida%20no%20Ponto%20Eletr%C3%B4nico.">Chamar no WhatsApp</a>
+    <p class="foot">Ponto Eletrônico por Keller IA</p>
+  </div></section>
+
+</main>
+<nav class="nav">
+  <button id="ant" aria-label="Anterior">←</button>
+  <div class="dots" id="dots"></div>
+  <button id="prox" aria-label="Próximo">→</button>
+</nav>
+<script>
+const deck = document.getElementById('deck'), slides = [...deck.children], dots = document.getElementById('dots');
+slides.forEach(() => dots.appendChild(document.createElement('i')));
+const atual = () => Math.round(deck.scrollLeft / deck.clientWidth);
+function marcar() { const i = atual(); [...dots.children].forEach((d, k) => d.classList.toggle('on', k === i)); document.getElementById('ant').disabled = i === 0; document.getElementById('prox').disabled = i === slides.length - 1; }
+const ir = i => deck.scrollTo({left: Math.max(0, Math.min(slides.length - 1, i)) * deck.clientWidth});
+document.getElementById('ant').onclick = () => ir(atual() - 1);
+document.getElementById('prox').onclick = () => ir(atual() + 1);
+document.addEventListener('keydown', e => { if (e.key === 'ArrowRight') ir(atual() + 1); if (e.key === 'ArrowLeft') ir(atual() - 1); });
+deck.addEventListener('scroll', () => requestAnimationFrame(marcar));
+window.addEventListener('resize', () => ir(atual()));
+marcar();
+</script>
+</body>
+</html>
