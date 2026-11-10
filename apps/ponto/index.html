@@ -44,7 +44,7 @@ h2{font-size:22px;margin:0 0 10px;font-weight:700}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
 .tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;position:sticky;top:env(safe-area-inset-top,0);z-index:5}
-.tab{border:0;background:transparent;color:var(--muted);font-size:17px;font-weight:700;padding:9px 4px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.tab{border:0;background:transparent;color:var(--muted);font-size:16px;font-weight:700;padding:9px 2px;border-radius:10px;cursor:pointer;white-space:nowrap}
 .tab[aria-selected=true]{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff}
 label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
 select,input{width:100%;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px}
@@ -519,10 +519,10 @@ let timerTerminal = null, digitado = '', tmEmp = null, tmEmpData = null, ocupado
 async function abrirTerminal(empId) {
   tela('terminal'); tmEmp = empId;
   const tick = () => { const d = new Date(); $('#tm-clock').textContent = hm(d); $('#tm-date').textContent = d.toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long'}); };
-  tick(); timerTerminal = setInterval(tick, 10000);
+  tick(); timerTerminal = setInterval(tick, 10000); $('#tm-teclado').hidden = false;
   try {
     const s = await getDoc(doc(db, 'ponto_empresas', empId));
-    if (!s.exists()) { $('#tm-emp').textContent = 'Empresa não encontrada'; $('#tm-msg').innerHTML = '<div class="errbox">Link inválido. Peça um novo link ao seu gestor.</div>'; return; }
+    if (!s.exists()) { $('#tm-emp').textContent = 'Empresa não encontrada'; $('#tm-teclado').hidden = true; $('#tm-lembrado').hidden = true; $('#tm-msg').innerHTML = '<div class="errbox">Link inválido. Peça um novo link ao seu gestor.</div>'; return; }
     tmEmpData = s.data(); $('#tm-emp').textContent = tmEmpData.nome;
     document.title = 'Ponto · ' + tmEmpData.nome;
   } catch (e) { $('#tm-emp').textContent = 'Ponto Eletrônico'; }
