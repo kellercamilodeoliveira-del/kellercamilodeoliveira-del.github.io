@@ -46,7 +46,8 @@
       }
 
       match /marcacoes/{m} {
-        allow read, update, delete: if pontoEquipe(e);
+        allow get: if true; // o motor do WhatsApp confere a batida pelo código do registro
+        allow list, update, delete: if pontoEquipe(e);
         allow create: if pontoEquipe(e) || (
           request.resource.data.origem == 'funcionario'
           && request.resource.data.recebido == request.time

@@ -257,10 +257,12 @@ tr.ext td{background:rgba(245,166,35,.07)}
         <div><label for="n-resp">Responsável</label><input id="n-resp"></div>
       </div>
       <label for="n-end">Endereço</label><input id="n-end">
+      <label for="n-wa">WhatsApp do gestor (recebe os comprovantes)</label><input id="n-wa" inputmode="tel" placeholder="(14) 99999-9999">
       <div class="grid2">
-        <div><label for="n-email">E-mail do gestor</label><input id="n-email" type="email" required></div>
-        <div><label for="n-senha">Senha inicial</label><input id="n-senha" minlength="6" required></div>
+        <div><label for="n-email">E-mail de login do gestor</label><input id="n-email" type="email" required></div>
+        <div><label for="n-senha">Senha inicial</label><input id="n-senha" minlength="6"></div>
       </div>
+      <div class="note">Se for você mesmo quem vai cuidar da empresa, use o seu e-mail de administrador e deixe a senha em branco.</div>
       <label for="n-status">Situação</label>
       <select id="n-status"><option value="teste">Teste grátis (7 dias)</option><option value="ativo">Ativo (cliente pagante)</option></select>
       <div class="erro" id="n-erro"></div>
@@ -317,13 +319,16 @@ tr.ext td{background:rgba(245,166,35,.07)}
         <h2>Equipe</h2>
         <div id="e-lista"></div>
         <form id="f-func" style="margin-top:12px">
+          <h2 style="margin-top:8px">Cadastrar colaborador</h2>
+          <label for="ef-nome">Nome completo</label><input id="ef-nome" required autocomplete="off">
           <div class="grid2">
-            <div><label for="ef-nome">Nome</label><input id="ef-nome" required></div>
-            <div><label for="ef-func">Função</label><input id="ef-func"></div>
+            <div><label for="ef-rg">RG</label><input id="ef-rg" autocomplete="off"></div>
+            <div><label for="ef-wa">WhatsApp do colaborador</label><input id="ef-wa" inputmode="tel" placeholder="(14) 99999-9999" autocomplete="off"></div>
           </div>
-          <button class="btn a w" type="submit" style="margin-top:12px" id="ef-btn">Adicionar funcionário</button>
+          <label for="ef-func">Função</label><input id="ef-func" autocomplete="off">
+          <button class="btn a w" type="submit" style="margin-top:12px" id="ef-btn">Cadastrar colaborador</button>
         </form>
-        <div class="note">Cada funcionário recebe um código de 4 números para bater o ponto. Toque no nome para editar.</div>
+        <div class="note">Cada colaborador recebe um código de 4 números para bater o ponto no tablet. A cada batida, ele e o gestor recebem o comprovante em PDF no WhatsApp. Toque no nome para editar.</div>
       </div>
     </div>
 
@@ -334,6 +339,9 @@ tr.ext td{background:rgba(245,166,35,.07)}
         <label for="em-nome">Nome</label><input id="em-nome" required>
         <label for="em-cnpj">CNPJ</label><input id="em-cnpj">
         <label for="em-end">Endereço</label><input id="em-end">
+        <label for="em-wa">WhatsApp do gestor (recebe os comprovantes)</label><input id="em-wa" inputmode="tel" placeholder="(14) 99999-9999">
+        <label class="check" style="margin-top:12px"><input type="checkbox" id="em-nf"> Mandar o comprovante de cada batida no WhatsApp do colaborador</label>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="em-ng"> Mandar o comprovante de cada batida no WhatsApp do gestor</label>
         <button class="btn p w" type="submit" style="margin-top:14px">Salvar</button>
       </form>
       <form class="card" id="f-jor" style="margin-top:14px">
@@ -374,6 +382,7 @@ import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,co
 const firebaseConfig = {apiKey: 'AIzaSyBZyZ4Dqs0BI5VSsm3HB2TNGpk7Z7330CE', authDomain: 'escritorio-c3acb.firebaseapp.com', projectId: 'escritorio-c3acb', storageBucket: 'escritorio-c3acb.firebasestorage.app', messagingSenderId: '752996396852', appId: '1:752996396852:web:13569631f01d301d5a3f61'};
 const MASTER = ['keller_camilo@hotmail.com', 'kellercamilodeoliveira@gmail.com'];
 const WHATS_KELLER = '5514988324456';
+const MOTOR_WHATSAPP = 'https://motor-whatsapp-keller-ia.onrender.com'; // manda o comprovante de cada batida no WhatsApp
 const DIAS_TESTE = 7;
 // ==========================
 
@@ -528,6 +537,8 @@ $('#l-esqueci').addEventListener('click', async () => {
   try { await sendPasswordResetEmail(auth, email); toast('Enviamos um link para trocar a senha no seu e-mail.'); } catch (e) { $('#l-erro').textContent = erroTxt(e); }
 });
 const slug = s => (s || 'empresa').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 16) || 'empresa';
+const soNumeros = v => String(v || '').replace(/\D/g, '');
+const fmtFone = v => { const n = soNumeros(v).replace(/^55(?=\d{10,11}$)/, ''); return n.length === 11 ? `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}` : n.length === 10 ? `(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}` : v || ''; };
 const novoId = nome => slug(nome) + '-' + Math.random().toString(36).slice(2, 6);
 $('#f-cad').addEventListener('submit', async ev => {
   ev.preventDefault();
@@ -617,6 +628,9 @@ function erroCodigo(t) {
   $('#tm-msg').innerHTML = '<div class="errbox">' + esc(t) + '</div>';
   if (navigator.vibrate) navigator.vibrate(200);
 }
+function avisarWhatsApp(marcacao) {
+  try { fetch(MOTOR_WHATSAPP + '/ponto/comprovante', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({empresa: tmEmp, marcacao}), keepalive: true}).catch(() => {}); } catch (e) {}
+}
 function limparMsgDepois(ms) { clearTimeout(registrar.t); registrar.t = setTimeout(() => { $('#tm-msg').innerHTML = ''; }, ms); }
 async function registrar(cod, confirmado) {
   if (ocupado || !cod) return; ocupado = true;
@@ -647,15 +661,19 @@ async function registrar(cod, confirmado) {
     const upd = updateDoc(ref, {...basico, ultimaTs: Timestamp.fromDate(agora), mes: ym, dias})
       .catch(e => { if (String(e.code || '').includes('permission')) return updateDoc(ref, basico); throw e; }); // regras antigas: grava só o básico
     const offline = !navigator.onLine;
-    if (offline) { add.catch(() => {}); upd.catch(() => {}); } else await Promise.all([add, upd]);
+    let marcRef = null;
+    if (offline) { add.catch(() => {}); upd.catch(() => {}); } else [marcRef] = await Promise.all([add, upd]);
+    if (marcRef) avisarWhatsApp(marcRef.id);
     if (!kiosk() && $('#tm-lembrar').checked) { ls.set('ponto.codigo.' + tmEmp, cod); ls.set('ponto.nome.' + tmEmp, c.nome || ''); }
     // saldo do mês (banco de horas)
     const fechou = hojeFechado(n + 1, hoje, jor);
     const sd = saldoDoMes(dias, jor, c.inicio, ym, fechou);
-    const hojeTxt = (n + 1) % 2 === 0 ? `<div class="note">Hoje: ${fmtH(dias[hoje] || 0)} trabalhadas</div>` : '';
+    let hojeTxt = (n + 1) % 2 === 0 ? `<div class="note">Hoje: ${fmtH(dias[hoje] || 0)} trabalhadas</div>` : '';
+    if (fechou) { const dh = difDia(dias[hoje] || 0, previstoDia(hoje, jor)); hojeTxt = `<div style="margin-top:6px">Hoje: ${fmtH(dias[hoje] || 0)} trabalhadas · <span class="saldo ${clsSaldo(dh)}">${dh < 0 ? 'faltaram ' + fmtH(-dh) : dh > 0 ? 'sobraram ' + fmtH(dh) : 'em dia'}</span></div>`; }
+    const zap = marcRef && c.whatsapp && (tmEmpData?.notificar?.funcionario !== false) ? '<div class="note">📲 Comprovante enviado no seu WhatsApp.</div>' : '';
     msg.innerHTML = `<div class="okbox"><div class="tipo">✓ ${esc(tipo)}</div><div style="font-size:18px">${esc(c.nome)} · ${hm(agora)}</div>${hojeTxt}
       <div class="sbox">Saldo do mês${fechou ? '' : ' (até ontem)'}: <span class="saldo ${clsSaldo(sd.saldo)}">${fmtSaldo(sd.saldo)}</span> <span class="note">${txtSaldo(sd.saldo)}</span></div>
-      ${offline ? '<div class="note">Sem internet agora: o registro será enviado sozinho quando voltar o sinal.</div>' : ''}</div>`;
+      ${zap}${offline ? '<div class="note">Sem internet agora: o registro será enviado sozinho quando voltar o sinal.</div>' : ''}</div>`;
     if (navigator.vibrate) navigator.vibrate(60);
     mostrarLembrado();
     limparMsgDepois(kiosk() ? 7000 : 10000);
@@ -721,18 +739,25 @@ $('#f-nova').addEventListener('submit', async ev => {
   const email = $('#n-email').value.trim().toLowerCase(), nome = $('#n-emp').value.trim();
   let app2;
   try {
-    app2 = initializeApp(firebaseConfig, 'cad' + Date.now());
-    const a2 = getAuth(app2);
-    const cred = await createUserWithEmailAndPassword(a2, email, $('#n-senha').value);
-    await signOut(a2);
+    const souEu = MASTER.includes(email); // o próprio administrador cuida da empresa: não cria outra conta
+    let uid = auth.currentUser.uid;
+    if (!souEu) {
+      if (($('#n-senha').value || '').length < 6) throw {code: 'auth/weak-password'};
+      app2 = initializeApp(firebaseConfig, 'cad' + Date.now());
+      const a2 = getAuth(app2);
+      const cred = await createUserWithEmailAndPassword(a2, email, $('#n-senha').value);
+      await signOut(a2); uid = cred.user.uid;
+    }
     const id = novoId(nome), batch = writeBatch(db), status = $('#n-status').value;
     batch.set(doc(db, 'ponto_empresas', id), {
       nome, cnpj: $('#n-cnpj').value.trim(), endereco: $('#n-end').value.trim(), responsavel: $('#n-resp').value.trim(), email,
-      donoUid: cred.user.uid, status, fimTeste: Timestamp.fromDate(new Date(Date.now() + DIAS_TESTE * 864e5)), criadoEm: serverTimestamp(), origem: 'master'
+      whatsappGestor: soNumeros($('#n-wa').value), notificar: {funcionario: true, gestor: true},
+      donoUid: uid, status, fimTeste: Timestamp.fromDate(new Date(Date.now() + DIAS_TESTE * 864e5)), criadoEm: serverTimestamp(), origem: 'master'
     });
-    batch.set(doc(db, 'ponto_usuarios', cred.user.uid), {email, empresaId: id, papel: 'gestor', nome: $('#n-resp').value.trim()});
+    if (!souEu) batch.set(doc(db, 'ponto_usuarios', uid), {email, empresaId: id, papel: 'gestor', nome: $('#n-resp').value.trim()});
     await batch.commit();
-    ev.target.reset(); toast('Empresa cadastrada.');
+    ev.target.reset(); toast('Empresa cadastrada. Abrindo o painel...');
+    painelEmpresaMaster = id; rotear(auth.currentUser);
   } catch (e) { $('#n-erro').textContent = erroTxt(e); }
   finally { if (app2) deleteApp(app2).catch(() => {}); b.disabled = false; b.textContent = 'Cadastrar empresa'; }
 });
@@ -838,7 +863,7 @@ async function sincronizarCodigos() {
     if (f.ativo === false || !f.codigo) continue;
     const r = calcular(marcsMes, f, mesAtual);
     const lHoje = marcsMes.filter(x => x.funcionarioId === f.id && dkey(x.ts) === hoje).sort((a, b) => a.ts - b.ts);
-    const dados = {funcionarioId: f.id, nome: f.nome, mes: mesAtual, dias: r.diasMin, jornada: f.jornada || null, inicio: inicioDe(f) || null};
+    const dados = {funcionarioId: f.id, nome: f.nome, whatsapp: f.whatsapp || '', mes: mesAtual, dias: r.diasMin, jornada: f.jornada || null, inicio: inicioDe(f) || null};
     if (lHoje.length) { const u = lHoje[lHoje.length - 1].ts; Object.assign(dados, {ultimaData: hoje, qtdDia: lHoje.length, ultimaHora: hm(u), ultimaTs: Timestamp.fromDate(u)}); }
     const chave = JSON.stringify(dados, (k, v) => v instanceof Timestamp ? v.toMillis() : v);
     if (codigosGravados[f.codigo] === chave) continue;
@@ -901,13 +926,13 @@ async function renderRel() {
     relAtual = {tipo: 'todos', linhas, mesNome, ym};
     box.innerHTML = `<div class="scroll"><table><thead><tr><th>Funcionário</th><th class="r">Trabalhadas</th><th class="r">Previstas</th><th class="r">Saldo</th></tr></thead><tbody>` +
       (linhas.length ? linhas.map(x => `<tr class="click" data-func="${x.f.id}"><td>${esc(x.f.nome)}${x.r.pend ? ' <span class="tag r">' + x.r.pend + ' sem saída</span>' : ''}</td><td class="r">${fmtH(x.r.trab)}</td><td class="r">${fmtH(x.r.prev)}</td><td class="r">${sSpan(x.r.saldo)}</td></tr>`).join('') : '<tr><td colspan="4" class="wd">Nenhum funcionário.</td></tr>') +
-      `</tbody></table></div><div class="btns"><button class="btn p" id="r-pdf">Baixar resumo (PDF)</button></div><div class="note">Saldo positivo = horas a mais. Negativo = devendo horas. O dia de hoje entra quando o funcionário bate a saída. Toque num nome para ver o dia a dia.</div>`;
+      `</tbody></table></div><div class="btns"><button class="btn p" id="r-pdf-todos">Relatório completo do mês (PDF)</button><button class="btn s" id="r-pdf">Só o resumo (PDF)</button></div><div class="note">O relatório completo traz uma página por colaborador com todas as batidas do mês (entrada, almoço, volta e saída), o saldo de cada dia e o campo de assinatura.</div><div class="note">Saldo positivo = horas a mais. Negativo = devendo horas. O dia de hoje entra quando o funcionário bate a saída. Toque num nome para ver o dia a dia.</div>`;
   } else {
     const f = funcs.find(x => x.id === fid); if (!f) return;
     const r = calcular(marcs, f, ym);
     relAtual = {tipo: 'func', f, r, mesNome, ym};
     const txt = `*Ponto Eletrônico · ${empresa.nome}*\n${f.nome}${f.funcao ? ' (' + f.funcao + ')' : ''}\n${mesNome}\n\nHoras trabalhadas: ${fmtH(r.trab)}\nHoras previstas: ${fmtH(r.prev)}\nSaldo: ${fmtSaldo(r.saldo)} (${txtSaldo(r.saldo)})`;
-    box.innerHTML = `<div class="tot"><div><div class="num">${fmtH(r.trab)}</div><div class="lbl">Trabalhadas</div></div><div><div class="num">${fmtH(r.prev)}</div><div class="lbl">Previstas</div></div><div><div class="num saldo ${clsSaldo(r.saldo)}">${fmtSaldo(r.saldo)}</div><div class="lbl">Saldo · ${txtSaldo(r.saldo)}</div></div></div>` +
+    box.innerHTML = `<div class="note" style="margin:-4px 0 10px">${esc(f.nome)}${f.rg ? ' · RG ' + esc(f.rg) : ''}${f.funcao ? ' · ' + esc(f.funcao) : ''}${f.whatsapp ? ' · ' + esc(fmtFone(f.whatsapp)) : ''}</div><div class="tot"><div><div class="num">${fmtH(r.trab)}</div><div class="lbl">Trabalhadas</div></div><div><div class="num">${fmtH(r.prev)}</div><div class="lbl">Previstas</div></div><div><div class="num saldo ${clsSaldo(r.saldo)}">${fmtSaldo(r.saldo)}</div><div class="lbl">Saldo · ${txtSaldo(r.saldo)}</div></div></div>` +
       (r.pend ? `<div class="banner" style="margin-bottom:10px">${r.pend} dia${r.pend > 1 ? 's' : ''} sem marcação de saída. Toque no dia para corrigir.</div>` : '') +
       `<div class="scroll"><table><thead><tr><th>Dia</th><th>Marcações</th><th class="r">Total</th><th class="r">Saldo</th></tr></thead><tbody>` +
       (r.rows.length ? r.rows.map(x => {
@@ -929,6 +954,7 @@ $('#r-func').addEventListener('change', renderRel);
 $('#r-conteudo').addEventListener('click', ev => {
   const t = ev.target;
   if (t.id === 'r-pdf') return gerarPdf();
+  if (t.id === 'r-pdf-todos') return gerarPdf(true);
   if (t.id === 'r-incluir') return modalIncluir(relAtual.f, null);
   const fr = t.closest('[data-func]'); if (fr) { $('#r-func').value = fr.dataset.func; return renderRel(); }
   const dr = t.closest('[data-dia]'); if (dr) return modalDia(relAtual.f, dr.dataset.dia);
@@ -966,38 +992,53 @@ function modalIncluir(f, k) {
 }
 
 // ----- PDF -----
-async function gerarPdf() {
+async function gerarPdf(completo) {
   if (!window.jspdf) { toast('Carregando gerador de PDF... tente de novo em instantes.', true); return; }
   const {jsPDF} = window.jspdf, docp = new jsPDF({unit: 'mm', format: 'a4'}), W = 210; let y = 18;
   const R = relAtual, sTxt = m => fmtSaldo(m).replace('−', '-');
-  docp.setFillColor(79, 70, 229); docp.rect(0, 0, W, 6, 'F');
-  docp.setFont('helvetica', 'bold'); docp.setFontSize(16); docp.text(empresa.nome || '', 14, y); y += 6;
-  docp.setFont('helvetica', 'normal'); docp.setFontSize(9); docp.setTextColor(90);
-  if (empresa.cnpj) { docp.text('CNPJ: ' + empresa.cnpj, 14, y); y += 4.5; }
-  if (empresa.endereco) { docp.text(empresa.endereco, 14, y); y += 4.5; }
-  y += 5; docp.setTextColor(0);
-  const nova = () => { if (y > 270) { docp.addPage(); y = 20; } };
   const corSaldo = m => Math.round(m) < 0 ? docp.setTextColor(190, 40, 30) : Math.round(m) > 0 ? docp.setTextColor(20, 130, 70) : docp.setTextColor(0);
-  if (R.tipo === 'todos') {
+  const rodape = () => { docp.setFont('helvetica', 'normal'); docp.setFontSize(7); docp.setTextColor(140); docp.text('Gerado em ' + new Date().toLocaleString('pt-BR') + ' - Ponto Eletrônico por Keller IA', 14, 290); };
+  const cabecalho = () => {
+    y = 18; docp.setFillColor(79, 70, 229); docp.rect(0, 0, W, 6, 'F');
+    docp.setTextColor(0); docp.setFont('helvetica', 'bold'); docp.setFontSize(16); docp.text(empresa.nome || '', 14, y); y += 6;
+    docp.setFont('helvetica', 'normal'); docp.setFontSize(9); docp.setTextColor(90);
+    if (empresa.cnpj) { docp.text('CNPJ: ' + empresa.cnpj, 14, y); y += 4.5; }
+    if (empresa.endereco) { docp.text(empresa.endereco, 14, y); y += 4.5; }
+    y += 5; docp.setTextColor(0);
+  };
+  const nova = () => { if (y > 270) { rodape(); docp.addPage(); cabecalho(); } };
+  const resumo = (linhas) => {
     docp.setFont('helvetica', 'bold'); docp.setFontSize(13); docp.text('Banco de Horas da Equipe - ' + R.mesNome, 14, y); y += 9;
     docp.setFillColor(240, 240, 245); docp.rect(14, y-4.5, W-28, 7, 'F'); docp.setFontSize(9);
-    docp.text('Funcionário', 16, y); docp.text('Trabalhadas', 128, y, {align: 'right'}); docp.text('Previstas', 160, y, {align: 'right'}); docp.text('Saldo', W-16, y, {align: 'right'}); y += 6;
+    docp.text('Colaborador', 16, y); docp.text('Dias', 112, y, {align: 'right'}); docp.text('Trabalhadas', 138, y, {align: 'right'}); docp.text('Previstas', 164, y, {align: 'right'}); docp.text('Saldo', W-16, y, {align: 'right'}); y += 6;
     docp.setFont('helvetica', 'normal');
-    R.linhas.forEach(x => { nova(); docp.setTextColor(0); docp.text(x.f.nome + (x.f.funcao ? ' (' + x.f.funcao + ')' : ''), 16, y); docp.text(fmtH(x.r.trab), 128, y, {align: 'right'}); docp.text(fmtH(x.r.prev), 160, y, {align: 'right'}); corSaldo(x.r.saldo); docp.text(sTxt(x.r.saldo), W-16, y, {align: 'right'}); y += 6; });
-    docp.setTextColor(110); docp.setFontSize(8); y += 2; docp.text('Saldo positivo = horas a mais. Saldo negativo = horas devidas. Diferença de até 10 min no dia não conta.', 14, y);
-  } else {
-    const {f, r} = R, jor = jornadaDe(f);
+    linhas.forEach(x => { nova(); docp.setTextColor(0); docp.text(x.f.nome + (x.f.rg ? '  (RG ' + x.f.rg + ')' : ''), 16, y); docp.text(String(x.r.dias), 112, y, {align: 'right'}); docp.text(fmtH(x.r.trab), 138, y, {align: 'right'}); docp.text(fmtH(x.r.prev), 164, y, {align: 'right'}); corSaldo(x.r.saldo); docp.text(sTxt(x.r.saldo) + ' ' + txtSaldo(x.r.saldo), W-16, y, {align: 'right'}); y += 6; });
+    docp.setTextColor(110); docp.setFontSize(8); y += 2; docp.text('Saldo positivo = horas sobrando. Saldo negativo = horas faltando. Diferença de até 10 min no dia não conta.', 14, y); y += 6;
+  };
+  const espelho = (f, r) => {
+    const jor = jornadaDe(f);
     docp.setFont('helvetica', 'bold'); docp.setFontSize(13); docp.text('Espelho de Ponto - ' + R.mesNome, 14, y); y += 7;
-    docp.setFont('helvetica', 'normal'); docp.setFontSize(10); docp.text('Funcionário: ' + f.nome + (f.funcao ? '   |   Função: ' + f.funcao : ''), 14, y); y += 8;
-    docp.setFillColor(240, 240, 245); docp.rect(14, y-4.5, W-28, 7, 'F'); docp.setFont('helvetica', 'bold'); docp.setFontSize(9);
-    docp.text('Data', 16, y); docp.text('Dia', 38, y); docp.text('Marcações', 54, y); docp.text('Trabalhado', 150, y, {align: 'right'}); docp.text('Previsto', 172, y, {align: 'right'}); docp.text('Saldo', W-16, y, {align: 'right'}); y += 6;
-    docp.setFont('helvetica', 'normal');
+    docp.setFont('helvetica', 'normal'); docp.setFontSize(10);
+    docp.text('Colaborador: ' + f.nome + (f.rg ? '   |   RG: ' + f.rg : ''), 14, y); y += 5;
+    if (f.funcao) { docp.text('Função: ' + f.funcao, 14, y); y += 5; }
+    y += 3;
+    const th = () => { docp.setFillColor(240, 240, 245); docp.rect(14, y-4.5, W-28, 7, 'F'); docp.setFont('helvetica', 'bold'); docp.setFontSize(8); docp.setTextColor(0);
+      docp.text('Data', 16, y); docp.text('Entrada', 44, y); docp.text('Saída alm.', 62, y); docp.text('Volta alm.', 82, y); docp.text('Saída', 102, y); docp.text('Trabalhado', 150, y, {align: 'right'}); docp.text('Previsto', 172, y, {align: 'right'}); docp.text('Saldo', W-16, y, {align: 'right'}); y += 6; docp.setFont('helvetica', 'normal'); };
+    th();
     r.rows.forEach(x => {
-      nova(); docp.setTextColor(0);
+      if (y > 270) { rodape(); docp.addPage(); cabecalho(); th(); }
+      docp.setTextColor(0); docp.setFontSize(8);
       if (x.prev === 0 && x.l.length) { docp.setFillColor(255, 244, 222); docp.rect(14, y-4, W-28, 6, 'F'); }
-      docp.text(dataBR(x.k), 16, y);
-      docp.text(DSEM[x.dow] + (x.hol ? ' (fer.)' : ''), 38, y);
-      docp.text(x.falta ? 'sem registro' : x.l.map(m => hm(m.ts) + (m.origem === 'gestor' ? '*' : '')).join(' - ') + (x.aberto ? (x.hoje ? ' (em andamento)' : ' (sem saída)') : ''), 54, y);
+      docp.text(dataBR(x.k).slice(0, 5) + ' ' + DSEM[x.dow] + (x.hol ? '*' : ''), 16, y);
+      if (x.falta) docp.text('sem registro', 44, y);
+      else {
+        const hs = x.l.map(m => hm(m.ts) + (m.origem === 'gestor' ? '¹' : ''));
+        const curto = x.prev && x.prev <= 360 && hs.length <= 2;
+        const cols = curto ? [hs[0], '', '', hs[1]] : [hs[0], hs[1], hs[2], hs[3]];
+        [44, 62, 82, 102].forEach((cx, i) => { if (cols[i]) docp.text(cols[i].replace('¹', '*'), cx, y); });
+        if (hs.length > 4) docp.text('+' + hs.slice(4).join(' ').replace(/¹/g, '*'), 118, y);
+        if (x.aberto && !x.hoje) { docp.setTextColor(190, 40, 30); docp.text('sem saída', 118, y); docp.setTextColor(0); }
+      }
       docp.text(x.l.length ? fmtH(x.min) : '-', 150, y, {align: 'right'});
       docp.text(fmtH(x.prev), 172, y, {align: 'right'});
       if (x.dif !== null) { corSaldo(x.dif); docp.text(sTxt(x.dif), W-16, y, {align: 'right'}); }
@@ -1006,15 +1047,20 @@ async function gerarPdf() {
     y += 4; nova();
     docp.setTextColor(0); docp.setFont('helvetica', 'bold'); docp.setFontSize(10);
     docp.text('Trabalhadas: ' + fmtH(r.trab), 14, y); docp.text('Previstas: ' + fmtH(r.prev), 70, y); corSaldo(r.saldo); docp.text('Saldo do mês: ' + sTxt(r.saldo) + ' (' + txtSaldo(r.saldo) + ')', 120, y); y += 5;
-    docp.setFont('helvetica', 'normal'); docp.setFontSize(8); docp.setTextColor(110);
-    docp.text('Jornada: ' + DIAS_JOR.map(([d, n]) => n + ' ' + fmtH(+jor[d] || 0)).join(', ') + '.  Diferença de até 10 min no dia não conta.  * = marcação incluída pelo gestor.', 14, y); y += 4;
+    docp.setFont('helvetica', 'normal'); docp.setFontSize(7.5); docp.setTextColor(110);
+    docp.text('Jornada: ' + DIAS_JOR.map(([d, n]) => n + ' ' + fmtH(+jor[d] || 0)).join(', ') + '.  Diferença de até 10 min no dia não conta.  * na data = feriado.  * na hora = incluída pelo gestor.', 14, y); y += 4;
     if (r.domFer) { docp.text('Horas em domingo/feriado no mês: ' + fmtH(r.domFer) + '.', 14, y); y += 4; }
-    y += 16; if (y > 275) { docp.addPage(); y = 30; }
+    y += 16; if (y > 278) { rodape(); docp.addPage(); cabecalho(); y += 12; }
     docp.setTextColor(0); docp.setDrawColor(120); docp.line(14, y, 94, y); docp.line(116, y, 196, y); y += 4.5; docp.setFontSize(9);
-    docp.text('Assinatura do funcionário', 14, y); docp.text('Assinatura da empresa', 116, y);
-  }
-  docp.setFontSize(7); docp.setTextColor(140); docp.text('Gerado em ' + new Date().toLocaleString('pt-BR') + ' - Ponto Eletrônico por Keller IA', 14, 290);
-  const nomeArq = ('ponto-' + (R.tipo === 'todos' ? 'equipe' : slug(R.f.nome)) + '-' + R.ym + '.pdf');
+    docp.text('Assinatura do colaborador', 14, y); docp.text('Assinatura da empresa', 116, y);
+  };
+  cabecalho();
+  if (R.tipo === 'todos') {
+    resumo(R.linhas);
+    if (completo) R.linhas.forEach(x => { rodape(); docp.addPage(); cabecalho(); espelho(x.f, x.r); });
+  } else espelho(R.f, R.r);
+  rodape();
+  const nomeArq = 'ponto-' + (R.tipo === 'todos' ? (completo ? 'relatorio-completo' : 'equipe') : slug(R.f.nome)) + '-' + R.ym + '.pdf';
   const blob = docp.output('blob');
   try {
     const file = new File([blob], nomeArq, {type: 'application/pdf'});
@@ -1025,7 +1071,7 @@ async function gerarPdf() {
 
 // ----- equipe -----
 function renderEquipe() {
-  $('#e-lista').innerHTML = funcs.length ? funcs.map(f => `<div class="row click" data-edit="${f.id}" style="${f.ativo === false ? 'opacity:.5' : ''}"><div class="av">${esc((f.nome || '?')[0])}</div><div class="grow"><div class="nm">${esc(f.nome)}</div><div class="fn">${esc(f.funcao || '')}${f.jornada ? ' · jornada própria' : ''}${f.ativo === false ? ' · inativo' : ''}</div></div>${f.ativo === false ? '' : `<span class="code-pill">${esc(f.codigo)}</span>`}</div>`).join('') : '<div class="sub">Nenhum funcionário ainda.</div>';
+  $('#e-lista').innerHTML = funcs.length ? funcs.map(f => `<div class="row click" data-edit="${f.id}" style="${f.ativo === false ? 'opacity:.5' : ''}"><div class="av">${esc((f.nome || '?')[0])}</div><div class="grow"><div class="nm">${esc(f.nome)}</div><div class="fn">${[f.funcao, f.rg ? 'RG ' + f.rg : '', f.whatsapp ? fmtFone(f.whatsapp) : 'sem WhatsApp'].filter(Boolean).map(esc).join(' · ')}${f.jornada ? ' · jornada própria' : ''}${f.ativo === false ? ' · inativo' : ''}</div></div>${f.ativo === false ? '' : `<span class="code-pill">${esc(f.codigo)}</span>`}</div>`).join('') : '<div class="sub">Nenhum funcionário ainda.</div>';
 }
 async function novoCodigo() {
   for (let i = 0; i < 25; i++) {
@@ -1041,12 +1087,13 @@ $('#f-func').addEventListener('submit', async ev => {
   const b = $('#ef-btn'); b.disabled = true;
   try {
     const cod = await novoCodigo(), nome = $('#ef-nome').value.trim(), funcao = $('#ef-func').value.trim(), inicio = dkey(new Date());
+    const rg = $('#ef-rg').value.trim(), whatsapp = soNumeros($('#ef-wa').value);
     const fref = doc(collection(db, 'ponto_empresas', EMP, 'funcionarios')), batch = writeBatch(db);
-    batch.set(fref, {nome, funcao, codigo: cod, ativo: true, inicio, criadoEm: serverTimestamp()});
-    batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', cod), {funcionarioId: fref.id, nome, inicio});
+    batch.set(fref, {nome, funcao, rg, whatsapp, codigo: cod, ativo: true, inicio, criadoEm: serverTimestamp()});
+    batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', cod), {funcionarioId: fref.id, nome, inicio, whatsapp});
     await batch.commit(); ev.target.reset();
     abrirModal(`<h2>${esc(nome)} cadastrado</h2><p class="sub">Código para bater o ponto no tablet:</p><div style="text-align:center;margin:10px 0"><span class="code-pill" style="font-size:40px;padding:6px 18px">${cod}</span></div>
-      <div class="btns"><a class="btn p" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`Olá, ${nome.split(' ')[0]}! Seu código do ponto da ${empresa.nome} é *${cod}*. Digite no tablet ao chegar, ao sair para o almoço, ao voltar e ao ir embora.`)}">Enviar código ao funcionário</a><button class="btn s" onclick="document.getElementById('modal').hidden=true">Fechar</button></div>`);
+      <div class="btns"><a class="btn p" target="_blank" rel="noopener" href="https://wa.me/${whatsapp ? '55' + whatsapp.replace(/^55/, '') : ''}?text=${encodeURIComponent(`Olá, ${nome.split(' ')[0]}! Seu código do ponto da ${empresa.nome} é *${cod}*. Digite no tablet ao chegar, ao sair para o almoço, ao voltar e ao ir embora.`)}">Enviar código ao funcionário</a><button class="btn s" onclick="document.getElementById('modal').hidden=true">Fechar</button></div>`);
   } catch (e) { toast(erroTxt(e), true); }
   b.disabled = false;
 });
@@ -1058,7 +1105,9 @@ $('#e-lista').addEventListener('click', ev => {
   const r = ev.target.closest('[data-edit]'); if (!r) return;
   const f = funcs.find(x => x.id === r.dataset.edit); if (!f) return;
   const ativo = f.ativo !== false;
-  abrirModal(`<h2>Editar funcionário</h2><form id="fe"><label for="fe-n">Nome</label><input id="fe-n" value="${esc(f.nome)}" required><label for="fe-f">Função</label><input id="fe-f" value="${esc(f.funcao || '')}">
+  abrirModal(`<h2>Editar colaborador</h2><form id="fe"><label for="fe-n">Nome completo</label><input id="fe-n" value="${esc(f.nome)}" required>
+    <div class="grid2"><div><label for="fe-rg">RG</label><input id="fe-rg" value="${esc(f.rg || '')}"></div><div><label for="fe-wa">WhatsApp</label><input id="fe-wa" inputmode="tel" value="${esc(fmtFone(f.whatsapp || ''))}"></div></div>
+    <label for="fe-f">Função</label><input id="fe-f" value="${esc(f.funcao || '')}">
     <label for="fe-i">Começou a usar o ponto em</label><input id="fe-i" type="date" value="${esc(inicioDe(f) || '')}">
     <label class="check" style="margin-top:12px"><input type="checkbox" id="fe-jp" ${f.jornada ? 'checked' : ''}> Jornada diferente da empresa</label>
     <div class="jor" id="fe-jor" ${f.jornada ? '' : 'hidden'}>${camposJornada('fj', jornadaDe(f))}</div>
@@ -1070,14 +1119,15 @@ $('#e-lista').addEventListener('click', ev => {
   $('#fe').onsubmit = async ev2 => {
     ev2.preventDefault();
     const nome = $('#fe-n').value.trim(), jornada = $('#fe-jp').checked ? lerJornada('fj') : null, inicio = $('#fe-i').value || null, batch = writeBatch(db);
-    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), {nome, funcao: $('#fe-f').value.trim(), jornada, inicio});
-    if (ativo && f.codigo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo), {funcionarioId: f.id, nome, jornada, inicio}, {merge: true});
+    const rg = $('#fe-rg').value.trim(), whatsapp = soNumeros($('#fe-wa').value);
+    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), {nome, funcao: $('#fe-f').value.trim(), rg, whatsapp, jornada, inicio});
+    if (ativo && f.codigo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo), {funcionarioId: f.id, nome, jornada, inicio, whatsapp}, {merge: true});
     try { await batch.commit(); fecharModal(); toast('Salvo.'); } catch (e) { toast(erroTxt(e), true); }
   };
   const trocarCodigo = async (novo) => {
     const batch = writeBatch(db);
     if (f.codigo) batch.delete(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo));
-    if (novo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', novo), {funcionarioId: f.id, nome: f.nome, jornada: f.jornada || null, inicio: inicioDe(f) || null});
+    if (novo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', novo), {funcionarioId: f.id, nome: f.nome, jornada: f.jornada || null, inicio: inicioDe(f) || null, whatsapp: f.whatsapp || ''});
     batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), novo ? {codigo: novo, ativo: true} : {ativo: false});
     await batch.commit();
     if (f.codigo) delete codigosGravados[f.codigo];
@@ -1092,13 +1142,14 @@ function renderEmpresa() {
   const ativo = document.activeElement;
   if (!(ativo && ativo.closest && ativo.closest('#f-emp'))) {
     $('#em-nome').value = empresa.nome || ''; $('#em-cnpj').value = empresa.cnpj || ''; $('#em-end').value = empresa.endereco || '';
+    $('#em-wa').value = fmtFone(empresa.whatsappGestor || ''); const nt = empresa.notificar || {}; $('#em-nf').checked = nt.funcionario !== false; $('#em-ng').checked = nt.gestor !== false;
   }
   if (!(ativo && ativo.closest && ativo.closest('#f-jor'))) $('#jor-emp').innerHTML = camposJornada('ej', empresa.jornada || JORNADA_PADRAO);
   $('#ct-email').textContent = 'Logado como ' + (auth.currentUser?.email || '');
 }
 $('#f-emp').addEventListener('submit', async ev => {
   ev.preventDefault();
-  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {nome: $('#em-nome').value.trim(), cnpj: $('#em-cnpj').value.trim(), endereco: $('#em-end').value.trim()}); toast('Dados salvos.'); document.activeElement.blur(); } catch (e) { toast(erroTxt(e), true); }
+  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {nome: $('#em-nome').value.trim(), cnpj: $('#em-cnpj').value.trim(), endereco: $('#em-end').value.trim(), whatsappGestor: soNumeros($('#em-wa').value), notificar: {funcionario: $('#em-nf').checked, gestor: $('#em-ng').checked}}); toast('Dados salvos.'); document.activeElement.blur(); } catch (e) { toast(erroTxt(e), true); }
 });
 $('#f-jor').addEventListener('submit', async ev => {
   ev.preventDefault();
