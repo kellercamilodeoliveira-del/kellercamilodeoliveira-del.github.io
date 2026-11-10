@@ -36,13 +36,13 @@
       allow delete: if pontoMaster();
 
       match /funcionarios/{f} { allow read, write: if pontoEquipe(e); }
-      match /feriados/{f} { allow read, write: if pontoEquipe(e); }
+      match /feriados/{f} { allow read: if true; allow write: if pontoEquipe(e); }
 
       match /codigos/{c} {
         allow get: if true;
         allow list, create, delete: if pontoEquipe(e);
         allow update: if pontoEquipe(e)
-          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ultimaData', 'qtdDia', 'ultimaHora']);
+          || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ultimaData', 'qtdDia', 'ultimaHora', 'ultimaTs', 'mes', 'dias']);
       }
 
       match /marcacoes/{m} {
