@@ -757,9 +757,9 @@ function renderMaster() {
       <div class="fn">${esc(e.email || '')}${e.cnpj ? ' · ' + esc(e.cnpj) : ''}${s === 'teste' || s === 'vencido' ? ' · teste até ' + fim : ''}</div></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;padding-left:50px">
         <button class="btn p sm" data-m="abrir" data-id="${e.id}">Abrir painel</button>
-        ${s !== 'ativo' ? `<button class="btn s sm" data-m="ativar" data-id="${e.id}">Ativar</button>` : ''}
-        ${s === 'teste' || s === 'vencido' ? `<button class="btn s sm" data-m="mais7" data-id="${e.id}">+7 dias</button>` : ''}
-        ${s !== 'bloqueado' ? `<button class="btn d sm" data-m="bloquear" data-id="${e.id}">Bloquear</button>` : ''}
+        <button class="btn ${s === 'teste' ? 'a' : 's'} sm" data-m="mais7" data-id="${e.id}">${s === 'teste' ? '+7 dias de teste' : 'Teste grátis 7 dias'}</button>
+        ${s === 'bloqueado' ? '' : `<button class="btn ${s === 'ativo' ? 'a' : 's'} sm" data-m="ativar" data-id="${e.id}" ${s === 'ativo' ? 'disabled' : ''}>${s === 'ativo' ? '✓ Ativo' : 'Ativar'}</button>`}
+        ${s === 'bloqueado' ? `<button class="btn a sm" data-m="ativar" data-id="${e.id}">Desbloquear</button>` : `<button class="btn d sm" data-m="bloquear" data-id="${e.id}">Bloquear</button>`}
       </div></div>`;
   }).join('') : '<div class="sub">Nenhuma empresa ainda.</div>';
 }
@@ -770,7 +770,8 @@ $('#m-lista').addEventListener('click', async ev => {
     if (b.dataset.m === 'abrir') { painelEmpresaMaster = id; return rotear(auth.currentUser); }
     if (b.dataset.m === 'ativar') await updateDoc(ref, {status: 'ativo'});
     if (b.dataset.m === 'bloquear' && confirm('Bloquear esta empresa? Os funcionários não conseguirão bater ponto.')) await updateDoc(ref, {status: 'bloqueado'});
-    if (b.dataset.m === 'mais7') { const e = empresasMaster.find(x => x.id === id); const base = Math.max(Date.now(), e.fimTeste ? e.fimTeste.toMillis() : 0); await updateDoc(ref, {status: 'teste', fimTeste: Timestamp.fromMillis(base + 7 * 864e5)}); }
+    if (b.dataset.m === 'mais7') { const e = empresasMaster.find(x => x.id === id); const base = e.status === 'teste' ? Math.max(Date.now(), e.fimTeste ? e.fimTeste.toMillis() : 0) : Date.now(); await updateDoc(ref, {status: 'teste', fimTeste: Timestamp.fromMillis(base + 7 * 864e5)}); toast('Teste grátis até ' + new Date(base + 7 * 864e5).toLocaleDateString('pt-BR') + '.'); }
+    if (b.dataset.m === 'ativar') toast('Empresa ativa.');
   } catch (e) { toast(erroTxt(e), true); }
 });
 $('#f-nova').addEventListener('submit', async ev => {
