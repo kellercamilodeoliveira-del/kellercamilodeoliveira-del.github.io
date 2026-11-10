@@ -209,6 +209,7 @@ tr.ext td{background:rgba(245,166,35,.07)}
         <div><label for="c-resp">Seu nome</label><input id="c-resp" required></div>
       </div>
       <label for="c-end">Endereço</label><input id="c-end">
+      <label for="c-wa">WhatsApp do gestor (recebe os comprovantes)</label><input id="c-wa" inputmode="tel" placeholder="(14) 99999-9999">
       <label for="c-email">E-mail (para entrar no painel)</label><input id="c-email" type="email" autocomplete="username" required>
       <label for="c-senha">Crie uma senha (mínimo 6)</label><input id="c-senha" type="password" autocomplete="new-password" minlength="6" required>
       <div class="erro" id="c-erro"></div>
@@ -274,9 +275,11 @@ tr.ext td{background:rgba(245,166,35,.07)}
   <section class="tela" id="t-painel" hidden>
     <div class="banner master" id="p-master" hidden><span>Você está no painel desta empresa como administrador.</span><button class="btn s sm" id="p-voltar">Voltar</button></div>
     <header class="top">
-      <div><div class="eyebrow">Ponto Eletrônico</div><h1 id="p-nome">Empresa</h1></div>
+      <div><div class="eyebrow">Ponto Eletrônico</div><h1 id="p-nome">Empresa</h1><div class="sub" id="p-quem"></div></div>
+      <button class="btn s sm" data-sair id="p-sair">Sair</button>
     </header>
     <div class="banner" id="p-aviso" hidden></div>
+    <div class="banner" id="p-zap" hidden>Coloque o <b>WhatsApp do gestor</b> na aba <b>Empresa</b> para receber o comprovante de cada batida.</div>
     <div class="tabs" role="tablist" id="p-tabs">
       <button class="tab" role="tab" aria-selected="true" data-pt="hoje">Hoje</button>
       <button class="tab" role="tab" aria-selected="false" data-pt="rel">Relatório</button>
@@ -325,10 +328,9 @@ tr.ext td{background:rgba(245,166,35,.07)}
             <div><label for="ef-rg">RG</label><input id="ef-rg" autocomplete="off"></div>
             <div><label for="ef-wa">WhatsApp do colaborador</label><input id="ef-wa" inputmode="tel" placeholder="(14) 99999-9999" autocomplete="off"></div>
           </div>
-          <label for="ef-func">Função</label><input id="ef-func" autocomplete="off">
           <button class="btn a w" type="submit" style="margin-top:12px" id="ef-btn">Cadastrar colaborador</button>
         </form>
-        <div class="note">Cada colaborador recebe um código de 4 números para bater o ponto no tablet. A cada batida, ele e o gestor recebem o comprovante em PDF no WhatsApp. Toque no nome para editar.</div>
+        <div class="note">Cada colaborador recebe um código de 4 números para bater o ponto no tablet. A cada batida, o comprovante em PDF vai sozinho para o WhatsApp dele e do gestor. Toque no nome para editar.</div>
       </div>
     </div>
 
@@ -552,6 +554,7 @@ $('#f-cad').addEventListener('submit', async ev => {
     batch.set(doc(db, 'ponto_empresas', id), {
       nome: $('#c-emp').value.trim(), cnpj: $('#c-cnpj').value.trim(), endereco: $('#c-end').value.trim(),
       responsavel: $('#c-resp').value.trim(), email, donoUid: cred.user.uid, status: 'teste',
+      whatsappGestor: soNumeros($('#c-wa').value), notificar: {funcionario: true, gestor: true},
       fimTeste: Timestamp.fromDate(new Date(Date.now() + DIAS_TESTE * 864e5)), criadoEm: serverTimestamp(), origem: 'cadastro'
     });
     batch.set(doc(db, 'ponto_usuarios', cred.user.uid), {email, empresaId: id, papel: 'gestor', nome: $('#c-resp').value.trim()});
@@ -786,6 +789,9 @@ function abrirPainel(empId, master) {
     if (st === 'teste') { const d = Math.max(0, Math.ceil((empresa.fimTeste.toDate() - new Date()) / 864e5)); av.hidden = false; av.textContent = `Teste grátis: ${d} dia${d === 1 ? '' : 's'} restante${d === 1 ? '' : 's'}.`; }
     else if (viaMaster && st !== 'ativo') { av.hidden = false; av.textContent = 'Situação: ' + st; }
     else av.hidden = true;
+    $('#p-zap').hidden = !!(empresa.whatsappGestor && empresa.whatsappGestor.length >= 10);
+    $('#p-quem').textContent = viaMaster ? '' : 'Entrou como ' + (auth.currentUser?.email || '');
+    $('#p-sair').hidden = viaMaster;
     renderEmpresa(); renderTudo(); talvezMostrar();
   }, e => { toast(erroTxt(e), true); tela('login'); }));
   unsubs.push(onSnapshot(collection(db, 'ponto_empresas', EMP, 'funcionarios'), s => {
@@ -1086,8 +1092,9 @@ $('#f-func').addEventListener('submit', async ev => {
   ev.preventDefault();
   const b = $('#ef-btn'); b.disabled = true;
   try {
-    const cod = await novoCodigo(), nome = $('#ef-nome').value.trim(), funcao = $('#ef-func').value.trim(), inicio = dkey(new Date());
+    const cod = await novoCodigo(), nome = $('#ef-nome').value.trim(), funcao = '', inicio = dkey(new Date());
     const rg = $('#ef-rg').value.trim(), whatsapp = soNumeros($('#ef-wa').value);
+    if (whatsapp.length < 10) { toast('Coloque o WhatsApp com DDD, pra ele receber os comprovantes.', true); b.disabled = false; return; }
     const fref = doc(collection(db, 'ponto_empresas', EMP, 'funcionarios')), batch = writeBatch(db);
     batch.set(fref, {nome, funcao, rg, whatsapp, codigo: cod, ativo: true, inicio, criadoEm: serverTimestamp()});
     batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', cod), {funcionarioId: fref.id, nome, inicio, whatsapp});
@@ -1107,7 +1114,7 @@ $('#e-lista').addEventListener('click', ev => {
   const ativo = f.ativo !== false;
   abrirModal(`<h2>Editar colaborador</h2><form id="fe"><label for="fe-n">Nome completo</label><input id="fe-n" value="${esc(f.nome)}" required>
     <div class="grid2"><div><label for="fe-rg">RG</label><input id="fe-rg" value="${esc(f.rg || '')}"></div><div><label for="fe-wa">WhatsApp</label><input id="fe-wa" inputmode="tel" value="${esc(fmtFone(f.whatsapp || ''))}"></div></div>
-    <label for="fe-f">Função</label><input id="fe-f" value="${esc(f.funcao || '')}">
+
     <label for="fe-i">Começou a usar o ponto em</label><input id="fe-i" type="date" value="${esc(inicioDe(f) || '')}">
     <label class="check" style="margin-top:12px"><input type="checkbox" id="fe-jp" ${f.jornada ? 'checked' : ''}> Jornada diferente da empresa</label>
     <div class="jor" id="fe-jor" ${f.jornada ? '' : 'hidden'}>${camposJornada('fj', jornadaDe(f))}</div>
@@ -1120,7 +1127,7 @@ $('#e-lista').addEventListener('click', ev => {
     ev2.preventDefault();
     const nome = $('#fe-n').value.trim(), jornada = $('#fe-jp').checked ? lerJornada('fj') : null, inicio = $('#fe-i').value || null, batch = writeBatch(db);
     const rg = $('#fe-rg').value.trim(), whatsapp = soNumeros($('#fe-wa').value);
-    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), {nome, funcao: $('#fe-f').value.trim(), rg, whatsapp, jornada, inicio});
+    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), {nome, rg, whatsapp, jornada, inicio});
     if (ativo && f.codigo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo), {funcionarioId: f.id, nome, jornada, inicio, whatsapp}, {merge: true});
     try { await batch.commit(); fecharModal(); toast('Salvo.'); } catch (e) { toast(erroTxt(e), true); }
   };
