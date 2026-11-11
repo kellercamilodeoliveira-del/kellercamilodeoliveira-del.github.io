@@ -328,7 +328,7 @@ tr.ext td{background:rgba(245,166,35,.07)}
           <h2 style="margin-top:8px">Cadastrar colaborador</h2>
           <label for="ef-nome">Nome completo</label><input id="ef-nome" required autocomplete="off">
           <div class="grid2">
-            <div><label for="ef-rg">RG</label><input id="ef-rg" autocomplete="off"></div>
+            <div><label for="ef-cpf">CPF</label><input id="ef-cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00"></div>
             <div><label for="ef-wa">WhatsApp do colaborador</label><input id="ef-wa" inputmode="tel" placeholder="(14) 99999-9999" autocomplete="off"></div>
           </div>
           <button class="btn a w" type="submit" style="margin-top:12px" id="ef-btn">Cadastrar colaborador</button>
@@ -553,6 +553,8 @@ $('#l-esqueci').addEventListener('click', async () => {
 });
 const slug = s => (s || 'empresa').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 16) || 'empresa';
 const soNumeros = v => String(v || '').replace(/\D/g, '');
+const fmtCpf = v => { const d = soNumeros(v); return d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : d; };
+const docTxt = f => f.cpf ? 'CPF ' + f.cpf : (f.rg ? 'RG ' + f.rg : '');
 const fmtFone = v => { const n = soNumeros(v).replace(/^55(?=\d{10,11}$)/, ''); return n.length === 11 ? `(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}` : n.length === 10 ? `(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}` : v || ''; };
 
 // ====== MARCA DA EMPRESA (logo e cor no painel, no tablet e nos PDFs) ======
@@ -976,7 +978,7 @@ async function renderRel() {
     const r = calcular(marcs, f, ym);
     relAtual = {tipo: 'func', f, r, mesNome, ym};
     const txt = `*Ponto Eletrônico · ${empresa.nome}*\n${f.nome}${f.funcao ? ' (' + f.funcao + ')' : ''}\n${mesNome}\n\nHoras trabalhadas: ${fmtH(r.trab)}\nHoras previstas: ${fmtH(r.prev)}\nSaldo: ${fmtSaldo(r.saldo)} (${txtSaldo(r.saldo)})`;
-    box.innerHTML = `<div class="note" style="margin:-4px 0 10px">${esc(f.nome)}${f.rg ? ' · RG ' + esc(f.rg) : ''}${f.funcao ? ' · ' + esc(f.funcao) : ''}${f.whatsapp ? ' · ' + esc(fmtFone(f.whatsapp)) : ''}</div><div class="tot"><div><div class="num">${fmtH(r.trab)}</div><div class="lbl">Trabalhadas</div></div><div><div class="num">${fmtH(r.prev)}</div><div class="lbl">Previstas</div></div><div><div class="num saldo ${clsSaldo(r.saldo)}">${fmtSaldo(r.saldo)}</div><div class="lbl">Saldo · ${txtSaldo(r.saldo)}</div></div></div>` +
+    box.innerHTML = `<div class="note" style="margin:-4px 0 10px">${esc(f.nome)}${docTxt(f) ? ' · ' + esc(docTxt(f)) : ''}${f.funcao ? ' · ' + esc(f.funcao) : ''}${f.whatsapp ? ' · ' + esc(fmtFone(f.whatsapp)) : ''}</div><div class="tot"><div><div class="num">${fmtH(r.trab)}</div><div class="lbl">Trabalhadas</div></div><div><div class="num">${fmtH(r.prev)}</div><div class="lbl">Previstas</div></div><div><div class="num saldo ${clsSaldo(r.saldo)}">${fmtSaldo(r.saldo)}</div><div class="lbl">Saldo · ${txtSaldo(r.saldo)}</div></div></div>` +
       (r.pend ? `<div class="banner" style="margin-bottom:10px">${r.pend} dia${r.pend > 1 ? 's' : ''} sem marcação de saída. Toque no dia para corrigir.</div>` : '') +
       `<div class="scroll"><table><thead><tr><th>Dia</th><th>Marcações</th><th class="r">Total</th><th class="r">Saldo</th></tr></thead><tbody>` +
       (r.rows.length ? r.rows.map(x => {
@@ -1070,14 +1072,14 @@ async function gerarPdf(completo) {
     docp.setFillColor(240, 240, 245); docp.rect(14, y-4.5, W-28, 7, 'F'); docp.setFontSize(9);
     docp.text('Colaborador', 16, y); docp.text('Dias', 112, y, {align: 'right'}); docp.text('Trabalhadas', 138, y, {align: 'right'}); docp.text('Previstas', 164, y, {align: 'right'}); docp.text('Saldo', W-16, y, {align: 'right'}); y += 6;
     docp.setFont('helvetica', 'normal');
-    linhas.forEach(x => { nova(); docp.setTextColor(0); docp.text(x.f.nome + (x.f.rg ? '  (RG ' + x.f.rg + ')' : ''), 16, y); docp.text(String(x.r.dias), 112, y, {align: 'right'}); docp.text(fmtH(x.r.trab), 138, y, {align: 'right'}); docp.text(fmtH(x.r.prev), 164, y, {align: 'right'}); corSaldo(x.r.saldo); docp.text(sTxt(x.r.saldo) + ' ' + txtSaldo(x.r.saldo), W-16, y, {align: 'right'}); y += 6; });
+    linhas.forEach(x => { nova(); docp.setTextColor(0); docp.text(x.f.nome + (docTxt(x.f) ? '  (' + docTxt(x.f) + ')' : ''), 16, y); docp.text(String(x.r.dias), 112, y, {align: 'right'}); docp.text(fmtH(x.r.trab), 138, y, {align: 'right'}); docp.text(fmtH(x.r.prev), 164, y, {align: 'right'}); corSaldo(x.r.saldo); docp.text(sTxt(x.r.saldo) + ' ' + txtSaldo(x.r.saldo), W-16, y, {align: 'right'}); y += 6; });
     docp.setTextColor(110); docp.setFontSize(8); y += 2; docp.text('Saldo positivo = horas sobrando. Saldo negativo = horas faltando. Diferença de até 10 min no dia não conta.', 14, y); y += 6;
   };
   const espelho = (f, r) => {
     const jor = jornadaDe(f);
     docp.setFont('helvetica', 'bold'); docp.setFontSize(13); docp.text('Espelho de Ponto - ' + R.mesNome, 14, y); y += 7;
     docp.setFont('helvetica', 'normal'); docp.setFontSize(10);
-    docp.text('Colaborador: ' + f.nome + (f.rg ? '   |   RG: ' + f.rg : ''), 14, y); y += 5;
+    docp.text('Colaborador: ' + f.nome + (docTxt(f) ? '   |   ' + docTxt(f).replace(' ', ': ') : ''), 14, y); y += 5;
     if (f.funcao) { docp.text('Função: ' + f.funcao, 14, y); y += 5; }
     y += 3;
     const th = () => { docp.setFillColor(240, 240, 245); docp.rect(14, y-4.5, W-28, 7, 'F'); docp.setFont('helvetica', 'bold'); docp.setFontSize(8); docp.setTextColor(0);
@@ -1129,7 +1131,7 @@ async function gerarPdf(completo) {
 
 // ----- equipe -----
 function renderEquipe() {
-  $('#e-lista').innerHTML = funcs.length ? funcs.map(f => `<div class="row click" data-edit="${f.id}" style="${f.ativo === false ? 'opacity:.5' : ''}"><div class="av">${esc((f.nome || '?')[0])}</div><div class="grow"><div class="nm">${esc(f.nome)}</div><div class="fn">${[f.funcao, f.rg ? 'RG ' + f.rg : '', f.whatsapp ? fmtFone(f.whatsapp) : 'sem WhatsApp'].filter(Boolean).map(esc).join(' · ')}${f.jornada ? ' · jornada própria' : ''}${f.ativo === false ? ' · inativo' : ''}</div></div>${f.ativo === false ? '' : `<span class="code-pill">${esc(f.codigo)}</span>`}</div>`).join('') : '<div class="sub">Nenhum funcionário ainda.</div>';
+  $('#e-lista').innerHTML = funcs.length ? funcs.map(f => `<div class="row click" data-edit="${f.id}" style="${f.ativo === false ? 'opacity:.5' : ''}"><div class="av">${esc((f.nome || '?')[0])}</div><div class="grow"><div class="nm">${esc(f.nome)}</div><div class="fn">${[f.funcao, docTxt(f), f.whatsapp ? fmtFone(f.whatsapp) : 'sem WhatsApp'].filter(Boolean).map(esc).join(' · ')}${f.jornada ? ' · jornada própria' : ''}${f.ativo === false ? ' · inativo' : ''}</div></div>${f.ativo === false ? '' : `<span class="code-pill">${esc(f.codigo)}</span>`}</div>`).join('') : '<div class="sub">Nenhum funcionário ainda.</div>';
 }
 async function novoCodigo() {
   for (let i = 0; i < 25; i++) {
@@ -1145,10 +1147,11 @@ $('#f-func').addEventListener('submit', async ev => {
   const b = $('#ef-btn'); b.disabled = true;
   try {
     const cod = await novoCodigo(), nome = $('#ef-nome').value.trim(), funcao = '', inicio = dkey(new Date());
-    const rg = $('#ef-rg').value.trim(), whatsapp = soNumeros($('#ef-wa').value);
+    const cpf = fmtCpf($('#ef-cpf').value), whatsapp = soNumeros($('#ef-wa').value);
+    if (cpf && cpf.length !== 14) { toast('O CPF precisa ter 11 números.', true); b.disabled = false; return; }
     if (whatsapp.length < 10) { toast('Coloque o WhatsApp com DDD, pra ele receber os comprovantes.', true); b.disabled = false; return; }
     const fref = doc(collection(db, 'ponto_empresas', EMP, 'funcionarios')), batch = writeBatch(db);
-    batch.set(fref, {nome, funcao, rg, whatsapp, codigo: cod, ativo: true, inicio, criadoEm: serverTimestamp()});
+    batch.set(fref, {nome, funcao, cpf, whatsapp, codigo: cod, ativo: true, inicio, criadoEm: serverTimestamp()});
     batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', cod), {funcionarioId: fref.id, nome, inicio, whatsapp});
     await batch.commit(); ev.target.reset();
     abrirModal(`<h2>${esc(nome)} cadastrado</h2><p class="sub">Código para bater o ponto no tablet:</p><div style="text-align:center;margin:10px 0"><span class="code-pill" style="font-size:40px;padding:6px 18px">${cod}</span></div>
@@ -1165,7 +1168,7 @@ $('#e-lista').addEventListener('click', ev => {
   const f = funcs.find(x => x.id === r.dataset.edit); if (!f) return;
   const ativo = f.ativo !== false;
   abrirModal(`<h2>Editar colaborador</h2><form id="fe"><label for="fe-n">Nome completo</label><input id="fe-n" value="${esc(f.nome)}" required>
-    <div class="grid2"><div><label for="fe-rg">RG</label><input id="fe-rg" value="${esc(f.rg || '')}"></div><div><label for="fe-wa">WhatsApp</label><input id="fe-wa" inputmode="tel" value="${esc(fmtFone(f.whatsapp || ''))}"></div></div>
+    <div class="grid2"><div><label for="fe-cpf">CPF</label><input id="fe-cpf" inputmode="numeric" placeholder="000.000.000-00" value="${esc(f.cpf || '')}"></div><div><label for="fe-wa">WhatsApp</label><input id="fe-wa" inputmode="tel" value="${esc(fmtFone(f.whatsapp || ''))}"></div></div>
 
     <label for="fe-i">Começou a usar o ponto em</label><input id="fe-i" type="date" value="${esc(inicioDe(f) || '')}">
     <label class="check" style="margin-top:12px"><input type="checkbox" id="fe-jp" ${f.jornada ? 'checked' : ''}> Jornada diferente da empresa</label>
@@ -1178,8 +1181,9 @@ $('#e-lista').addEventListener('click', ev => {
   $('#fe').onsubmit = async ev2 => {
     ev2.preventDefault();
     const nome = $('#fe-n').value.trim(), jornada = $('#fe-jp').checked ? lerJornada('fj') : null, inicio = $('#fe-i').value || null, batch = writeBatch(db);
-    const rg = $('#fe-rg').value.trim(), whatsapp = soNumeros($('#fe-wa').value);
-    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), {nome, rg, whatsapp, jornada, inicio});
+    const cpf = fmtCpf($('#fe-cpf').value), whatsapp = soNumeros($('#fe-wa').value);
+    if (cpf && cpf.length !== 14) { toast('O CPF precisa ter 11 números.', true); return; }
+    batch.update(doc(db, 'ponto_empresas', EMP, 'funcionarios', f.id), {nome, cpf, whatsapp, jornada, inicio});
     if (ativo && f.codigo) batch.set(doc(db, 'ponto_empresas', EMP, 'codigos', f.codigo), {funcionarioId: f.id, nome, jornada, inicio, whatsapp}, {merge: true});
     try { await batch.commit(); fecharModal(); toast('Salvo.'); } catch (e) { toast(erroTxt(e), true); }
   };
