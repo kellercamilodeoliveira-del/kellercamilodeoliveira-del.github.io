@@ -3,9 +3,48 @@
     "local": "PP5A1",
     "posicao": "I",
     "ferramentais": [
-      { "codigo": "PP1 A51", "desenho": "" },
-      { "codigo": "PP1 A11", "desenho": "" },
-      { "codigo": "PP1 A3", "desenho": "" }
+      {
+        "codigo": "PP1 A51",
+        "desenho": ""
+      },
+      {
+        "codigo": "PP1 A11",
+        "desenho": ""
+      },
+      {
+        "codigo": "PP1 A3",
+        "desenho": ""
+      }
+    ]
+  },
+  "PP5-C2": {
+    "local": "PP5-C2",
+    "peso": "1.193 kg",
+    "ferramentais": [
+      {
+        "codigo": "PP5-C2-1",
+        "peso": "400 kg",
+        "ns": "001",
+        "desenho": ""
+      },
+      {
+        "codigo": "PP5-C2-2",
+        "peso": "175 kg",
+        "ns": "001",
+        "desenho": ""
+      },
+      {
+        "codigo": "PP5-C2-3",
+        "peso": "175 kg",
+        "ns": "001",
+        "desenho": ""
+      },
+      {
+        "codigo": "PP5-C2-4",
+        "peso": "443 kg",
+        "ns": "001",
+        "desenho": ""
+      }
     ]
   }
 }

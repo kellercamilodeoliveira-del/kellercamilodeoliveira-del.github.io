@@ -16,6 +16,8 @@
   .alerta strong{display:block;font-size:18px;margin-bottom:4px}
   .card{background:#fff;border:1px solid #d1d5db;border-radius:12px;margin-bottom:16px;overflow:hidden}
   .card h2{margin:0;padding:14px 16px;font-size:26px;border-bottom:1px solid #e5e7eb}
+  .peso-total{background:#111;color:#fff;border-radius:10px;padding:12px 16px;font-size:18px;font-weight:700;margin-bottom:16px}
+  .info{padding:10px 16px;font-size:17px;color:#374151;border-bottom:1px solid #e5e7eb}
   .card img{display:block;width:100%;height:auto;background:#fff}
   .pendente{padding:40px 16px;text-align:center;color:#4b5563;font-size:16px;background:repeating-linear-gradient(45deg,#fafafa,#fafafa 10px,#f3f4f6 10px,#f3f4f6 20px)}
   .erro{background:#fee2e2;border:2px solid #b91c1c;color:#7f1d1d;border-radius:10px;padding:16px;font-size:17px}
@@ -52,12 +54,24 @@
   alerta.className = 'alerta';
   alerta.innerHTML = '<strong>Ferramental que deve estar neste pallet</strong>Se encontrar ferramental diferente dos desenhos abaixo, registre como <b>NÃO CONFORMIDADE</b>.';
   main.appendChild(alerta);
+  if (pallet.peso) {
+    const pt = document.createElement('div');
+    pt.className = 'peso-total';
+    pt.textContent = 'Peso total do pallet com ferramental: ' + pallet.peso;
+    main.appendChild(pt);
+  }
   pallet.ferramentais.forEach(function(f){
     const card = document.createElement('section');
     card.className = 'card';
     const h = document.createElement('h2');
     h.textContent = f.codigo;
     card.appendChild(h);
+    if (f.peso || f.ns) {
+      const info = document.createElement('div');
+      info.className = 'info';
+      info.textContent = [f.peso ? 'Peso: ' + f.peso : '', f.ns ? 'NS: ' + f.ns : ''].filter(Boolean).join('  ·  ');
+      card.appendChild(info);
+    }
     if (f.desenho) {
       const a = document.createElement('a');
       a.href = f.desenho; a.target = '_blank';
