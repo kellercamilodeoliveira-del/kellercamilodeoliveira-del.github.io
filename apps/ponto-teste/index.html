@@ -464,7 +464,8 @@ const JORNADA_PADRAO = {0: 0, 1: 480, 2: 480, 3: 480, 4: 480, 5: 480, 6: 240}; /
 const JORNADA_EMPRESA = {'betolubservicosa-cmcx': {0: 0, 1: 480, 2: 480, 3: 480, 4: 480, 5: 480, 6: 300}};
 const jornadaPadraoDe = id => JORNADA_EMPRESA[id] || JORNADA_PADRAO;
 // Horário de cada empresa, pro quadro do tablet (mesmos horários dos avisos do motor, pontoAlertas.js).
-const HORARIO_EMPRESA = {'betolubservicosa-cmcx': {tolerancia: 10, dias: {
+// Mudou aqui? Mude também apps/ponto/horarios.json (é de lá que o motor lê os avisos).
+const HORARIO_EMPRESA = {'betolubservicosa-cmcx': {tolerancia: 10, toleranciaSaida: 6, dias: {
   1: ['08:30', '12:00', '13:30', '18:00'], 2: ['08:30', '12:00', '13:30', '18:00'], 3: ['08:30', '12:00', '13:30', '18:00'],
   4: ['08:30', '12:00', '13:30', '18:00'], 5: ['08:30', '12:00', '13:30', '18:00'], 6: ['08:00', '13:00']}}};
 const VIRADA_QUADRO = 21; // às 21:00 o quadro do tablet passa para o dia seguinte
@@ -770,7 +771,7 @@ function desenharQuadro() {
   const el = $('#tm-quadro');
   if (!kiosk() || $('#t-terminal').hidden) { el.hidden = true; return; }
   el.hidden = false;
-  const dia = diaDoQuadro(new Date()), h = horarioDoDia(dia), tol = HORARIO_EMPRESA[tmEmp]?.tolerancia || 10;
+  const dia = diaDoQuadro(new Date()), h = horarioDoDia(dia), cfgH = HORARIO_EMPRESA[tmEmp] || {}, tol = cfgH.tolerancia ?? 10, tolS = cfgH.toleranciaSaida ?? tol;
   const cols = COLUNAS[h ? h.length : 4] || COLUNAS[4], amanha = dia !== dkey(new Date());
   const minDe = s => { const [a, b] = s.split(':').map(Number); return a * 60 + b; };
   const q = lerQuadro();
@@ -780,13 +781,13 @@ function desenharQuadro() {
     const cel = cols.map((t, i) => {
       const x = bs.find(b => b.t === t);
       let tarde = false;
-      if (x && h && h[i]) { const dif = minDe(x.h) - minDe(h[i]); tarde = i % 2 === 0 ? dif > tol : dif < -tol; }
+      if (x && h && h[i]) { const dif = minDe(x.h) - minDe(h[i]), t = i === h.length - 1 ? tolS : tol; tarde = i % 2 === 0 ? dif > t : dif < -t; }
       return `<span class="${tarde ? 'tarde' : ''}">${esc(ROTULOS[t])} <b>${x ? esc(x.h) : '--:--'}</b></span>`;
     }).join('') + bs.filter(b => !cols.includes(b.t)).map(b => `<span>${esc(b.t)} <b>${esc(b.h)}</b></span>`).join('');
     return `<div class="q-lin"><div class="q-nome">${esc(e.nome)}</div><div class="q-bat">${cel}</div></div>`;
   }).join('');
   const titulo = amanha ? 'Horários de amanhã' : 'Horários de hoje';
-  const hor = h ? (h.length === 4 ? `${h[0]}–${h[1]} · ${h[2]}–${h[3]}` : `${h[0]}–${h[1]}`) + ` · tolerância ${tol} min` : 'Sem expediente';
+  const hor = h ? (h.length === 4 ? `${h[0]}–${h[1]} · ${h[2]}–${h[3]}` : `${h[0]}–${h[1]}`) + ` · tolerância ${tol} min${tolS !== tol ? ` (saída ${tolS} min)` : ''}` : 'Sem expediente';
   el.innerHTML = `<h2>${titulo}</h2><div class="q-hor">Horário: ${esc(hor)}</div>` +
     (linhas || '<div class="note">Os horários aparecem aqui conforme a equipe bate o ponto neste tablet.</div>');
 }
