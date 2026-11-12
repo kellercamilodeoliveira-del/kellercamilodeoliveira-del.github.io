@@ -44,7 +44,7 @@ h2{font-size:22px;margin:0 0 10px;font-weight:700}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
 .tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;position:sticky;top:env(safe-area-inset-top,0);z-index:5}
-.tab{border:0;background:transparent;color:var(--muted);font-size:16px;font-weight:700;padding:9px 2px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.tab{border:0;background:transparent;color:var(--muted);font-size:clamp(13px,3.6vw,16px);font-weight:700;padding:9px 2px;border-radius:10px;cursor:pointer;white-space:nowrap}
 .tab[aria-selected=true]{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff}
 .logo-emp{display:block;max-width:min(320px,80%);max-height:96px;object-fit:contain;margin:2px 0 6px}
 .marca-prev{background:#141416;border-radius:12px;padding:12px;display:flex;justify-content:center;min-height:60px;align-items:center}.marca-prev img{max-width:100%;max-height:90px}
@@ -296,6 +296,7 @@ tr.ext td{background:rgba(245,166,35,.07)}
     <div class="tabs" role="tablist" id="p-tabs">
       <button class="tab" role="tab" aria-selected="true" data-pt="hoje">Hoje</button>
       <button class="tab" role="tab" aria-selected="false" data-pt="rel">Relatório</button>
+      <button class="tab" role="tab" aria-selected="false" data-pt="banco">Banco</button>
       <button class="tab" role="tab" aria-selected="false" data-pt="equipe">Equipe</button>
       <button class="tab" role="tab" aria-selected="false" data-pt="empresa">Empresa</button>
     </div>
@@ -330,6 +331,15 @@ tr.ext td{background:rgba(245,166,35,.07)}
       </div>
     </div>
 
+    <div class="pv" id="pv-banco" hidden>
+      <div class="card">
+        <h2>Banco de horas</h2>
+        <div class="sub" style="margin-top:0">Saldo de cada colaborador mês a mês e o total acumulado. Positivo = horas a mais; negativo = horas devendo.</div>
+        <div class="filters" style="margin-top:10px"><select id="b-de" aria-label="Período"></select></div>
+        <div id="b-conteudo" style="margin-top:10px"></div>
+        <div class="btns"><button class="btn p" id="b-pdf">Gerar banco de horas (PDF)</button></div>
+      </div>
+    </div>
     <div class="pv" id="pv-equipe" hidden>
       <div class="card">
         <h2>Equipe</h2>
@@ -922,6 +932,7 @@ function trocarAba(a) {
   $$('[data-pt]').forEach(b => b.setAttribute('aria-selected', b.dataset.pt === a));
   $$('.pv').forEach(v => v.hidden = v.id !== 'pv-' + a);
   if (a === 'rel') renderRel();
+  if (a === 'banco') renderBanco();
 }
 $$('[data-pt]').forEach(b => b.addEventListener('click', () => trocarAba(b.dataset.pt)));
 let timerSync = null;
@@ -1019,10 +1030,11 @@ function fillFuncs() {
 }
 async function marcsDoMes(ym) {
   if (ym === mesAtual) return marcsMes;
-  if (cacheMes[ym]) return cacheMes[ym];
+  const ck = EMP + '|' + ym;
+  if (cacheMes[ck]) return cacheMes[ck];
   const [y, m] = ym.split('-').map(Number);
   const s = await getDocs(query(collection(db, 'ponto_empresas', EMP, 'marcacoes'), where('ts', '>=', Timestamp.fromDate(new Date(y, m-1, 1))), where('ts', '<', Timestamp.fromDate(new Date(y, m, 1))), orderBy('ts')));
-  return cacheMes[ym] = s.docs.map(d => ({id: d.id, ...d.data(), ts: d.data().ts.toDate()}));
+  return cacheMes[ck] = s.docs.map(d => ({id: d.id, ...d.data(), ts: d.data().ts.toDate()}));
 }
 let relAtual = null;
 const sSpan = min => `<span class="saldo ${clsSaldo(min)}">${fmtSaldo(min)}</span>`;
@@ -1047,7 +1059,7 @@ async function renderRel() {
       `<div class="scroll"><table><thead><tr><th>Dia</th><th>Marcações</th><th class="r">Total</th><th class="r">Saldo</th></tr></thead><tbody>` +
       (r.rows.length ? r.rows.map(x => {
         const tag = x.hol ? '<span class="tag">Feriado</span>' : (x.dow === 0 ? '<span class="tag">Dom</span>' : '');
-        const aj = x.l.some(m => m.origem === 'gestor') ? '<span class="tag g">ajuste</span>' : '';
+        const aj = x.l.some(m => m.origem === 'gestor' || m.editado) ? '<span class="tag g">ajuste</span>' : '';
         const ab = x.aberto ? (x.hoje ? ' · <span class="wd">em andamento</span>' : ' <span class="tag r">sem saída</span>') : '';
         const marc = x.falta ? '<span class="wd">sem registro</span>' : x.l.map(m => hm(m.ts)).join(' · ') + ab + aj;
         return `<tr class="click ${x.prev === 0 && x.l.length ? 'ext' : ''}" data-dia="${x.k}"><td>${x.k.slice(8)}/${x.k.slice(5,7)} <span class="wd">${DSEM[x.dow]}</span>${tag}</td><td>${marc}</td><td class="r">${x.l.length ? fmtH(x.min) : '—'}</td><td class="r">${x.dif === null ? '<span class="wd">—</span>' : sSpan(x.dif)}</td></tr>`;
@@ -1074,14 +1086,35 @@ function modalDia(f, k) {
   const jor = jornadaDe(f);
   abrirModal(`<h2>${esc(f.nome)} · ${dataBR(k)}</h2>
     <div class="sub" style="margin-top:0">Previsto: ${fmtH(row.prev)}${row.l.length ? ' · Trabalhado: ' + fmtH(row.min) : ''}</div>
-    <div>${row.l.length ? row.l.map((m, i) => `<div class="row"><div class="grow"><div class="nm">${hm(m.ts)} · ${esc(nomeBatida(i, k, jor))}</div><div class="fn">${m.origem === 'gestor' ? 'Incluída pelo gestor' + (m.motivo ? ': ' + esc(m.motivo) : '') : 'Batida no ponto'}</div></div><button class="btn d sm" data-apagar="${m.id}">Apagar</button></div>`).join('') : '<div class="note">Nenhuma marcação neste dia.</div>'}</div>
+    <div>${row.l.length ? row.l.map((m, i) => `<div class="row"><div class="grow"><div class="nm">${hm(m.ts)} · ${esc(nomeBatida(i, k, jor))}</div><div class="fn">${m.origem === 'gestor' ? 'Incluída pelo gestor' + (m.motivo ? ': ' + esc(m.motivo) : '') : 'Batida no ponto'}${m.editado ? ` · <b>editada</b> (era ${m.tsOriginal ? hm(m.tsOriginal.toDate ? m.tsOriginal.toDate() : m.tsOriginal) : '?'})${m.motivoEdicao ? ': ' + esc(m.motivoEdicao) : ''}` : ''}</div></div><button class="btn s sm" data-editar="${m.id}">Editar</button><button class="btn d sm" data-apagar="${m.id}">Apagar</button></div>`).join('') : '<div class="note">Nenhuma marcação neste dia.</div>'}</div>
     <div class="btns"><button class="btn a" id="md-incluir">+ Incluir marcação</button><button class="btn s" id="md-fechar">Fechar</button></div>`);
   $('#md-fechar').onclick = fecharModal;
   $('#md-incluir').onclick = () => modalIncluir(f, k);
+  $$('[data-editar]').forEach(b => b.onclick = () => modalEditar(f, k, row.l.find(m => m.id === b.dataset.editar)));
   $$('[data-apagar]').forEach(b => b.onclick = async () => {
     if (!confirm('Apagar esta marcação?')) return;
-    try { await deleteDoc(doc(db, 'ponto_empresas', EMP, 'marcacoes', b.dataset.apagar)); delete cacheMes[relAtual.ym]; fecharModal(); renderRel(); toast('Marcação apagada.'); } catch (e) { toast(erroTxt(e), true); }
+    try { await deleteDoc(doc(db, 'ponto_empresas', EMP, 'marcacoes', b.dataset.apagar)); delete cacheMes[EMP + '|' + relAtual.ym]; fecharModal(); renderRel(); toast('Marcação apagada.'); } catch (e) { toast(erroTxt(e), true); }
   });
+}
+function modalEditar(f, k, m) {
+  if (!m) return;
+  const hoje = dkey(new Date());
+  abrirModal(`<h2>Editar marcação</h2><div class="sub" style="margin-top:0">${esc(f.nome)} · ${dataBR(k)} · hoje está ${hm(m.ts)}</div>
+    <form id="fx"><div class="grid2"><div><label for="fx-d">Data</label><input id="fx-d" type="date" required value="${k}" max="${hoje}"></div><div><label for="fx-h">Hora</label><input id="fx-h" type="time" required value="${hm(m.ts)}"></div></div>
+    <label for="fx-m">Motivo</label><input id="fx-m" placeholder="Ex: bateu a saída atrasado por engano" required>
+    <div class="note">O horário original fica guardado e aparece como "editada" no relatório.</div>
+    <div class="btns"><button class="btn p" type="submit">Salvar</button><button class="btn s" type="button" id="fx-c">Cancelar</button></div></form>`);
+  $('#fx-c').onclick = fecharModal;
+  $('#fx').onsubmit = async ev => {
+    ev.preventDefault();
+    const [Y, M, D] = $('#fx-d').value.split('-').map(Number), [h, mi] = $('#fx-h').value.split(':').map(Number);
+    const ts = new Date(Y, M-1, D, h, mi), dados = {ts: Timestamp.fromDate(ts), editado: true, motivoEdicao: $('#fx-m').value.trim(), editadoEm: serverTimestamp()};
+    if (!m.tsOriginal) dados.tsOriginal = Timestamp.fromDate(m.ts);
+    try {
+      await updateDoc(doc(db, 'ponto_empresas', EMP, 'marcacoes', m.id), dados);
+      delete cacheMes[EMP + '|' + relAtual.ym]; delete cacheMes[EMP + '|' + `${Y}-${p2(M)}`]; fecharModal(); renderRel(); toast('Marcação editada.');
+    } catch (e) { toast(erroTxt(e), true); }
+  };
 }
 function modalIncluir(f, k) {
   const hoje = dkey(new Date());
@@ -1096,9 +1129,93 @@ function modalIncluir(f, k) {
     const ts = new Date(Y, M-1, D, h, mi);
     try {
       await addDoc(collection(db, 'ponto_empresas', EMP, 'marcacoes'), {funcionarioId: f.id, nome: f.nome, codigo: f.codigo || '', ts: Timestamp.fromDate(ts), recebido: serverTimestamp(), origem: 'gestor', motivo: $('#fi-m').value.trim(), tipo: 'ajuste'});
-      delete cacheMes[`${Y}-${p2(M)}`]; fecharModal(); renderRel(); toast('Marcação incluída.');
+      delete cacheMes[EMP + '|' + `${Y}-${p2(M)}`]; fecharModal(); renderRel(); toast('Marcação incluída.');
     } catch (e) { toast(erroTxt(e), true); }
   };
+}
+
+// ----- banco de horas (gestor e administrador) -----
+let bancoAtual = null;
+const mesCurto = ym => MESES[+ym.slice(5) - 1].slice(0, 3).toLowerCase() + '/' + ym.slice(2, 4);
+function fillBancoDe() {
+  const sel = $('#b-de'); if (sel.dataset.emp === EMP && sel.options.length) return;
+  sel.innerHTML = ''; sel.dataset.emp = EMP;
+  const n = new Date(), c = empresa?.criadoEm?.toDate ? empresa.criadoEm.toDate() : null, ini = c ? `${c.getFullYear()}-${p2(c.getMonth() + 1)}` : null;
+  let padrao = null;
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(n.getFullYear(), n.getMonth() - i, 1), v = `${d.getFullYear()}-${p2(d.getMonth() + 1)}`;
+    if (ini && v < ini) break;
+    const o = document.createElement('option'); o.value = v; o.textContent = (i ? 'Desde ' + MESES[d.getMonth()].toLowerCase() + ' ' + d.getFullYear() : 'Só este mês (' + MESES[d.getMonth()].toLowerCase() + ')'); sel.appendChild(o);
+    padrao = v;
+  }
+  sel.value = padrao;
+}
+async function renderBanco() {
+  if (!empresa) return;
+  fillBancoDe();
+  const box = $('#b-conteudo'), de = $('#b-de').value, n = new Date(), meses = [];
+  let [y, m] = de.split('-').map(Number);
+  while (y < n.getFullYear() || (y === n.getFullYear() && m <= n.getMonth() + 1)) { meses.push(`${y}-${p2(m)}`); if (++m > 12) { m = 1; y++; } }
+  box.innerHTML = '<div class="sub">Calculando...</div>';
+  let porMes; try { porMes = await Promise.all(meses.map(marcsDoMes)); } catch (e) { box.innerHTML = '<div class="erro">' + erroTxt(e) + '</div>'; return; }
+  const linhas = funcs.map(f => { const s = meses.map((ym, i) => calcular(porMes[i], f, ym).saldo); return {f, s, total: s.reduce((a, b) => a + b, 0)}; })
+    .filter(x => x.f.ativo !== false || x.s.some(v => Math.round(v)));
+  bancoAtual = {meses, linhas};
+  box.innerHTML = `<div class="scroll"><table><thead><tr><th>Colaborador</th>${meses.map(ym => `<th class="r">${mesCurto(ym)}</th>`).join('')}<th class="r">Total</th></tr></thead><tbody>` +
+    (linhas.length ? linhas.map(x => `<tr class="click" data-bfunc="${x.f.id}"><td>${esc(x.f.nome)}${x.f.ativo === false ? ' <span class="wd">(inativo)</span>' : ''}</td>${x.s.map(v => `<td class="r">${sSpan(v)}</td>`).join('')}<td class="r"><b>${sSpan(x.total)}</b></td></tr>`).join('')
+      : `<tr><td colspan="${meses.length + 2}" class="wd">Nenhum colaborador ainda.</td></tr>`) +
+    `</tbody></table></div><div class="note">O mês atual conta até o último dia fechado. Diferença de até 10 min no dia não conta. Toque num nome para ver os dias e corrigir marcações.</div>`;
+}
+$('#b-de').addEventListener('change', renderBanco);
+$('#b-conteudo').addEventListener('click', ev => {
+  const r = ev.target.closest('[data-bfunc]'); if (!r) return;
+  $('#r-func').value = r.dataset.bfunc; $('#r-mes').value = $('#r-mes').options[0].value; trocarAba('rel');
+});
+$('#b-pdf').addEventListener('click', () => gerarPdfBanco());
+async function gerarPdfBanco() {
+  const B = bancoAtual; if (!B) { toast('Espere o banco de horas carregar.', true); return; }
+  if (!window.jspdf) { toast('Carregando gerador de PDF... tente de novo em instantes.', true); return; }
+  const largo = B.meses.length > 5;
+  const {jsPDF} = window.jspdf, docp = new jsPDF({unit: 'mm', format: 'a4', orientation: largo ? 'landscape' : 'portrait'});
+  const W = docp.internal.pageSize.getWidth(), H = docp.internal.pageSize.getHeight(); let y = 18;
+  const marca = marcaDe(EMP, empresa), lg = await logoParaPdf(marca.logo), corM = marca.cor ? hexRgb(marca.cor) : [79, 70, 229];
+  const corSaldo = v => Math.round(v) < 0 ? docp.setTextColor(190, 40, 30) : Math.round(v) > 0 ? docp.setTextColor(20, 130, 70) : docp.setTextColor(0);
+  const sTxt = v => fmtSaldo(v).replace('−', '-');
+  const rodape = () => { docp.setFont('helvetica', 'normal'); docp.setFontSize(7); docp.setTextColor(140); docp.text('Gerado em ' + new Date().toLocaleString('pt-BR') + ' - Ponto Eletrônico por Keller IA', 14, H - 7); };
+  const cab = () => {
+    docp.setFillColor(...corM); docp.rect(0, 0, W, 6, 'F'); let x = 14; y = 18;
+    if (lg) { const lw = 52, lh = Math.min(26, lw * lg.h / lg.w); docp.setFillColor(20, 20, 22); docp.roundedRect(14, 10, lw + 6, lh + 6, 2, 2, 'F'); docp.addImage(lg.data, 'PNG', 17, 13, lw, lh); x = 14 + lw + 12; y = 17; }
+    docp.setTextColor(0); docp.setFont('helvetica', 'bold'); docp.setFontSize(14); docp.text(empresa.nome || '', x, y); y += 5.5;
+    docp.setFont('helvetica', 'normal'); docp.setFontSize(9); docp.setTextColor(90);
+    if (empresa.cnpj) { docp.text('CNPJ: ' + empresa.cnpj, x, y); y += 4.5; }
+    if (empresa.endereco) { docp.text(docp.splitTextToSize(empresa.endereco, W - x - 14)[0], x, y); y += 4.5; }
+    y = Math.max(y, lg ? 10 + Math.min(26, 52 * lg.h / lg.w) + 6 : y) + 7; docp.setTextColor(0);
+  };
+  cab();
+  const periodo = B.meses.length > 1 ? `${MESES[+B.meses[0].slice(5) - 1].toLowerCase()}/${B.meses[0].slice(0, 4)} a ${MESES[+B.meses[B.meses.length - 1].slice(5) - 1].toLowerCase()}/${B.meses[B.meses.length - 1].slice(0, 4)}` : `${MESES[+B.meses[0].slice(5) - 1].toLowerCase()}/${B.meses[0].slice(0, 4)}`;
+  docp.setFont('helvetica', 'bold'); docp.setFontSize(13); docp.text('Banco de Horas - ' + periodo, 14, y); y += 9;
+  const xNome = 16, xFim = W - 16, larg = Math.min(26, (xFim - 90) / (B.meses.length + 1));
+  const xs = B.meses.map((_, i) => xFim - larg * (B.meses.length - i)), xTot = xFim;
+  const cabTab = () => { docp.setFont('helvetica', 'bold'); docp.setFontSize(9); docp.setTextColor(0); docp.setFillColor(240, 240, 245); docp.rect(14, y - 4.5, W - 28, 7, 'F'); docp.text('Colaborador', xNome, y); B.meses.forEach((ym, i) => docp.text(mesCurto(ym), xs[i], y, {align: 'right'})); docp.text('Total', xTot, y, {align: 'right'}); y += 6; docp.setFont('helvetica', 'normal'); };
+  cabTab();
+  B.linhas.forEach(x => {
+    if (y > H - 20) { rodape(); docp.addPage(); cab(); cabTab(); }
+    docp.setTextColor(0); docp.text(docp.splitTextToSize(x.f.nome + (docTxt(x.f) ? '  (' + docTxt(x.f) + ')' : ''), xs[0] - larg - xNome)[0], xNome, y);
+    x.s.forEach((v, i) => { corSaldo(v); docp.text(sTxt(v), xs[i], y, {align: 'right'}); });
+    docp.setFont('helvetica', 'bold'); corSaldo(x.total); docp.text(sTxt(x.total), xTot, y, {align: 'right'}); docp.setFont('helvetica', 'normal');
+    y += 6.5;
+  });
+  docp.setTextColor(110); docp.setFontSize(8); y += 2;
+  docp.text('Saldo positivo = horas a mais. Saldo negativo = horas devendo. Diferença de até 10 min no dia não conta. O mês atual conta até o último dia fechado.', 14, y); y += 14;
+  docp.setTextColor(0); docp.setFontSize(9); docp.line(14, y, 84, y); docp.line(W - 84, y, W - 14, y); y += 4; docp.text('Responsável pela empresa', 14, y); docp.text('Data', W - 84, y);
+  rodape();
+  const nomeArq = 'banco-de-horas-' + slug(empresa.nome) + '-' + B.meses[B.meses.length - 1] + '.pdf';
+  const blob = docp.output('blob');
+  try {
+    const file = new File([blob], nomeArq, {type: 'application/pdf'});
+    if (navigator.canShare && navigator.canShare({files: [file]}) && /Android|iPhone|iPad/i.test(navigator.userAgent)) { await navigator.share({files: [file], title: nomeArq}); return; }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  docp.save(nomeArq);
 }
 
 // ----- PDF -----
@@ -1156,7 +1273,7 @@ async function gerarPdf(completo) {
       docp.text(dataBR(x.k).slice(0, 5) + ' ' + DSEM[x.dow] + (x.hol ? '*' : ''), 16, y);
       if (x.falta) docp.text('sem registro', 44, y);
       else {
-        const hs = x.l.map(m => hm(m.ts) + (m.origem === 'gestor' ? '¹' : ''));
+        const hs = x.l.map(m => hm(m.ts) + (m.origem === 'gestor' || m.editado ? '¹' : ''));
         const curto = x.prev && x.prev <= 360 && hs.length <= 2;
         const cols = curto ? [hs[0], '', '', hs[1]] : [hs[0], hs[1], hs[2], hs[3]];
         [44, 62, 82, 102].forEach((cx, i) => { if (cols[i]) docp.text(cols[i].replace('¹', '*'), cx, y); });

@@ -1,6 +1,6 @@
 // Service worker: guarda o app no celular para abrir sem internet
 const PREFIXO='ponto-teste-';
-const VERSAO=PREFIXO+'v10';
+const VERSAO=PREFIXO+'v11';
 const FB='https://www.gstatic.com/firebasejs/10.12.2/';
 const JSPDF='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
 const LOCAIS=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png','../../fonts/inter-400.woff2','../../fonts/inter-500.woff2','../../fonts/inter-600.woff2'];
