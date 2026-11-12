@@ -449,6 +449,10 @@ const feriado = k => feriadosEmp[k] || feriadosNacionais(+k.slice(0,4))[k] || nu
 
 // ====== JORNADA E BANCO DE HORAS ======
 const JORNADA_PADRAO = {0: 0, 1: 480, 2: 480, 3: 480, 4: 480, 5: 480, 6: 240}; // minutos por dia da semana (0 = domingo)
+// Jornada combinada com cada empresa (vale enquanto o gestor não salvar outra na aba Empresa).
+// Betolub: seg a sex 08:30–12:00 e 13:30–18:00 (8h); sábado 08:00–13:00 (5h).
+const JORNADA_EMPRESA = {'betolubservicosa-cmcx': {0: 0, 1: 480, 2: 480, 3: 480, 4: 480, 5: 480, 6: 300}};
+const jornadaPadraoDe = id => JORNADA_EMPRESA[id] || JORNADA_PADRAO;
 const TOLERANCIA = 10; // CLT: até 10 min de diferença no dia não conta
 const DIAS_JOR = [[1,'Seg'],[2,'Ter'],[3,'Qua'],[4,'Qui'],[5,'Sex'],[6,'Sáb'],[0,'Dom']];
 const dataDe = k => new Date(+k.slice(0,4), +k.slice(5,7) - 1, +k.slice(8,10));
@@ -499,8 +503,11 @@ const isMaster = u => !!u && !u.isAnonymous && MASTER.includes((u.email || '').t
 
 // ====== ROTEAMENTO ======
 const params = new URLSearchParams(location.search);
-if (params.get('e')) { ls.set('ponto.terminal', params.get('e')); if (params.get('tablet')) ls.set('ponto.kiosk', params.get('e')); }
-let modoTerminal = params.get('e') || ls.get('ponto.terminal');
+// ?tablet=0 tira o aparelho do modo tablet (o tablet não tem mais botão para o painel do gestor)
+const sairDoTablet = params.get('tablet') === '0';
+if (sairDoTablet) { ls.del('ponto.kiosk'); ls.del('ponto.terminal'); history.replaceState(null, '', location.pathname); }
+else if (params.get('e')) { ls.set('ponto.terminal', params.get('e')); if (params.get('tablet')) ls.set('ponto.kiosk', params.get('e')); }
+let modoTerminal = sairDoTablet ? null : (params.get('e') || ls.get('ponto.terminal'));
 let rotaSeq = 0;
 
 let cadastrando = false;
@@ -630,6 +637,7 @@ async function abrirTerminal(empId) {
   const tick = () => { const d = new Date(); $('#tm-clock').textContent = hm(d); $('#tm-date').textContent = d.toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long'}); };
   tick(); timerTerminal = setInterval(tick, 10000); $('#tm-teclado').hidden = false;
   $('#tm-lembrar-wrap').hidden = kiosk();
+  $('#tm-gestor').style.display = kiosk() ? 'none' : ''; // no tablet da empresa, só bater ponto
   manterTelaAcesa();
   try {
     const s = await getDoc(doc(db, 'ponto_empresas', empId));
@@ -683,7 +691,7 @@ async function registrar(cod, confirmado) {
     let s; try { s = await getDocFromServer(ref); } catch (e) { s = await getDoc(ref); }
     if (!s.exists()) { erroCodigo('Código não encontrado. Confira com seu gestor.'); return; }
     const c = s.data(), agora = new Date(), hoje = dkey(agora), ym = hoje.slice(0, 7);
-    const jor = c.jornada || tmEmpData?.jornada || JORNADA_PADRAO;
+    const jor = c.jornada || tmEmpData?.jornada || jornadaPadraoDe(tmEmp);
     const n = c.ultimaData === hoje ? (c.qtdDia || 0) : 0;
     // proteção contra batida repetida sem querer
     if (!confirmado && c.ultimaTs && agora - c.ultimaTs.toDate() < 3 * 60000 && c.ultimaData === hoje) {
@@ -867,7 +875,7 @@ function renderTudo() {
   renderHoje(); renderEquipe(); fillFuncs(); if (abaAtual === 'rel') renderRel(); renderFeriados();
   clearTimeout(timerSync); timerSync = setTimeout(sincronizarCodigos, 1500);
 }
-const jornadaDe = f => (f && f.jornada) || (empresa && empresa.jornada) || JORNADA_PADRAO;
+const jornadaDe = f => (f && f.jornada) || (empresa && empresa.jornada) || jornadaPadraoDe(EMP);
 const inicioDe = f => f.inicio || (f.criadoEm && f.criadoEm.toDate ? dkey(f.criadoEm.toDate()) : null);
 
 // cálculo do mês de um funcionário: dias trabalhados, previsto e saldo (banco de horas)
@@ -1208,7 +1216,7 @@ function renderEmpresa() {
     $('#em-nome').value = empresa.nome || ''; $('#em-cnpj').value = empresa.cnpj || ''; $('#em-end').value = empresa.endereco || '';
     $('#em-wa').value = fmtFone(empresa.whatsappGestor || ''); const nt = empresa.notificar || {}; $('#em-nf').checked = nt.funcionario !== false; $('#em-ng').checked = nt.gestor !== false;
   }
-  if (!(ativo && ativo.closest && ativo.closest('#f-jor'))) $('#jor-emp').innerHTML = camposJornada('ej', empresa.jornada || JORNADA_PADRAO);
+  if (!(ativo && ativo.closest && ativo.closest('#f-jor'))) $('#jor-emp').innerHTML = camposJornada('ej', empresa.jornada || jornadaPadraoDe(EMP));
   $('#ct-email').textContent = 'Logado como ' + (auth.currentUser?.email || '');
   if (logoNovo === undefined) { const m = marcaDe(EMP, empresa); previaMarca(m.logo); if (document.activeElement !== $('#mc-cor')) $('#mc-cor').value = m.cor || '#4f46e5'; }
 }

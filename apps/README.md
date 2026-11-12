@@ -27,3 +27,5 @@ Regras para o agente Mecânico:
 - Regras do Firestore do Ponto: `apps/ponto/firestore.rules` (só o Keller publica no Firebase; mudança de regra = escalar).
 - Clientes: Betolub Serviços Automotivos (empresa `betolubservicosa-cmcx`), WhatsApp (14) 99119-9934 e (14) 99111-2441 (Fernando).
 - Cadastro do colaborador: nome completo, CPF (campo `cpf`, formato 000.000.000-00; cadastros antigos podem ter `rg`) e WhatsApp com DDD.
+- Jornada padrão por empresa: mapa `JORNADA_EMPRESA` no index.html (vale até o gestor salvar outra na aba Empresa). Betolub: seg–sex 08:30–12:00 e 13:30–18:00 (8h), sáb 08:00–13:00 (5h).
+- Modo tablet (`?e=<empresa>&tablet=1`): só a tela de bater ponto, sem botão "Área do gestor". Para tirar um aparelho do modo tablet: abrir `.../apps/ponto/?tablet=0`.
