@@ -78,6 +78,8 @@ select:focus,input:focus{outline:2px solid var(--indigo);outline-offset:-1px}
 @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:330px}
 .tm-lado{display:flex;flex-direction:column;gap:16px}
+.hbtns{display:flex;gap:8px;white-space:nowrap;justify-content:flex-end;align-items:flex-start}
+.nova-versao{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:50;display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 12px;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:calc(100% - 32px)}
 .quadro{text-align:left}.quadro h2{font:700 22px 'Barlow Condensed',sans-serif;margin:0;text-transform:uppercase;letter-spacing:.02em}
 .q-hor{color:var(--muted);font-size:13px;margin:2px 0 10px}
 .q-lin{padding:9px 0;border-top:1px solid var(--line)}.q-nome{font-weight:700;font-size:15px}
@@ -256,7 +258,7 @@ tr.ext td{background:rgba(245,166,35,.07)}
   <section class="tela" id="t-master" hidden>
     <header class="top">
       <div><div class="eyebrow">Keller IA · Administrador</div><h1>Empresas</h1></div>
-      <button class="btn s sm" data-sair>Sair</button>
+      <div class="hbtns"><button class="btn s sm" data-atualizar title="Buscar a versão mais nova do app">⟳ Atualizar</button><button class="btn s sm" data-sair>Sair</button></div>
     </header>
     <div class="chips">
       <div class="chip"><div class="num" id="m-total">0</div><div class="lbl">Empresas</div></div>
@@ -290,7 +292,7 @@ tr.ext td{background:rgba(245,166,35,.07)}
     <div class="banner master" id="p-master" hidden><span>Você está no painel desta empresa como administrador.</span><button class="btn s sm" id="p-voltar">Voltar</button></div>
     <header class="top">
       <div><img class="logo-emp" id="p-logo" alt="" hidden><div class="eyebrow">Ponto Eletrônico</div><h1 id="p-nome">Empresa</h1><div class="sub" id="p-quem"></div></div>
-      <button class="btn s sm" data-sair id="p-sair">Sair</button>
+      <div class="hbtns"><button class="btn s sm" data-atualizar title="Buscar a versão mais nova do app">⟳ Atualizar</button><button class="btn s sm" data-sair id="p-sair">Sair</button></div>
     </header>
     <div class="banner" id="p-aviso" hidden></div>
     <div class="banner" id="p-zap" hidden>Coloque o <b>WhatsApp do gestor</b> na aba <b>Empresa</b> para receber o comprovante de cada batida.</div>
@@ -1440,6 +1442,41 @@ $('#ct-senha').addEventListener('click', async () => { try { await sendPasswordR
 if (!configurado) tela('config');
 else onAuthStateChanged(auth, u => rotear(u));
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+
+// ====== ATUALIZAÇÃO DO APP ======
+// Botão "Atualizar app" (gestor e administrador) e aviso automático quando sai versão nova.
+// No tablet, ele se atualiza sozinho quando ninguém está digitando.
+async function atualizarApp() {
+  toast('Atualizando...');
+  try {
+    const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if (reg) await reg.update().catch(() => {});
+    if (window.caches) for (const k of await caches.keys()) if (k.startsWith('ponto-')) await caches.delete(k);
+  } catch (e) {}
+  location.reload();
+}
+$$('[data-atualizar]').forEach(b => b.addEventListener('click', atualizarApp));
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  const tinhaVersao = !!navigator.serviceWorker.controller;
+  let avisado = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!tinhaVersao || avisado) return; // primeira instalação não é versão nova
+    avisado = true;
+    if (!$('#t-terminal').hidden) {
+      // tablet: recarrega quando ninguém estiver digitando nem lendo o comprovante na tela
+      const tentar = () => { if (!digitado && !ocupado && !$('#tm-msg').innerHTML.trim()) location.reload(); else setTimeout(tentar, 5000); };
+      return tentar();
+    }
+    const el = document.createElement('div'); el.className = 'nova-versao';
+    el.innerHTML = '<span>Tem versão nova do app.</span><button class="btn p sm">Atualizar</button>';
+    el.querySelector('button').onclick = () => location.reload();
+    document.body.appendChild(el);
+  });
+  // confere se saiu versão nova a cada 15 min (e quando o app volta a aparecer na tela)
+  const conferirVersao = () => navigator.serviceWorker.getRegistration().then(r => r && r.update()).catch(() => {});
+  setInterval(conferirVersao, 15 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') conferirVersao(); });
+}
 </script>
 </body>
 </html>
