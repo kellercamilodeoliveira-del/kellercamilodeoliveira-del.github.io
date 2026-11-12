@@ -29,3 +29,4 @@ Regras para o agente Mecânico:
 - Cadastro do colaborador: nome completo, CPF (campo `cpf`, formato 000.000.000-00; cadastros antigos podem ter `rg`) e WhatsApp com DDD.
 - Jornada padrão por empresa: mapa `JORNADA_EMPRESA` no index.html (vale até o gestor salvar outra na aba Empresa). Betolub: seg–sex 08:30–12:00 e 13:30–18:00 (8h), sáb 08:00–13:00 (5h).
 - Modo tablet (`?e=<empresa>&tablet=1`): só a tela de bater ponto, sem botão "Área do gestor". Para tirar um aparelho do modo tablet: abrir `.../apps/ponto/?tablet=0`.
+- Quadro "Horários de hoje" ao lado do teclado (só no modo tablet): batidas feitas naquele tablet, guardadas só no aparelho (localStorage `ponto.quadro.<empresa>`); vermelho = fora da tolerância. Horários no mapa `HORARIO_EMPRESA`; às 21:00 (`VIRADA_QUADRO`) o quadro passa para o dia seguinte. Avisos de horário no WhatsApp do gestor: `pontoAlertas.js` do motor.

@@ -77,6 +77,13 @@ select:focus,input:focus{outline:2px solid var(--indigo);outline-offset:-1px}
 .code.shake{animation:shake .35s}
 @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:330px}
+.tm-lado{display:flex;flex-direction:column;gap:16px}
+.quadro{text-align:left}.quadro h2{font:700 22px 'Barlow Condensed',sans-serif;margin:0;text-transform:uppercase;letter-spacing:.02em}
+.q-hor{color:var(--muted);font-size:13px;margin:2px 0 10px}
+.q-lin{padding:9px 0;border-top:1px solid var(--line)}.q-nome{font-weight:700;font-size:15px}
+.q-bat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:5px}.q-bat span{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:3px 4px;font-size:12px;color:var(--muted);text-align:center;white-space:nowrap}.q-bat b{display:block;font-size:15px}
+.q-bat b{color:var(--fg);font-weight:700}.q-bat span.tarde{border-color:#e2402f;background:rgba(226,64,47,.15)}.q-bat span.tarde b{color:#ff8a7d}
+@media(min-width:860px){body.kiosk .app{max-width:1180px}body.kiosk .tm-lado{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,400px);align-items:start}body.kiosk .quadro{max-height:calc(100vh - 220px);overflow:auto}}
 .key{height:60px;border-radius:14px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-size:30px;font-weight:700;cursor:pointer;touch-action:manipulation}
 .key:active{transform:scale(.97);background:#252932}
 .key.ok{background:linear-gradient(135deg,var(--indigo),var(--indigo2));border:0;font-size:20px}
@@ -168,6 +175,7 @@ tr.ext td{background:rgba(245,166,35,.07)}
       <div class="eyebrow" id="tm-emp">Ponto Eletrônico</div>
       <h1>Bater ponto</h1>
     </header>
+    <div class="tm-lado">
     <div class="card terminal">
       <div class="clock" id="tm-clock">--:--</div>
       <div class="date" id="tm-date"></div>
@@ -182,6 +190,8 @@ tr.ext td{background:rgba(245,166,35,.07)}
         <label class="check" id="tm-lembrar-wrap"><input type="checkbox" id="tm-lembrar"> Lembrar meu código neste celular</label>
       </div>
       <div class="msg" id="tm-msg" aria-live="polite"></div>
+    </div>
+    <div class="card quadro" id="tm-quadro" hidden></div>
     </div>
     <div class="foot"><button class="link" id="tm-gestor">Área do gestor</button><br>Ponto Eletrônico por <b>Keller IA</b></div>
   </section>
@@ -452,6 +462,11 @@ const JORNADA_PADRAO = {0: 0, 1: 480, 2: 480, 3: 480, 4: 480, 5: 480, 6: 240}; /
 // Betolub: seg a sex 08:30–12:00 e 13:30–18:00 (8h); sábado 08:00–13:00 (5h).
 const JORNADA_EMPRESA = {'betolubservicosa-cmcx': {0: 0, 1: 480, 2: 480, 3: 480, 4: 480, 5: 480, 6: 300}};
 const jornadaPadraoDe = id => JORNADA_EMPRESA[id] || JORNADA_PADRAO;
+// Horário de cada empresa, pro quadro do tablet (mesmos horários dos avisos do motor, pontoAlertas.js).
+const HORARIO_EMPRESA = {'betolubservicosa-cmcx': {tolerancia: 10, dias: {
+  1: ['08:30', '12:00', '13:30', '18:00'], 2: ['08:30', '12:00', '13:30', '18:00'], 3: ['08:30', '12:00', '13:30', '18:00'],
+  4: ['08:30', '12:00', '13:30', '18:00'], 5: ['08:30', '12:00', '13:30', '18:00'], 6: ['08:00', '13:00']}}};
+const VIRADA_QUADRO = 21; // às 21:00 o quadro do tablet passa para o dia seguinte
 const TOLERANCIA = 10; // CLT: até 10 min de diferença no dia não conta
 const DIAS_JOR = [[1,'Seg'],[2,'Ter'],[3,'Qua'],[4,'Qui'],[5,'Sex'],[6,'Sáb'],[0,'Dom']];
 const dataDe = k => new Date(+k.slice(0,4), +k.slice(5,7) - 1, +k.slice(8,10));
@@ -634,9 +649,10 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 async function abrirTerminal(empId) {
   tela('terminal'); tmEmp = empId;
   const tick = () => { const d = new Date(); $('#tm-clock').textContent = hm(d); $('#tm-date').textContent = d.toLocaleDateString('pt-BR', {weekday: 'long', day: 'numeric', month: 'long'}); };
-  tick(); timerTerminal = setInterval(tick, 10000); $('#tm-teclado').hidden = false;
+  tick(); timerTerminal = setInterval(() => { tick(); desenharQuadro(); }, 10000); $('#tm-teclado').hidden = false;
   $('#tm-lembrar-wrap').hidden = kiosk();
   $('#tm-gestor').style.display = kiosk() ? 'none' : ''; // no tablet da empresa, só bater ponto
+  document.body.classList.toggle('kiosk', kiosk()); desenharQuadro();
   manterTelaAcesa();
   try {
     const s = await getDoc(doc(db, 'ponto_empresas', empId));
@@ -715,6 +731,7 @@ async function registrar(cod, confirmado) {
     if (offline) { add.catch(() => {}); upd.catch(() => {}); } else [marcRef] = await Promise.all([add, upd]);
     if (marcRef) avisarWhatsApp(marcRef.id);
     if (!kiosk() && $('#tm-lembrar').checked) { ls.set('ponto.codigo.' + tmEmp, cod); ls.set('ponto.nome.' + tmEmp, c.nome || ''); }
+    anotarQuadro(cod, c.nome || '', tipo, agora);
     // saldo do mês (banco de horas)
     const fechou = hojeFechado(n + 1, hoje, jor);
     const sd = saldoDoMes(dias, jor, c.inicio, ym, fechou);
@@ -733,6 +750,44 @@ async function registrar(cod, confirmado) {
   } finally {
     digitado = ''; desenharCodigo(); ocupado = false;
   }
+}
+// ----- quadro "horários de hoje" ao lado do teclado (só no tablet; guardado só neste aparelho) -----
+const diaDoQuadro = d => { const x = new Date(d); if (x.getHours() >= VIRADA_QUADRO) x.setDate(x.getDate() + 1); return dkey(x); };
+const lerQuadro = () => { try { return JSON.parse(ls.get('ponto.quadro.' + tmEmp) || '{}') || {}; } catch (e) { return {}; } };
+const COLUNAS = {4: ['Entrada', 'Saída para almoço', 'Volta do almoço', 'Saída'], 2: ['Entrada', 'Saída']};
+const ROTULOS = {'Entrada': 'Entrada', 'Saída para almoço': 'Almoço', 'Volta do almoço': 'Volta', 'Saída': 'Saída'};
+function horarioDoDia(dia) { const h = HORARIO_EMPRESA[tmEmp]; return h ? (h.dias[new Date(dia + 'T12:00').getDay()] || null) : null; }
+function anotarQuadro(cod, nome, tipo, quando) {
+  if (!kiosk()) return;
+  const q = lerQuadro(), dia = (quando.getHours() >= VIRADA_QUADRO && tipo !== 'Entrada') ? dkey(quando) : diaDoQuadro(quando);
+  const e = q[cod] && q[cod].dia === dia ? q[cod] : {dia, b: []};
+  e.nome = nome; e.visto = Date.now(); e.b.push({t: tipo, h: hm(quando)}); q[cod] = e;
+  for (const k of Object.keys(q)) if (Date.now() - (q[k].visto || 0) > 30 * 864e5) delete q[k];
+  ls.set('ponto.quadro.' + tmEmp, JSON.stringify(q)); desenharQuadro();
+}
+function desenharQuadro() {
+  const el = $('#tm-quadro');
+  if (!kiosk() || $('#t-terminal').hidden) { el.hidden = true; return; }
+  el.hidden = false;
+  const dia = diaDoQuadro(new Date()), h = horarioDoDia(dia), tol = HORARIO_EMPRESA[tmEmp]?.tolerancia || 10;
+  const cols = COLUNAS[h ? h.length : 4] || COLUNAS[4], amanha = dia !== dkey(new Date());
+  const minDe = s => { const [a, b] = s.split(':').map(Number); return a * 60 + b; };
+  const q = lerQuadro();
+  const pessoas = Object.entries(q).sort((a, b) => (a[1].nome || '').localeCompare(b[1].nome || ''));
+  const linhas = pessoas.map(([, e]) => {
+    const bs = e.dia === dia ? e.b : [];
+    const cel = cols.map((t, i) => {
+      const x = bs.find(b => b.t === t);
+      let tarde = false;
+      if (x && h && h[i]) { const dif = minDe(x.h) - minDe(h[i]); tarde = i % 2 === 0 ? dif > tol : dif < -tol; }
+      return `<span class="${tarde ? 'tarde' : ''}">${esc(ROTULOS[t])} <b>${x ? esc(x.h) : '--:--'}</b></span>`;
+    }).join('') + bs.filter(b => !cols.includes(b.t)).map(b => `<span>${esc(b.t)} <b>${esc(b.h)}</b></span>`).join('');
+    return `<div class="q-lin"><div class="q-nome">${esc(e.nome)}</div><div class="q-bat">${cel}</div></div>`;
+  }).join('');
+  const titulo = amanha ? 'Horários de amanhã' : 'Horários de hoje';
+  const hor = h ? (h.length === 4 ? `${h[0]}–${h[1]} · ${h[2]}–${h[3]}` : `${h[0]}–${h[1]}`) + ` · tolerância ${tol} min` : 'Sem expediente';
+  el.innerHTML = `<h2>${titulo}</h2><div class="q-hor">Horário: ${esc(hor)}</div>` +
+    (linhas || '<div class="note">Os horários aparecem aqui conforme a equipe bate o ponto neste tablet.</div>');
 }
 $('#tm-gestor').addEventListener('click', async () => {
   if (kiosk() && !confirm('Sair do modo tablet? Para voltar, o gestor precisa abrir o link do tablet de novo.')) return;
