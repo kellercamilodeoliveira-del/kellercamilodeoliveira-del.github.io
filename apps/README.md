@@ -26,3 +26,4 @@ Regras para o agente Mecânico:
 - Comprovante por WhatsApp: rota `/ponto/comprovante` do motor (repositório motor-whatsapp-keller-ia, arquivo ponto.js).
 - Regras do Firestore do Ponto: `apps/ponto/firestore.rules` (só o Keller publica no Firebase; mudança de regra = escalar).
 - Clientes: Betolub Serviços Automotivos (empresa `betolubservicosa-cmcx`), WhatsApp (14) 99119-9934 e (14) 99111-2441 (Fernando).
+- Cadastro do colaborador: nome completo, CPF (campo `cpf`, formato 000.000.000-00; cadastros antigos podem ter `rg`) e WhatsApp com DDD.
