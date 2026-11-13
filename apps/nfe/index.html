@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DuaPi.NFe · Nota Fiscal</title>
+<meta name="description" content="Emissão de nota fiscal eletrônica (NF-e) direto na Sefaz. Keller IA.">
+<meta name="theme-color" content="#07080a">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../../favicon.png">
+<link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Inter';src:url(../../fonts/inter-400.woff2) format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Inter';src:url(../../fonts/inter-500.woff2) format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Inter';src:url(../../fonts/inter-600.woff2) format('woff2');font-weight:600 700;font-display:swap}
+:root{--bg:#07080a;--panel:#15171b;--panel2:#1c1f25;--fg:#f6f4ee;--muted:#9aa1ab;--line:#2a2d33;--indigo:#4f46e5;--indigo2:#6a60f0;--amber:#f5a623;--green:#34c77b;--red:#e2402f;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 'Inter',system-ui,-apple-system,sans-serif;padding:env(safe-area-inset-top,0) max(14px,env(safe-area-inset-right,0)) env(safe-area-inset-bottom,0) max(14px,env(safe-area-inset-left,0));-webkit-tap-highlight-color:transparent}
+h1,h2,h3,.tab,.num,.eyebrow{font-family:'Barlow Condensed',system-ui,sans-serif}
+.app{max-width:760px;margin:0 auto;padding:20px 0 70px;display:flex;flex-direction:column;gap:16px}
+[hidden]{display:none!important}
+.eyebrow{font-weight:700;font-size:13px;letter-spacing:.09em;color:var(--amber);text-transform:uppercase}
+h1{font-size:32px;line-height:1.05;margin:2px 0 0}h2{font-size:22px;margin:0 0 10px}h3{font-size:18px;margin:14px 0 6px}
+.sub{color:var(--muted);font-size:13px;margin-top:6px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;position:sticky;top:env(safe-area-inset-top,0);z-index:5}
+.tab{border:0;background:transparent;color:var(--muted);font-size:17px;font-weight:700;padding:9px 2px;border-radius:10px;cursor:pointer}
+.tab[aria-selected=true]{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input,select,textarea{width:100%;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:16px}
+textarea{min-height:70px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--indigo);outline-offset:-1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 12px}
+.g2{grid-column:span 2}@media(max-width:520px){.g2{grid-column:auto}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:12px 16px;font:600 15px 'Inter',sans-serif;cursor:pointer;text-decoration:none;color:var(--fg)}
+.btn.p{background:linear-gradient(135deg,var(--indigo),var(--indigo2));color:#fff}
+.btn.s{background:var(--panel2);border:1px solid var(--line)}
+.btn.a{background:var(--amber);color:#1a1200}
+.btn.d{background:transparent;border:1px solid rgba(226,64,47,.5);color:#ff8a7d}
+.btn.w{width:100%}.btn.sm{padding:7px 11px;font-size:13px;border-radius:9px}
+.btn:disabled{opacity:.5;cursor:default}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.btns .btn{flex:1;min-width:130px}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-size:14px;cursor:pointer;padding:6px}
+.erro{color:#ff8a7d;font-size:14px;margin-top:8px;white-space:pre-line}
+.ok{color:var(--green);font-size:14px;margin-top:8px}
+.note{font-size:12px;color:var(--muted);margin-top:6px}
+.banner{border-radius:12px;padding:10px 14px;font-size:14px;background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.45)}
+.banner.prod{background:rgba(52,199,123,.12);border-color:rgba(52,199,123,.45)}
+.passos{display:flex;flex-direction:column;gap:8px}
+.passo{display:flex;gap:10px;align-items:center;font-size:14px}
+.passo b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line);font-size:12px;flex:none}
+.passo.feito b{background:var(--green);border-color:var(--green);color:#04210f}
+.item{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px;background:#111317}
+.item .top{align-items:center}
+.item .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.item .g2{grid-column:span 2}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.total .num{font-size:30px;font-weight:700}
+.nota{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.nota:last-child{border-bottom:0}
+.pill{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.pill.autorizada{background:rgba(52,199,123,.18);color:#6be3a2}.pill.cancelada{background:rgba(226,64,47,.18);color:#ff8a7d}.pill.denegada{background:rgba(226,64,47,.18);color:#ff8a7d}.pill.teste{background:rgba(245,166,35,.18);color:var(--amber)}
+.acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chk{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px;color:var(--fg)}.chk input{width:auto}
+.res{border-radius:14px;padding:14px;margin-top:12px}
+.res.bom{background:rgba(52,199,123,.12);border:1px solid rgba(52,199,123,.45)}
+.res.ruim{background:rgba(226,64,47,.1);border:1px solid rgba(226,64,47,.45)}
+.chave{font-family:ui-monospace,monospace;font-size:12px;word-break:break-all;color:var(--muted)}
+.carregando{opacity:.6;pointer-events:none}
+footer{color:var(--muted);font-size:12px;text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+<main class="app">
+
+  <!-- LOGIN -->
+  <section id="tLogin" class="card" hidden>
+    <div class="eyebrow">DuaPi.NFe</div>
+    <h1>Nota fiscal eletrônica</h1>
+    <p class="sub">Emita NF-e direto na Sefaz pelo celular. Entre com o código e a senha que você recebeu.</p>
+    <form id="fLogin">
+      <label for="lEmp">Código da empresa</label><input id="lEmp" autocomplete="username" autocapitalize="off" required>
+      <label for="lSenha">Senha</label><input id="lSenha" type="password" autocomplete="current-password" required>
+      <button class="btn p w" style="margin-top:16px">Entrar</button>
+      <div class="erro" id="lErro"></div>
+    </form>
+  </section>
+
+  <!-- APP -->
+  <section id="tApp" hidden>
+    <div class="top">
+      <div><div class="eyebrow">DuaPi.NFe</div><h1 id="nomeEmp">Empresa</h1></div>
+      <button class="link" id="bSair">Sair</button>
+    </div>
+    <div id="bannerAmb" class="banner" style="margin-top:12px"></div>
+    <nav class="tabs" style="margin-top:12px" role="tablist">
+      <button class="tab" data-tab="emitir" aria-selected="true">Emitir</button>
+      <button class="tab" data-tab="notas" aria-selected="false">Notas</button>
+      <button class="tab" data-tab="empresa" aria-selected="false">Empresa</button>
+    </nav>
+
+    <!-- EMITIR -->
+    <div id="pEmitir" style="margin-top:16px;display:flex;flex-direction:column;gap:16px">
+      <div class="card" id="faltaConfig" hidden></div>
+      <form id="fNota" class="card">
+        <h2>Cliente</h2>
+        <div class="grid">
+          <div><label for="dDoc">CPF ou CNPJ</label><input id="dDoc" inputmode="numeric" list="listaClientes" required></div>
+          <div class="g2"><label for="dNome">Nome / razão social</label><input id="dNome" maxlength="60" required></div>
+        </div>
+        <datalist id="listaClientes"></datalist>
+        <div id="dPJ" hidden>
+          <div class="grid">
+            <div><label for="dIE">Inscrição estadual</label><input id="dIE" inputmode="numeric" placeholder="vazio = não contribuinte"></div>
+            <div style="display:flex;align-items:flex-end"><label class="chk"><input type="checkbox" id="dCF" checked> Cliente usa o produto (consumidor final)</label></div>
+          </div>
+        </div>
+        <div class="grid">
+          <div><label for="dCep">CEP</label><input id="dCep" inputmode="numeric" required></div>
+          <div class="g2"><label for="dLgr">Rua</label><input id="dLgr" required></div>
+          <div><label for="dNro">Número</label><input id="dNro" required></div>
+          <div><label for="dCpl">Complemento</label><input id="dCpl"></div>
+          <div><label for="dBairro">Bairro</label><input id="dBairro" required></div>
+          <div><label for="dMun">Cidade</label><input id="dMun" readonly placeholder="pelo CEP"></div>
+        </div>
+        <div class="grid">
+          <div><label for="dEmail">E-mail (opcional)</label><input id="dEmail" type="email"></div>
+          <div><label for="dZap">WhatsApp p/ mandar a nota (opcional)</label><input id="dZap" inputmode="tel" placeholder="14999999999"></div>
+        </div>
+
+        <h2 style="margin-top:22px">Produtos</h2>
+        <datalist id="listaProdutos"></datalist>
+        <div id="itens"></div>
+        <button type="button" class="btn s w" id="bAddItem" style="margin-top:10px">+ Adicionar produto</button>
+
+        <h2 style="margin-top:22px">Venda</h2>
+        <div class="grid">
+          <div><label for="vTipo">Tipo de venda</label><select id="vTipo"><option value="rev">Revenda (comprei pra vender)</option><option value="fab">Fabricação própria</option></select></div>
+          <div><label for="vPag">Pagamento</label><select id="vPag"><option value="17">PIX</option><option value="01">Dinheiro</option><option value="03">Cartão de crédito</option><option value="04">Cartão de débito</option><option value="15">Boleto</option><option value="99">Outros</option><option value="90">Sem pagamento</option></select></div>
+          <div><label for="vPres">Onde foi a venda</label><select id="vPres"><option value="9">Fora da loja / internet / telefone</option><option value="1">Presencial na loja</option></select></div>
+        </div>
+        <label for="vObs">Observação na nota (opcional)</label><textarea id="vObs" maxlength="500"></textarea>
+        <div class="total"><span class="sub" style="margin:0">Total da nota</span><span class="num" id="vTotal">R$ 0,00</span></div>
+        <button class="btn p w" id="bEmitir" style="margin-top:14px">Emitir nota</button>
+        <div id="resEmissao"></div>
+      </form>
+    </div>
+
+    <!-- NOTAS -->
+    <div id="pNotas" class="card" style="margin-top:16px" hidden>
+      <h2>Notas emitidas</h2>
+      <div id="listaNotas"></div>
+    </div>
+
+    <!-- EMPRESA -->
+    <div id="pEmpresa" style="margin-top:16px;display:flex;flex-direction:column;gap:16px" hidden>
+      <div class="card">
+        <h2>Para começar a emitir</h2>
+        <div class="passos" id="passos"></div>
+      </div>
+
+      <form id="fEmp" class="card">
+        <h2>1. Dados da empresa</h2>
+        <div class="grid">
+          <div><label for="eCnpj">CNPJ</label><input id="eCnpj" inputmode="numeric" required></div>
+          <div style="display:flex;align-items:flex-end"><button type="button" class="btn s w" id="bBuscaCnpj">Buscar dados pelo CNPJ</button></div>
+          <div class="g2"><label for="eRazao">Razão social</label><input id="eRazao" maxlength="60" required></div>
+          <div class="g2"><label for="eFant">Nome fantasia</label><input id="eFant" maxlength="60"></div>
+          <div><label for="eIE">Inscrição estadual</label><input id="eIE" inputmode="numeric" required></div>
+          <div><label for="eCrt">Regime</label><select id="eCrt"><option value="1">Simples Nacional</option><option value="4">MEI</option></select></div>
+          <div><label for="eCep">CEP</label><input id="eCep" inputmode="numeric" required></div>
+          <div class="g2"><label for="eLgr">Rua</label><input id="eLgr" required></div>
+          <div><label for="eNro">Número</label><input id="eNro" required></div>
+          <div><label for="eCpl">Complemento</label><input id="eCpl"></div>
+          <div><label for="eBairro">Bairro</label><input id="eBairro" required></div>
+          <div><label for="eMun">Cidade</label><input id="eMun" readonly placeholder="pelo CEP"></div>
+          <div><label for="eFone">Telefone</label><input id="eFone" inputmode="tel"></div>
+          <div><label for="eSerie">Série da nota</label><input id="eSerie" inputmode="numeric" value="1"></div>
+          <div><label for="eNum">Próximo número</label><input id="eNum" inputmode="numeric"></div>
+        </div>
+        <p class="note">Se a empresa já emitia nota em outro sistema, use a mesma série e o próximo número de lá (só para produção).</p>
+        <label for="eInf">Texto fixo em todas as notas (opcional)</label><textarea id="eInf" maxlength="500"></textarea>
+        <button class="btn p w" id="bSalvarEmp" style="margin-top:14px">Salvar dados</button>
+        <div id="eMsg"></div>
+      </form>
+
+      <form id="fCert" class="card">
+        <h2>2. Certificado digital A1</h2>
+        <p class="sub" id="certInfo">A Sefaz só aceita nota assinada com o certificado A1 (.pfx) da empresa. Ele fica guardado criptografado.</p>
+        <label for="cArq">Arquivo do certificado (.pfx ou .p12)</label><input id="cArq" type="file" accept=".pfx,.p12,application/x-pkcs12" required>
+        <label for="cSenha">Senha do certificado</label><input id="cSenha" type="password" autocomplete="off" required>
+        <button class="btn p w" style="margin-top:14px">Enviar certificado</button>
+        <div id="cMsg"></div>
+        <button type="button" class="btn s w" id="bSefaz" style="margin-top:10px">Testar conexão com a Sefaz</button>
+        <div id="sMsg"></div>
+      </form>
+
+      <div class="card">
+        <h2>3. Nota de teste → produção</h2>
+        <p class="sub" id="ambInfo"></p>
+        <div id="ambAcoes"></div>
+        <div id="aMsg"></div>
+      </div>
+
+      <form id="fSenha" class="card">
+        <h2>Trocar senha</h2>
+        <div class="grid">
+          <div><label for="sAtual">Senha atual</label><input id="sAtual" type="password" autocomplete="current-password" required></div>
+          <div><label for="sNova">Senha nova</label><input id="sNova" type="password" autocomplete="new-password" minlength="6" required></div>
+        </div>
+        <button class="btn s w" style="margin-top:14px">Trocar senha</button>
+        <div id="pMsg"></div>
+      </form>
+    </div>
+  </section>
+
+  <footer>DuaPi.NFe · Keller IA · Nota fiscal direto na Sefaz</footer>
+</main>
+
+<script>
+const MOTOR = (location.hostname === 'localhost' && new URLSearchParams(location.search).get('motor')) || 'https://motor-whatsapp-keller-ia.onrender.com';
+const $ = (id) => document.getElementById(id);
+const so = (v) => String(v || '').replace(/\D/g, '');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl = (n) => (Number(n) || 0).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+const num = (v) => { let s = String(v ?? '').trim(); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); return Number(s) || 0; };
+const dataHora = (ms) => new Date(ms).toLocaleString('pt-BR', {day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'});
+const fmtDoc = (d) => { d = so(d); return d.length === 14 ? d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : d.length === 11 ? d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') : d; };
+const guardar = { get: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} } };
+
+let token = guardar.get('nfe.token') || '';
+let emp = null;
+const enderecos = {dest: {}, emp: {}};
+
+async function api(metodo, caminho, corpo, bruto) {
+  const r = await fetch(MOTOR + caminho, {method: metodo, headers: {'Content-Type': 'application/json', ...(token ? {Authorization: 'Bearer ' + token} : {})}, body: corpo ? JSON.stringify(corpo) : undefined});
+  if (bruto && r.ok) return r;
+  let j = {};
+  try { j = await r.json(); } catch (e) {}
+  if (r.status === 401 && j.sair) { sair(); throw new Error('Sua sessão expirou. Entre de novo.'); }
+  if (!r.ok) throw new Error(j.erro || 'Erro ' + r.status);
+  return j;
+}
+function msg(el, texto, bom) { $(el).className = bom ? 'ok' : 'erro'; $(el).textContent = texto || ''; }
+async function ocupado(btn, fn) { const t = btn.textContent; btn.disabled = true; btn.textContent = 'Aguarde…'; try { return await fn(); } finally { btn.disabled = false; btn.textContent = t; } }
+
+// ---------- login ----------
+$('fLogin').onsubmit = async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button');
+  msg('lErro', '');
+  try {
+    await ocupado(btn, async () => {
+      btn.textContent = 'Entrando… (o servidor pode levar uns segundos)';
+      const j = await api('POST', '/nfe/login', {empresa: $('lEmp').value.trim().toLowerCase(), senha: $('lSenha').value});
+      token = j.token; guardar.set('nfe.token', token); guardar.set('nfe.empresa', j.empresa.id);
+      mostrarApp(j.empresa);
+    });
+  } catch (err) { msg('lErro', err.message); }
+};
+function sair() { token = ''; guardar.set('nfe.token', null); emp = null; $('tApp').hidden = true; $('tLogin').hidden = false; $('lEmp').value = guardar.get('nfe.empresa') || new URLSearchParams(location.search).get('e') || ''; }
+$('bSair').onclick = sair;
+
+// ---------- abas ----------
+document.querySelectorAll('.tab').forEach((t) => t.onclick = () => abrirAba(t.dataset.tab));
+function abrirAba(nome) {
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', t.dataset.tab === nome));
+  $('pEmitir').hidden = nome !== 'emitir'; $('pNotas').hidden = nome !== 'notas'; $('pEmpresa').hidden = nome !== 'empresa';
+  window.scrollTo({top: 0});
+}
+
+function mostrarApp(e) {
+  emp = e;
+  $('tLogin').hidden = true; $('tApp').hidden = false;
+  $('nomeEmp').textContent = e.dados?.fantasia || e.dados?.razao || e.nome;
+  const prod = e.ambiente === 1;
+  $('bannerAmb').className = 'banner' + (prod ? ' prod' : '');
+  $('bannerAmb').innerHTML = prod ? '✅ <b>PRODUÇÃO</b>: as notas têm valor fiscal.' : '🧪 <b>MODO TESTE</b> (homologação): as notas vão pra Sefaz de verdade, mas <b>sem valor fiscal</b>.';
+  $('bEmitir').textContent = prod ? 'Emitir nota fiscal' : 'Emitir nota de TESTE';
+  preencherEmpresa(); desenharPassos(); desenharNotas(); desenharListas(); verificarConfig();
+  if (!$('itens').children.length) addItem();
+}
+
+function pronto() { return emp && emp.cert && !emp.cert.vencido && emp.dados?.cnpj && emp.dados?.ie && emp.dados?.cMun; }
+function verificarConfig() {
+  const f = $('faltaConfig');
+  if (pronto()) { f.hidden = true; return; }
+  f.hidden = false;
+  f.innerHTML = '<h2>Falta pouco</h2><p class="sub">Antes de emitir, preencha os dados da empresa e envie o certificado digital A1.</p><button class="btn a w" type="button" id="bIrEmp">Ir para Empresa</button>';
+  $('bIrEmp').onclick = () => abrirAba('empresa');
+}
+
+// ---------- endereço por CEP / CNPJ ----------
+async function buscarCep(cep) {
+  cep = so(cep); if (cep.length !== 8) return null;
+  try { const r = await fetch('https://viacep.com.br/ws/' + cep + '/json/'); const j = await r.json(); return j.erro ? null : j; } catch (e) { return null; }
+}
+function ligarCep(pref, alvo) {
+  $(pref + 'Cep').addEventListener('input', async (ev) => {
+    if (so(ev.target.value).length !== 8) return;
+    const j = await buscarCep(ev.target.value);
+    if (!j) { $(pref + 'Mun').value = 'CEP não encontrado'; enderecos[alvo] = {}; return; }
+    enderecos[alvo] = {cMun: j.ibge, xMun: j.localidade, uf: j.uf};
+    $(pref + 'Mun').value = j.localidade + ' / ' + j.uf;
+    if (j.logradouro && !$(pref + 'Lgr').value) $(pref + 'Lgr').value = j.logradouro;
+    if (j.bairro && !$(pref + 'Bairro').value) $(pref + 'Bairro').value = j.bairro;
+  });
+}
+ligarCep('d', 'dest'); ligarCep('e', 'emp');
+async function buscarCnpj(cnpj) {
+  const r = await fetch('https://brasilapi.com.br/api/cnpj/v1/' + so(cnpj));
+  if (!r.ok) throw new Error('Não achei esse CNPJ na Receita.');
+  return r.json();
+}
+$('bBuscaCnpj').onclick = (ev) => ocupado(ev.target, async () => {
+  try {
+    const j = await buscarCnpj($('eCnpj').value);
+    $('eRazao').value = (j.razao_social || '').slice(0, 60); $('eFant').value = (j.nome_fantasia || '').slice(0, 60);
+    $('eCep').value = so(j.cep); $('eLgr').value = j.logradouro || ''; $('eNro').value = j.numero || ''; $('eCpl').value = j.complemento || ''; $('eBairro').value = j.bairro || '';
+    if (j.codigo_municipio_ibge) { enderecos.emp = {cMun: String(j.codigo_municipio_ibge), xMun: j.municipio, uf: j.uf}; $('eMun').value = j.municipio + ' / ' + j.uf; }
+    if (j.ddd_telefone_1) $('eFone').value = so(j.ddd_telefone_1);
+    if (j.opcao_pelo_mei) $('eCrt').value = '4'; else if (j.opcao_pelo_simples) $('eCrt').value = '1';
+    msg('eMsg', 'Dados da Receita preenchidos. Confira e complete a inscrição estadual.', true);
+  } catch (err) { msg('eMsg', err.message); }
+});
+$('dDoc').addEventListener('change', async () => {
+  const d = so($('dDoc').value);
+  const salvo = (emp?.clientes || []).find((c) => c.doc === d);
+  $('dPJ').hidden = d.length !== 14;
+  if (salvo) { preencherCliente(salvo); return; }
+  if (d.length === 14 && !$('dNome').value) {
+    try {
+      const j = await buscarCnpj(d);
+      $('dNome').value = (j.razao_social || '').slice(0, 60); $('dCep').value = so(j.cep); $('dLgr').value = j.logradouro || ''; $('dNro').value = j.numero || ''; $('dCpl').value = j.complemento || ''; $('dBairro').value = j.bairro || '';
+      if (j.codigo_municipio_ibge) { enderecos.dest = {cMun: String(j.codigo_municipio_ibge), xMun: j.municipio, uf: j.uf}; $('dMun').value = j.municipio + ' / ' + j.uf; }
+    } catch (e) {}
+  }
+});
+function preencherCliente(c) {
+  $('dDoc').value = fmtDoc(c.doc); $('dNome').value = c.nome || ''; $('dIE').value = c.ie || ''; $('dEmail').value = c.email || ''; $('dZap').value = c.whatsapp || '';
+  const e = c.end || {}; $('dCep').value = e.cep || ''; $('dLgr').value = e.xLgr || ''; $('dNro').value = e.nro || ''; $('dCpl').value = e.xCpl || ''; $('dBairro').value = e.xBairro || '';
+  enderecos.dest = e.cMun ? {cMun: e.cMun, xMun: e.xMun, uf: e.uf} : {}; $('dMun').value = e.xMun ? e.xMun + ' / ' + e.uf : '';
+  $('dPJ').hidden = so(c.doc).length !== 14;
+}
+
+// ---------- produtos ----------
+const CSOSN = [['102', 'Simples sem crédito (padrão)'], ['101', 'Simples com crédito'], ['103', 'Isento (faixa de receita)'], ['300', 'Imune'], ['400', 'Não tributada'], ['500', 'ICMS já pago antes (ST)']];
+const ORIGEM = [['0', 'Nacional'], ['1', 'Importado direto por mim'], ['2', 'Importado comprado no Brasil']];
+function addItem(p = {}) {
+  const div = document.createElement('div');
+  div.className = 'item';
+  div.innerHTML = `
+    <div class="top"><b class="sub" style="margin:0">Produto</b><button type="button" class="link rm">remover</button></div>
+    <div class="grid">
+      <div class="g2"><label>Descrição</label><input class="i-desc" list="listaProdutos" maxlength="120" required></div>
+      <div><label>NCM (8 números)</label><input class="i-ncm" inputmode="numeric" required></div>
+      <div><label>Quantidade</label><input class="i-qtd" inputmode="decimal" value="1" required></div>
+      <div><label>Unidade</label><input class="i-un" value="UN" maxlength="6"></div>
+      <div><label>Valor unitário (R$)</label><input class="i-val" inputmode="decimal" required></div>
+      <div><label>Desconto (R$)</label><input class="i-desconto" inputmode="decimal" placeholder="0"></div>
+      <div><label>Tributação (CSOSN)</label><select class="i-csosn">${CSOSN.map(([v, t]) => `<option value="${v}">${v} · ${t}</option>`).join('')}</select></div>
+      <div><label>Origem</label><select class="i-orig">${ORIGEM.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
+    </div>
+    <div class="note i-ncmdica"></div>`;
+  $('itens').appendChild(div);
+  const q = (c) => div.querySelector(c);
+  if (p.descricao) { q('.i-desc').value = p.descricao; q('.i-ncm').value = p.ncm || ''; q('.i-un').value = p.unidade || 'UN'; q('.i-val').value = p.valor ? String(p.valor).replace('.', ',') : ''; q('.i-csosn').value = p.csosn || '102'; q('.i-orig').value = p.origem || '0'; }
+  q('.rm').onclick = () => { div.remove(); if (!$('itens').children.length) addItem(); somar(); };
+  q('.i-desc').addEventListener('change', () => {
+    const c = (emp?.produtos || []).find((x) => x.descricao.toLowerCase() === q('.i-desc').value.trim().toLowerCase());
+    if (c) { q('.i-ncm').value = c.ncm; q('.i-un').value = c.unidade; q('.i-val').value = String(c.valor).replace('.', ','); q('.i-csosn').value = c.csosn; q('.i-orig').value = c.origem; somar(); }
+  });
+  q('.i-ncm').addEventListener('change', async () => {
+    const n = so(q('.i-ncm').value); q('.i-ncmdica').textContent = '';
+    if (n.length !== 8) { q('.i-ncmdica').textContent = n ? 'O NCM tem 8 números.' : ''; return; }
+    try { const r = await fetch('https://brasilapi.com.br/api/ncm/v1/' + n); if (r.ok) { const j = await r.json(); q('.i-ncmdica').textContent = 'NCM: ' + (j.descricao || '').slice(0, 120); } else q('.i-ncmdica').textContent = '⚠️ NCM não encontrado na tabela.'; } catch (e) {}
+  });
+  div.querySelectorAll('input').forEach((i) => i.addEventListener('input', somar));
+  somar();
+}
+$('bAddItem').onclick = () => addItem();
+function lerItens() {
+  return [...$('itens').children].map((d) => {
+    const q = (c) => d.querySelector(c).value;
+    return {descricao: q('.i-desc').trim(), ncm: so(q('.i-ncm')), qtd: num(q('.i-qtd')), unidade: q('.i-un').trim() || 'UN', valor: num(q('.i-val')), desconto: num(q('.i-desconto')), csosn: q('.i-csosn'), origem: q('.i-orig')};
+  });
+}
+function somar() {
+  const t = lerItens().reduce((s, i) => s + Math.round(i.qtd * i.valor * 100) / 100 - i.desconto, 0);
+  $('vTotal').textContent = brl(t);
+}
+
+// ---------- emitir ----------
+$('fNota').onsubmit = async (e) => {
+  e.preventDefault();
+  if (!pronto()) { verificarConfig(); window.scrollTo({top: 0, behavior: 'smooth'}); return; }
+  const doc = so($('dDoc').value);
+  if (!enderecos.dest.cMun) { $('resEmissao').innerHTML = '<div class="res ruim">Coloque o CEP do cliente pra achar a cidade.</div>'; return; }
+  const pedido = {
+    dest: {doc, nome: $('dNome').value.trim(), ie: doc.length === 14 ? so($('dIE').value) : '', email: $('dEmail').value.trim(), whatsapp: so($('dZap').value),
+      end: {cep: so($('dCep').value), xLgr: $('dLgr').value.trim(), nro: $('dNro').value.trim(), xCpl: $('dCpl').value.trim(), xBairro: $('dBairro').value.trim(), ...enderecos.dest}},
+    consumidorFinal: doc.length === 11 || $('dCF').checked,
+    itens: lerItens(), pagamento: $('vPag').value, fabricacaoPropria: $('vTipo').value === 'fab', presencial: $('vPres').value === '1', obs: $('vObs').value.trim(),
+  };
+  if (emp.ambiente === 1 && !confirm('Emitir nota fiscal de verdade (PRODUÇÃO) no valor de ' + $('vTotal').textContent + '?')) return;
+  const btn = $('bEmitir');
+  $('resEmissao').innerHTML = '';
+  await ocupado(btn, async () => {
+    btn.textContent = 'Enviando pra Sefaz…';
+    try {
+      const r = await api('POST', '/nfe/emitir', pedido);
+      if (r.empresa) { emp = r.empresa; desenharNotas(); desenharListas(); desenharPassos(); desenharAmbiente(); }
+      if (r.ok) {
+        const n = r.nota;
+        $('resEmissao').innerHTML = `<div class="res bom"><b>✅ Nota nº ${n.numero} autorizada${n.amb === 2 ? ' (TESTE)' : ''}</b><div class="sub">${esc(n.dest)} · ${brl(n.valor)} · protocolo ${esc(n.prot)}</div><div class="chave">${esc(n.chave)}</div>${pedido.dest.whatsapp ? '<div class="note">Mandando o PDF e o XML no WhatsApp do cliente…</div>' : ''}<div class="acoes">${botoesNota(n, true)}</div></div>`;
+        ligarBotoes($('resEmissao'));
+        limparNota();
+      } else if (r.denegada) {
+        $('resEmissao').innerHTML = `<div class="res ruim"><b>Nota denegada pela Sefaz</b><div class="sub">${esc(r.nota?.motivo)}</div></div>`;
+      } else {
+        $('resEmissao').innerHTML = `<div class="res ruim"><b>A nota não foi emitida</b><div class="erro">${(r.erros || ['Erro desconhecido']).map(esc).join('\n')}</div></div>`;
+      }
+    } catch (err) { $('resEmissao').innerHTML = `<div class="res ruim"><b>A nota não foi emitida</b><div class="erro">${esc(err.message)}</div></div>`; }
+  });
+};
+function limparNota() {
+  ['dDoc', 'dNome', 'dIE', 'dCep', 'dLgr', 'dNro', 'dCpl', 'dBairro', 'dMun', 'dEmail', 'dZap', 'vObs'].forEach((i) => $(i).value = '');
+  enderecos.dest = {}; $('dPJ').hidden = true; $('itens').innerHTML = ''; addItem();
+}
+
+// ---------- notas ----------
+function botoesNota(n, soVer) {
+  const b = `<button type="button" class="btn s sm" data-acao="pdf" data-chave="${n.chave}">PDF (DANFE)</button><button type="button" class="btn s sm" data-acao="xml" data-chave="${n.chave}">XML</button>`;
+  if (soVer) return b;
+  return b + `<button type="button" class="btn s sm" data-acao="zap" data-chave="${n.chave}">WhatsApp</button>` + (n.status === 'autorizada' ? `<button type="button" class="btn d sm" data-acao="cancelar" data-chave="${n.chave}">Cancelar</button>` : '');
+}
+function desenharNotas() {
+  const l = emp?.notas || [];
+  $('listaNotas').innerHTML = l.length ? l.map((n) => `
+    <div class="nota"><div style="flex:1;min-width:0">
+      <div><b>Nº ${n.numero}</b><span class="pill ${n.status}">${n.status}</span>${n.amb === 2 ? '<span class="pill teste">teste</span>' : ''}</div>
+      <div class="sub" style="margin-top:2px">${esc(n.dest)} · ${dataHora(n.em)}</div>
+      <div class="acoes">${botoesNota(n)}</div>
+      <div class="cancelar" data-chave="${n.chave}"></div>
+    </div><div class="num" style="font-size:20px;white-space:nowrap">${brl(n.valor)}</div></div>`).join('') : '<p class="sub">Nenhuma nota ainda.</p>';
+  ligarBotoes($('listaNotas'));
+}
+function ligarBotoes(raiz) {
+  raiz.querySelectorAll('[data-acao]').forEach((b) => b.onclick = () => acaoNota(b.dataset.acao, b.dataset.chave, b));
+}
+async function acaoNota(acao, chave, btn) {
+  if (acao === 'pdf' || acao === 'xml') {
+    const janela = acao === 'pdf' ? window.open('', '_blank') : null;
+    try {
+      await ocupado(btn, async () => {
+        const r = await api('GET', `/nfe/nota/${chave}/${acao}`, null, true);
+        const url = URL.createObjectURL(await r.blob());
+        if (janela) janela.location = url;
+        else { const a = document.createElement('a'); a.href = url; a.download = chave + '-nfe.xml'; document.body.appendChild(a); a.click(); a.remove(); }
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      });
+    } catch (e) { if (janela) janela.close(); alert(e.message); }
+    return;
+  }
+  const area = document.querySelector(`.cancelar[data-chave="${chave}"]`);
+  if (acao === 'zap') {
+    area.innerHTML = `<div class="grid"><div class="g2"><label>WhatsApp com DDD</label><input class="z-num" inputmode="tel"></div></div><div class="btns"><button type="button" class="btn p sm z-ok">Mandar PDF + XML</button><button type="button" class="btn s sm z-x">Fechar</button></div><div class="z-msg"></div>`;
+    area.querySelector('.z-x').onclick = () => area.innerHTML = '';
+    area.querySelector('.z-ok').onclick = (ev) => ocupado(ev.target, async () => {
+      try { await api('POST', `/nfe/nota/${chave}/whatsapp`, {numero: area.querySelector('.z-num').value}); area.querySelector('.z-msg').className = 'ok'; area.querySelector('.z-msg').textContent = 'Enviado.'; }
+      catch (e) { area.querySelector('.z-msg').className = 'erro'; area.querySelector('.z-msg').textContent = e.message; }
+    });
+    return;
+  }
+  if (acao === 'cancelar') {
+    area.innerHTML = `<label>Motivo do cancelamento (mín. 15 letras)</label><textarea class="c-just" maxlength="255"></textarea><p class="note">Pela regra da Sefaz, dá pra cancelar até 24 horas depois de autorizada.</p><div class="btns"><button type="button" class="btn d sm c-ok">Cancelar a nota</button><button type="button" class="btn s sm c-x">Voltar</button></div><div class="c-msg"></div>`;
+    area.querySelector('.c-x').onclick = () => area.innerHTML = '';
+    area.querySelector('.c-ok').onclick = (ev) => ocupado(ev.target, async () => {
+      try { const r = await api('POST', `/nfe/nota/${chave}/cancelar`, {justificativa: area.querySelector('.c-just').value}); emp = r.empresa; desenharNotas(); desenharAmbiente(); }
+      catch (e) { area.querySelector('.c-msg').className = 'erro'; area.querySelector('.c-msg').textContent = e.message; }
+    });
+  }
+}
+function desenharListas() {
+  $('listaProdutos').innerHTML = (emp?.produtos || []).map((p) => `<option value="${esc(p.descricao)}">`).join('');
+  $('listaClientes').innerHTML = (emp?.clientes || []).map((c) => `<option value="${esc(fmtDoc(c.doc))}">${esc(c.nome)}</option>`).join('');
+}
+
+// ---------- empresa ----------
+function preencherEmpresa() {
+  const d = emp.dados || {};
+  const set = (id, v) => { $(id).value = v ?? ''; };
+  set('eCnpj', fmtDoc(d.cnpj)); set('eRazao', d.razao); set('eFant', d.fantasia); set('eIE', d.ie); $('eCrt').value = d.crt || '1';
+  set('eCep', d.cep); set('eLgr', d.xLgr); set('eNro', d.nro); set('eCpl', d.xCpl); set('eBairro', d.xBairro); set('eFone', d.fone); set('eSerie', d.serie || 1); set('eNum', emp.proximo); set('eInf', d.infCpl);
+  enderecos.emp = d.cMun ? {cMun: d.cMun, xMun: d.xMun, uf: d.uf} : {}; $('eMun').value = d.xMun ? d.xMun + ' / ' + d.uf : '';
+  const c = emp.cert;
+  $('certInfo').innerHTML = c ? `${c.vencido ? '⚠️ <b>Certificado vencido</b>' : '✅ <b>Certificado enviado</b>'}: ${esc(c.titular)}${c.cnpj ? ' · ' + fmtDoc(c.cnpj) : ''} · válido até ${new Date(c.validade).toLocaleDateString('pt-BR')}. Para trocar, envie outro.` : 'A Sefaz só aceita nota assinada com o certificado A1 (.pfx) da empresa. Ele fica guardado criptografado.';
+  desenharAmbiente();
+}
+function desenharAmbiente() {
+  const prod = emp.ambiente === 1;
+  $('ambInfo').innerHTML = prod ? 'A empresa está em <b>PRODUÇÃO</b>: as notas têm valor fiscal.' : (emp.homologOk ? 'Nota de teste autorizada ✅. Quando quiser, passe pra produção.' : 'Emita uma nota de TESTE na aba Emitir. Quando ela for autorizada, libera a produção.');
+  $('ambAcoes').innerHTML = prod
+    ? '<button type="button" class="btn s w" id="bVoltarTeste">Voltar pro modo teste</button>'
+    : (emp.homologOk ? '<label for="aConf">Para confirmar, digite PRODUCAO</label><input id="aConf" autocapitalize="characters"><button type="button" class="btn a w" id="bProd" style="margin-top:10px">Passar pra produção</button>' : '');
+  if ($('bVoltarTeste')) $('bVoltarTeste').onclick = (ev) => mudarAmbiente(ev.target, false);
+  if ($('bProd')) $('bProd').onclick = (ev) => mudarAmbiente(ev.target, true);
+}
+async function mudarAmbiente(btn, producao) {
+  try { await ocupado(btn, async () => { const r = await api('POST', '/nfe/ambiente', {producao, confirmo: producao ? $('aConf').value : ''}); mostrarApp(r); }); msg('aMsg', producao ? 'Pronto: notas agora com valor fiscal.' : 'Voltou pro modo teste.', true); }
+  catch (e) { msg('aMsg', e.message); }
+}
+function desenharPassos() {
+  const d = emp.dados || {};
+  const passos = [[!!(d.cnpj && d.ie && d.cMun), 'Dados da empresa preenchidos'], [!!(emp.cert && !emp.cert.vencido), 'Certificado digital A1 enviado'], [!!emp.homologOk, 'Nota de teste autorizada pela Sefaz'], [emp.ambiente === 1, 'Produção liberada (nota com valor fiscal)']];
+  $('passos').innerHTML = passos.map(([ok, t], i) => `<div class="passo ${ok ? 'feito' : ''}"><b>${ok ? '✓' : i + 1}</b>${t}</div>`).join('');
+}
+$('fEmp').onsubmit = async (e) => {
+  e.preventDefault();
+  if (!enderecos.emp.cMun) { msg('eMsg', 'Coloque o CEP pra achar a cidade.'); return; }
+  const corpo = {cnpj: $('eCnpj').value, razao: $('eRazao').value, fantasia: $('eFant').value, ie: $('eIE').value, crt: $('eCrt').value, cep: $('eCep').value, xLgr: $('eLgr').value, nro: $('eNro').value, xCpl: $('eCpl').value, xBairro: $('eBairro').value, ...enderecos.emp, fone: $('eFone').value, serie: $('eSerie').value, proximoNumero: $('eNum').value, infCpl: $('eInf').value};
+  try { await ocupado($('bSalvarEmp'), async () => { const r = await api('POST', '/nfe/dados', corpo); mostrarApp(r); }); msg('eMsg', 'Dados salvos.', true); }
+  catch (err) { msg('eMsg', err.message); }
+};
+$('fCert').onsubmit = async (e) => {
+  e.preventDefault();
+  const arq = $('cArq').files[0];
+  if (!arq) return;
+  if (arq.size > 40000) { msg('cMsg', 'Esse arquivo é grande demais pra ser um certificado A1.'); return; }
+  const b64 = await new Promise((ok, erro) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = erro; r.readAsDataURL(arq); });
+  try { await ocupado(e.target.querySelector('button'), async () => { const r = await api('POST', '/nfe/certificado', {pfx: b64, senha: $('cSenha').value}); mostrarApp(r); }); $('cSenha').value = ''; $('cArq').value = ''; msg('cMsg', 'Certificado guardado.', true); }
+  catch (err) { msg('cMsg', err.message); }
+};
+$('bSefaz').onclick = (ev) => ocupado(ev.target, async () => {
+  try { const r = await api('GET', '/nfe/sefaz'); msg('sMsg', (r.ok ? '✅ Sefaz respondeu: ' : '⚠️ Sefaz respondeu: ') + r.motivo + (r.ambiente === 2 ? ' (ambiente de teste)' : ''), r.ok); }
+  catch (e) { msg('sMsg', e.message); }
+});
+$('fSenha').onsubmit = async (e) => {
+  e.preventDefault();
+  try { await api('POST', '/nfe/senha', {atual: $('sAtual').value, nova: $('sNova').value}); alert('Senha trocada. Entre de novo com a senha nova.'); sair(); }
+  catch (err) { msg('pMsg', err.message); }
+};
+
+// ---------- início ----------
+(async () => {
+  if (!token) { sair(); return; }
+  try { mostrarApp(await api('GET', '/nfe/eu')); } catch (e) { sair(); }
+})();
+</script>
+</body>
+</html>

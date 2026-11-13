@@ -33,3 +33,12 @@ Regras para o agente Mecânico:
 - Painel (gestor e administrador): aba **Banco** = banco de horas acumulado mês a mês + PDF; no Relatório, tocar no dia permite **Editar** a hora de uma batida (guarda `tsOriginal`, `motivoEdicao`, `editado: true`), incluir ou apagar.
 - Botão **⟳ Atualizar** no topo do painel e da lista de empresas: limpa o cache do app e recarrega. Quando sai versão nova (sw.js com VERSAO nova), o painel mostra o aviso "Tem versão nova do app" e o tablet recarrega sozinho quando ninguém está digitando.
 - Começo da contagem do banco (aba Banco): mapa `INICIO_BANCO_EMPRESA` (Betolub = 2026-11-13, pra não contar os dias de instalação/teste) ou campo `inicioBanco` da empresa; botão "Zerar o banco de todos a partir de hoje". `inicioDe` = maior entre o início do funcionário e o início do banco da empresa.
+
+## DuaPi.NFe — Nota fiscal eletrônica (produto Keller IA, multiempresa)
+- App: https://kellercamilodeoliveira-del.github.io/apps/nfe/ (arquivo único `apps/nfe/index.html`).
+- Emite NF-e modelo 55 DIRETO na Sefaz (sem Focus NFe nem serviço pago). Quem fala com a Sefaz é o motor (`nfe.js` do repositório motor-whatsapp-keller-ia), rotas `/nfe/...`.
+- Empresa é criada pelo Keller no WhatsApp: `#nfe nova Nome` (gera código + senha). `#nfe empresas`, `#nfe senha código`.
+- Certificado A1 e dados ficam no Firestore (coleção `config`, docs `nfe-emp-*` e `nfe-xml-*`), criptografados pelo cofre do motor.
+- Começa em homologação (teste). Produção só depois de 1 nota de teste autorizada + digitar PRODUCAO.
+- Versão 1: só Simples Nacional (CRT 1) e MEI (CRT 4). Regime normal (CRT 3) ainda não.
+- Busca de CEP (ViaCEP), CNPJ e NCM (BrasilAPI) direto do navegador.
