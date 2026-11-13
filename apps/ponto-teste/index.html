@@ -342,6 +342,15 @@ tr.ext td{background:rgba(245,166,35,.07)}
         <div id="b-conteudo" style="margin-top:10px"></div>
         <div class="btns"><button class="btn p" id="b-pdf">Gerar banco de horas (PDF)</button></div>
       </div>
+      <form class="card" id="f-ib" style="margin-top:14px">
+        <h2>Começo da contagem</h2>
+        <div class="sub" style="margin-top:0">O banco de horas só conta a partir desta data. Os dias antes dela não entram no saldo de ninguém (as batidas continuam guardadas no relatório).</div>
+        <div class="grid2" style="margin-top:8px;align-items:end">
+          <div><label for="ib-data">Contar a partir de</label><input id="ib-data" type="date" required></div>
+          <button class="btn s" type="submit">Salvar data</button>
+        </div>
+        <div class="btns"><button class="btn d" type="button" id="ib-zerar">Zerar o banco de todos a partir de hoje</button></div>
+      </form>
     </div>
     <div class="pv" id="pv-equipe" hidden>
       <div class="card">
@@ -475,6 +484,11 @@ const JORNADA_PADRAO = {0: 0, 1: 480, 2: 480, 3: 480, 4: 480, 5: 480, 6: 240}; /
 // Betolub: seg a sex 08:30–12:00 e 13:30–18:00 (8h); sábado 08:00–13:00 (5h).
 const JORNADA_EMPRESA = {'betolubservicosa-cmcx': {0: 0, 1: 480, 2: 480, 3: 480, 4: 480, 5: 480, 6: 300}};
 const jornadaPadraoDe = id => JORNADA_EMPRESA[id] || JORNADA_PADRAO;
+// Começo da contagem do banco de horas por empresa (vale até o gestor salvar outra data na aba Banco).
+// Betolub: o ponto passou a valer em 13/11/2026; os dias de instalação e teste não contam.
+const INICIO_BANCO_EMPRESA = {'betolubservicosa-cmcx': '2026-11-13'};
+const inicioBancoEmp = (id, e) => (e && e.inicioBanco) || INICIO_BANCO_EMPRESA[id] || null;
+const maiorData = (a, b) => !a ? (b || null) : !b ? a : (a > b ? a : b);
 // Horário de cada empresa, pro quadro do tablet (mesmos horários dos avisos do motor, pontoAlertas.js).
 // Mudou aqui? Mude também apps/ponto/horarios.json (é de lá que o motor lê os avisos).
 const HORARIO_EMPRESA = {'betolubservicosa-cmcx': {tolerancia: 10, toleranciaSaida: 6, dias: {
@@ -748,7 +762,7 @@ async function registrar(cod, confirmado) {
     anotarQuadro(cod, c.nome || '', tipo, agora);
     // saldo do mês (banco de horas)
     const fechou = hojeFechado(n + 1, hoje, jor);
-    const sd = saldoDoMes(dias, jor, c.inicio, ym, fechou);
+    const sd = saldoDoMes(dias, jor, maiorData(c.inicio, inicioBancoEmp(tmEmp, tmEmpData)), ym, fechou);
     let hojeTxt = (n + 1) % 2 === 0 ? `<div class="note">Hoje: ${fmtH(dias[hoje] || 0)} trabalhadas</div>` : '';
     if (fechou) { const dh = difDia(dias[hoje] || 0, previstoDia(hoje, jor)); hojeTxt = `<div style="margin-top:6px">Hoje: ${fmtH(dias[hoje] || 0)} trabalhadas · <span class="saldo ${clsSaldo(dh)}">${dh < 0 ? 'faltaram ' + fmtH(-dh) : dh > 0 ? 'sobraram ' + fmtH(dh) : 'em dia'}</span></div>`; }
     const zap = marcRef && c.whatsapp && (tmEmpData?.notificar?.funcionario !== false) ? '<div class="note">📲 Comprovante enviado no seu WhatsApp.</div>' : '';
@@ -945,7 +959,8 @@ function renderTudo() {
   clearTimeout(timerSync); timerSync = setTimeout(sincronizarCodigos, 1500);
 }
 const jornadaDe = f => (f && f.jornada) || (empresa && empresa.jornada) || jornadaPadraoDe(EMP);
-const inicioDe = f => f.inicio || (f.criadoEm && f.criadoEm.toDate ? dkey(f.criadoEm.toDate()) : null);
+const inicioProprio = f => f.inicio || (f.criadoEm && f.criadoEm.toDate ? dkey(f.criadoEm.toDate()) : null);
+const inicioDe = f => maiorData(inicioProprio(f), inicioBancoEmp(EMP, empresa));
 
 // cálculo do mês de um funcionário: dias trabalhados, previsto e saldo (banco de horas)
 function calcular(marcs, f, ym) {
@@ -1156,6 +1171,7 @@ function fillBancoDe() {
 async function renderBanco() {
   if (!empresa) return;
   fillBancoDe();
+  if (document.activeElement !== $('#ib-data')) $('#ib-data').value = inicioBancoEmp(EMP, empresa) || '';
   const box = $('#b-conteudo'), de = $('#b-de').value, n = new Date(), meses = [];
   let [y, m] = de.split('-').map(Number);
   while (y < n.getFullYear() || (y === n.getFullYear() && m <= n.getMonth() + 1)) { meses.push(`${y}-${p2(m)}`); if (++m > 12) { m = 1; y++; } }
@@ -1354,7 +1370,7 @@ $('#e-lista').addEventListener('click', ev => {
   abrirModal(`<h2>Editar colaborador</h2><form id="fe"><label for="fe-n">Nome completo</label><input id="fe-n" value="${esc(f.nome)}" required>
     <div class="grid2"><div><label for="fe-cpf">CPF</label><input id="fe-cpf" inputmode="numeric" placeholder="000.000.000-00" value="${esc(f.cpf || '')}"></div><div><label for="fe-wa">WhatsApp</label><input id="fe-wa" inputmode="tel" value="${esc(fmtFone(f.whatsapp || ''))}"></div></div>
 
-    <label for="fe-i">Começou a usar o ponto em</label><input id="fe-i" type="date" value="${esc(inicioDe(f) || '')}">
+    <label for="fe-i">Começou a usar o ponto em</label><input id="fe-i" type="date" value="${esc(inicioProprio(f) || '')}">
     <label class="check" style="margin-top:12px"><input type="checkbox" id="fe-jp" ${f.jornada ? 'checked' : ''}> Jornada diferente da empresa</label>
     <div class="jor" id="fe-jor" ${f.jornada ? '' : 'hidden'}>${camposJornada('fj', jornadaDe(f))}</div>
     ${ativo ? `<label>Código</label><div style="display:flex;align-items:center;gap:10px"><span class="code-pill" style="font-size:22px">${esc(f.codigo)}</span><button type="button" class="btn s sm" id="fe-novo">Gerar novo código</button></div>` : ''}
@@ -1420,6 +1436,14 @@ $('#mc-salvar').addEventListener('click', async () => {
 });
 $('#mc-tirar').addEventListener('click', async () => {
   try { await updateDoc(doc(db, 'ponto_empresas', EMP), {marca: {cor: '#4f46e5', logo: ''}}); logoNovo = undefined; toast('Voltou ao padrão.'); } catch (e) { toast(erroTxt(e), true); }
+});
+async function salvarInicioBanco(data) {
+  try { await updateDoc(doc(db, 'ponto_empresas', EMP), {inicioBanco: data}); if (empresa) empresa.inicioBanco = data; toast('Banco de horas contando a partir de ' + dataBR(data) + '.'); renderBanco(); } catch (e) { toast(erroTxt(e), true); }
+}
+$('#f-ib').addEventListener('submit', ev => { ev.preventDefault(); salvarInicioBanco($('#ib-data').value); });
+$('#ib-zerar').addEventListener('click', () => {
+  const hoje = dkey(new Date());
+  if (confirm('Zerar o banco de horas de todos? O saldo passa a contar a partir de hoje (' + dataBR(hoje) + '). As batidas antigas continuam no relatório.')) salvarInicioBanco(hoje);
 });
 $('#f-jor').addEventListener('submit', async ev => {
   ev.preventDefault();
