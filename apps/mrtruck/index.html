@@ -33,6 +33,9 @@ button,input,textarea{font:inherit;color:inherit}
 .hd .emp b{display:block;font-size:13.5px;color:#222}
 .hd .num{text-align:center;font-size:11.5px;border-left:1.5px solid #333;padding-left:10px;flex-shrink:0}
 .hd .num b{display:block;font-family:"Courier New",monospace;font-size:18px;color:#b3141b;margin-top:4px}
+.hd .num input{display:block;width:118px;margin-top:4px;border:none;border-bottom:2px solid #b3141b;background:#fff5f5;font-family:"Courier New",monospace;font-size:21px;font-weight:700;color:#b3141b;text-align:center;height:38px;outline:none;border-radius:4px 4px 0 0}
+.hd .num input:focus{background:#ffe9e9}
+.hd .num small{display:block;font-size:10.5px;color:#b3141b;margin-top:3px;font-weight:700}
 .f{display:flex;align-items:flex-end;gap:8px;margin-top:14px}
 .f label{font-weight:700;white-space:nowrap;font-size:16px;padding-bottom:6px}
 .f input{flex:1;min-width:0;border:none;border-bottom:1.5px solid var(--line);border-radius:0;background:transparent;height:38px;padding:0 4px;font-size:19px;color:var(--ink);outline:none;font-family:inherit}
@@ -153,7 +156,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
 const KEY='mrtruck_ficha_papel_v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const pad6=n=>String(n).padStart(6,'0');
+const pad6=n=>typeof n==='number'?String(n).padStart(6,'0'):String(n??'');
 const normPlaca=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const int=s=>parseInt(String(s||'').replace(/\D/g,''))||0;
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -176,9 +179,9 @@ function seed(){
         {placa:'QWE4R56',modelo:'Volvo VM 270',chassi:'655102',km:274900}]},
       {id:'c2',nome:'João Batista',tel:'',veiculos:[{placa:'JBS7A88',modelo:'Volvo FH 420',chassi:'598731',km:861450}]}],
     fichas:[
-      {id:'f1',num:1,cid:'c1',cliente:'Transportadora Exemplo',data:'2026-09-02T07:40',motorista:'Gabriel',veiculos:[{placa:'ABC1D23',modelo:'Volvo FH 540',chassi:'680980',km:498700}],servico:'Revisão\nTroca de óleo e filtros',pecas:'38 L óleo\n1 filtro de óleo',assinatura:null},
-      {id:'f2',num:2,cid:'c2',cliente:'João Batista',data:'2026-10-21T13:00',motorista:'João Batista',veiculos:[{placa:'JBS7A88',modelo:'Volvo FH 420',chassi:'598731',km:861450}],servico:'Troca de embreagem',pecas:'1 kit embreagem\n1 rolamento',assinatura:null},
-      {id:'f3',num:3,cid:'c1',cliente:'Transportadora Exemplo',data:'2026-11-12T07:30',motorista:'Rodrigo',veiculos:[{placa:'BRA2E19',modelo:'Volvo FH 460',chassi:'712455',km:388120},{placa:'QWE4R56',modelo:'Volvo VM 270',chassi:'655102',km:274900}],servico:'Revisão dos freios nos dois caminhões',pecas:'',assinatura:null}]};
+      {id:'f1',num:'030241',cid:'c1',cliente:'Transportadora Exemplo',data:'2026-09-02T07:40',motorista:'Gabriel',veiculos:[{placa:'ABC1D23',modelo:'Volvo FH 540',chassi:'680980',km:498700}],servico:'Revisão\nTroca de óleo e filtros',pecas:'38 L óleo\n1 filtro de óleo',assinatura:null},
+      {id:'f2',num:'030242',cid:'c2',cliente:'João Batista',data:'2026-10-21T13:00',motorista:'João Batista',veiculos:[{placa:'JBS7A88',modelo:'Volvo FH 420',chassi:'598731',km:861450}],servico:'Troca de embreagem',pecas:'1 kit embreagem\n1 rolamento',assinatura:null},
+      {id:'f3',num:'030243',cid:'c1',cliente:'Transportadora Exemplo',data:'2026-11-12T07:30',motorista:'Rodrigo',veiculos:[{placa:'BRA2E19',modelo:'Volvo FH 460',chassi:'712455',km:388120},{placa:'QWE4R56',modelo:'Volvo VM 270',chassi:'655102',km:274900}],servico:'Revisão dos freios nos dois caminhões',pecas:'',assinatura:null}]};
 }
 let db;
 function load(){try{const s=localStorage.getItem(KEY);if(s){db=JSON.parse(s);db.config={...CONFIG_PADRAO,...db.config};return;}}catch(e){} db=seed();}
@@ -198,17 +201,17 @@ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();}
 let tela={v:'nova'};          // nova | salvas | cliente | ver
 let edit=null;                // ficha sendo editada (id) ou null
 let F=null;                   // dados do formulário
-function novoForm(){F={cliente:'',motorista:'',data:hoje(),veiculos:[{placa:'',modelo:'',chassi:'',km:''}],servico:'',pecas:'',assinatura:null};edit=null;}
+function novoForm(){F={num:'',cliente:'',motorista:'',data:hoje(),veiculos:[{placa:'',modelo:'',chassi:'',km:''}],servico:'',pecas:'',assinatura:null};edit=null;}
 novoForm();
 
 /* ---------- tela: ficha (igual ao papel) ---------- */
 function logoMini(){const C=db.config;return C.logo?`<img src="${C.logo}" alt="">`:`${truckSvg}<div class="t"><span>MR</span><span>TRUCK SERVICE</span></div>`;}
 function vNova(){
-  const C=db.config,d=new Date(F.data),num=edit?fichaById(edit).num:db.seq;
+  const C=db.config,d=new Date(F.data);
   return `<div class="sheet">
     <div class="hd"><div class="logo">${logoMini()}</div>
       <div class="emp"><b>${esc(C.nome)}</b>${esc(C.cidade)} · Fone ${esc(C.fone)}<br>CNPJ ${esc(C.cnpj)}</div>
-      <div class="num">Pré Ordem<br>de Serviço<b>Nº ${pad6(num)}</b></div></div>
+      <div class="num">Pré Ordem<br>de Serviço<input id="iNum" value="${esc(F.num)}" placeholder="Nº" inputmode="numeric" autocomplete="off"><small>↑ digite o Nº</small></div></div>
 
     <div class="f"><label>Cliente:</label><input id="iCliente" list="lClientes" value="${esc(F.cliente)}" autocomplete="off" autocapitalize="words"></div>
     <datalist id="lClientes">${db.clientes.map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>
@@ -251,7 +254,7 @@ function conhecidosHTML(){
 }
 function lerForm(){
   if(!$('#iCliente'))return;
-  F.cliente=$('#iCliente').value;F.motorista=$('#iMotorista').value;F.servico=$('#iServico').value;F.pecas=$('#iPecas').value;
+  F.num=$('#iNum').value;F.cliente=$('#iCliente').value;F.motorista=$('#iMotorista').value;F.servico=$('#iServico').value;F.pecas=$('#iPecas').value;
   document.querySelectorAll('#veis input[data-k]').forEach(el=>{F.veiculos[+el.dataset.i][el.dataset.k]=el.value;});
   const s=padData();if(s)F.assinatura=s;
 }
@@ -398,6 +401,10 @@ function render(){
 function salvar(){
   lerForm();
   const er=m=>{$('#erro').innerHTML=`<div class="err">${m}</div>`;$('#erro').scrollIntoView({behavior:'smooth',block:'center'});};
+  const num=String(F.num||'').trim();
+  if(!num){er('Digite o <b>número da ordem de serviço</b> (Nº), lá em cima, no canto direito da folha.');setTimeout(()=>$('#iNum').focus(),400);return;}
+  const rep=db.fichas.find(x=>String(x.num).trim()===num&&x.id!==edit);
+  if(rep)return er(`Já existe uma ficha com o Nº <b>${esc(num)}</b> (cliente ${esc(rep.cliente)}). Confira o número.`);
   const nome=F.cliente.trim();
   if(!nome)return er('Escreva o nome do cliente.');
   const vs=F.veiculos.map(v=>({placa:normPlaca(v.placa),modelo:v.modelo.trim(),chassi:v.chassi.trim().toUpperCase(),km:int(v.km)})).filter(v=>v.placa||v.modelo||v.chassi);
@@ -414,10 +421,10 @@ function salvar(){
   vs.forEach(v=>{const ex=c.veiculos.find(x=>x.placa===v.placa);
     if(ex){if(v.modelo)ex.modelo=v.modelo;if(v.chassi)ex.chassi=v.chassi;if(v.km>(ex.km||0))ex.km=v.km;}
     else c.veiculos.push({...v});});
-  const dados={cid:c.id,cliente:c.nome,motorista:F.motorista.trim(),veiculos:vs,servico:F.servico.trim(),pecas:F.pecas.trim(),assinatura:F.assinatura};
+  const dados={num,cid:c.id,cliente:c.nome,motorista:F.motorista.trim(),veiculos:vs,servico:F.servico.trim(),pecas:F.pecas.trim(),assinatura:F.assinatura};
   let f;
   if(edit){f=fichaById(edit);Object.assign(f,dados);}
-  else{f={id:uid('f'),num:db.seq++,data:F.data,...dados};db.fichas.push(f);}
+  else{f={id:uid('f'),data:F.data,...dados};db.fichas.push(f);}
   save();novoForm();tela={v:'ver',id:f.id,salvo:true};render();
 }
 
@@ -447,7 +454,7 @@ document.addEventListener('click',e=>{
     limparForm:()=>{novoForm();render();},
     cancelarEd:()=>{const id=edit;novoForm();tela={v:'ver',id};render();},
     fichaPara:()=>{if(tela.v==='cliente'&&!cadSalvar(true))return;const c=cliById(d.id);novoForm();F.cliente=c.nome;if(c.veiculos.length===1)F.veiculos=[{placa:c.veiculos[0].placa,modelo:c.veiculos[0].modelo||'',chassi:c.veiculos[0].chassi||'',km:''}];tela={v:'nova'};render();},
-    editar:()=>{const f=fichaById(d.id);edit=f.id;F={cliente:f.cliente,motorista:f.motorista,data:f.data,veiculos:f.veiculos.map(v=>({...v,km:v.km||''})),servico:f.servico,pecas:f.pecas,assinatura:f.assinatura};tela={v:'nova'};render();},
+    editar:()=>{const f=fichaById(d.id);edit=f.id;F={num:pad6(f.num),cliente:f.cliente,motorista:f.motorista,data:f.data,veiculos:f.veiculos.map(v=>({...v,km:v.km||''})),servico:f.servico,pecas:f.pecas,assinatura:f.assinatura};tela={v:'nova'};render();},
     imprimir:()=>{$('#printArea').innerHTML=paperHTML(fichaById(tela.id));setTimeout(()=>window.print(),80);},
     apagar:()=>modal(`<h3>Apagar esta ficha?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
     apagarOk:()=>{const f=fichaById(tela.id);db.fichas=db.fichas.filter(x=>x.id!==f.id);save();closeModal();CAD=cadDoCliente(cliById(f.cid));tela={v:'cliente',id:f.cid};render();toast('Ficha apagada');},
@@ -456,14 +463,13 @@ document.addEventListener('click',e=>{
     editVeiC:()=>{const v=cliById(tela.id).veiculos[+d.i];modal(`<h3>Corrigir veículo</h3><form id="fVeiC" data-i="${d.i}" autocomplete="off"><div id="mErro"></div><label>Placa</label><input name="placa" maxlength="8" value="${esc(v.placa)}" style="text-transform:uppercase;font-family:'Courier New';font-weight:800;font-size:20px"><label>Modelo</label><input name="modelo" value="${esc(v.modelo||'')}"><label>Chassi</label><input name="chassi" value="${esc(v.chassi||'')}"><button class="B">SALVAR</button></form><button class="lnk" style="color:var(--red)" data-act="tiraVeiC" data-i="${d.i}">Tirar este veículo do cliente</button><button class="lnk" data-act="fechar">Cancelar</button>`);},
     tiraVeiC:()=>{cliById(tela.id).veiculos.splice(+d.i,1);save();closeModal();render();toast('Veículo tirado');},
     editCli:()=>{const c=cliById(tela.id);modal(`<h3>Corrigir cliente</h3><form id="fCli" autocomplete="off"><label>Nome</label><input name="nome" value="${esc(c.nome)}"><label>WhatsApp</label><input name="tel" inputmode="tel" value="${esc(c.tel||'')}" placeholder="(14) 9...."><button class="B">SALVAR</button></form><button class="lnk" data-act="fechar">Cancelar</button>`);},
-    limparEx:()=>modal(`<h3>Apagar os exemplos?</h3><label>Número da próxima ficha (o do talão de papel)</label><input id="seqIn" inputmode="numeric" value="1"><button class="B" data-act="limparExOk">SIM, COMEÇAR DE VERDADE</button><button class="B white" data-act="fechar">AGORA NÃO</button>`),
-    limparExOk:()=>{db={config:db.config,seq:int($('#seqIn').value)||1,exemplo:false,clientes:[],fichas:[]};save();closeModal();novoForm();tela={v:'nova'};render();toast('Pronto! Pode usar 👍');},
+    limparEx:()=>modal(`<h3>Apagar os exemplos?</h3><p style="color:var(--mut);margin-bottom:6px">Os clientes e fichas de exemplo vão sumir.</p><button class="B" data-act="limparExOk">SIM, COMEÇAR DE VERDADE</button><button class="B white" data-act="fechar">AGORA NÃO</button>`),
+    limparExOk:()=>{db={config:db.config,exemplo:false,clientes:[],fichas:[]};save();closeModal();novoForm();tela={v:'nova'};render();toast('Pronto! Pode usar 👍');},
     config:()=>{const C=db.config;modal(`<h3>Dados da oficina</h3><form id="fCfg" autocomplete="off">
       <label>Logo (foto da logo)</label><input type="file" accept="image/*" id="logoIn" style="padding-top:12px">
       <label>Nome da empresa</label><input name="nome" value="${esc(C.nome)}">
       <label>Endereço</label><input name="end1" value="${esc(C.end1)}"><label>Bairro</label><input name="end2" value="${esc(C.end2)}"><label>Cidade / CEP</label><input name="end3" value="${esc(C.end3)}">
       <label>CNPJ</label><input name="cnpj" value="${esc(C.cnpj)}"><label>IE</label><input name="ie" value="${esc(C.ie)}"><label>Telefone</label><input name="fone" value="${esc(C.fone)}"><label>Cidade (rodapé)</label><input name="cidade" value="${esc(C.cidade)}">
-      <label>Número da próxima ficha</label><input name="seq" inputmode="numeric" value="${db.seq}">
       <button class="B">SALVAR</button></form>
       <h3 style="margin-top:20px;font-size:18px">Cópia de segurança</h3>
       <button class="B white" data-act="exportar">⬇️ Baixar cópia</button>
@@ -495,7 +501,7 @@ document.addEventListener('submit',e=>{
     if(i!==undefined)Object.assign(c.veiculos[+i],v);else c.veiculos.push({...v,km:0});
     save();closeModal();render();toast('Salvo');return;}
   if(f.id==='fCli'){const c=cliById(tela.id);const n=g('nome');if(n){c.nome=n;db.fichas.filter(x=>x.cid===c.id).forEach(x=>x.cliente=n);}c.tel=g('tel');save();closeModal();render();toast('Salvo');return;}
-  if(f.id==='fCfg'){const C=db.config;['nome','end1','end2','end3','cnpj','ie','fone','cidade'].forEach(k=>C[k]=g(k));const s=int(g('seq'));if(s)db.seq=s;save();closeModal();render();toast('Salvo');return;}
+  if(f.id==='fCfg'){const C=db.config;['nome','end1','end2','end3','cnpj','ie','fone','cidade'].forEach(k=>C[k]=g(k));save();closeModal();render();toast('Salvo');return;}
 });
 document.addEventListener('change',e=>{
   const t=e.target;

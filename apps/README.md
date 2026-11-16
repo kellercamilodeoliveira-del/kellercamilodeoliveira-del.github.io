@@ -47,5 +47,5 @@ Regras para o agente Mecânico:
 - App: https://kellercamilodeoliveira-del.github.io/apps/mrtruck/ (arquivo único `apps/mrtruck/index.html`).
 - Cliente: MR Truck Service LTDA - ME (São Manuel-SP), oficina de caminhões Volvo.
 - Ficha igual ao talão de papel; cada cliente tem cadastro com vários caminhões (botão "Adicionar mais um caminhão").
-- O número da ficha só avança ao salvar uma FICHA (cadastro de cliente não gasta número).
+- O Nº da ordem de serviço é digitado à mão pelo dono (campo no canto direito da folha), obrigatório e sem repetir. Nada de número automático.
 - Dados ficam só no aparelho (localStorage `mrtruck_ficha_papel_v1`), com cópia de segurança em Ajustes. Não mudar essa chave sem passar pelo Keller.
