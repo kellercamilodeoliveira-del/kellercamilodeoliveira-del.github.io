@@ -1,0 +1,27 @@
+    // --- Fichas de Serviço (MR Truck e outras oficinas) --- coleções os_oficinas e os_usuarios
+    // Colar no Firebase (projeto escritorio-c3acb) > Firestore > Regras, ao lado do bloco do Ponto.
+    // Usa a mesma função pontoMaster() do Ponto (o administrador é o mesmo).
+    function osPerfil() { return /databases/$(database)/documents/os_usuarios/$(request.auth.uid); }
+    function osDono(o) { return request.auth != null && exists(osPerfil()) && get(osPerfil()).data.oficinaId == o; }
+    function osLiberada(o) {
+      let of = get(/databases/$(database)/documents/os_oficinas/$(o)).data;
+      return of.status == 'ativo' || (of.status == 'teste' && of.fimTeste > request.time);
+    }
+
+    match /os_usuarios/{uid} {
+      allow get: if request.auth != null && (request.auth.uid == uid || pontoMaster());
+      allow list, create, update, delete: if pontoMaster();
+    }
+
+    match /os_oficinas/{o} {
+      allow get: if pontoMaster() || osDono(o);
+      allow list, create, delete: if pontoMaster();
+      allow update: if pontoMaster() || (osDono(o) && osLiberada(o)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'fimTeste', 'donoUid', 'email']));
+
+      match /{colecao}/{id} {
+        allow read: if pontoMaster() || osDono(o);
+        allow write: if pontoMaster() || (osDono(o) && osLiberada(o));
+      }
+    }
+    // --- fim Fichas de Serviço ---
