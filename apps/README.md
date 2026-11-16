@@ -61,5 +61,5 @@ Regras para o agente Mecânico:
   - Firebase `escritorio-c3acb`, coleções `os_oficinas/{oficina}/clientes|fichas` e `os_usuarios/{uid}` ({oficinaId, papel:'dono'}).
   - Administrador = mesma regra `pontoMaster()` do Ponto (o app descobre que é admin porque consegue listar `os_oficinas`; o e-mail não fica no código).
   - Painel do administrador: cadastrar oficina (cria login e senha da oficina), Liberar / Teste 7 dias / Bloquear, Ver fichas, Trocar senha.
-  - Regras: `apps/mrtruck-teste/firestore.rules` — o Keller precisa colar no Firebase ao lado do bloco do Ponto (sem isso ninguém entra).
+  - Regras: `apps/mrtruck-teste/firestore.rules` — PUBLICADAS no Firebase em 16/11/2026, logo depois do bloco do Ponto.
   - Depois das regras publicadas e testado: copiar `mrtruck-teste/index.html` para `mrtruck/` (título sem TESTE, `PREFIXO='mrtruck-'` no sw.js, subir VERSAO). Na primeira entrada da oficina, as fichas guardadas no aparelho sobem sozinhas para a nuvem.
