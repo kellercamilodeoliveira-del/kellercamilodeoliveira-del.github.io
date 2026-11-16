@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b2f35">
+<title>MR Truck — Pré Ordem de Serviço</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link rel="icon" href="icone-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="MR Truck">
+<style>
+:root{--ink:#0c2a80;--line:#8c939c;--txt:#1b1e22;--mut:#6b737d;--green:#139a5b;--blue:#1d4ed8;--wa:#1fa855;--red:#c8372a}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:#e7e3dc;color:var(--txt);font-family:Arial,Helvetica,sans-serif;font-size:17px}
+button,input,textarea{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:#2b2f35;display:flex;gap:6px;padding:8px;justify-content:center}
+.top button{flex:1;max-width:260px;height:50px;border:none;border-radius:12px;background:#3c424a;color:#cfd5dc;font-size:17px;font-weight:800;cursor:pointer}
+.top button.on{background:#fff;color:#111}
+.wrap{max-width:640px;margin:0 auto;padding:14px 10px 40px}
+
+/* folha */
+.sheet{background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.15);padding:18px 16px 22px}
+.hd{display:flex;gap:12px;align-items:center;border-bottom:3px solid #333;padding-bottom:10px;margin-bottom:6px}
+.hd .logo{width:96px;flex-shrink:0;text-align:center}
+.hd .logo img{max-width:96px;max-height:60px}
+.hd .logo .t{display:inline-flex;border:2px solid #222;font-weight:900;font-size:11px;line-height:1.1}
+.hd .logo .t span{padding:2px 3px}.hd .logo .t span+span{background:#222;color:#fff}
+.hd .logo svg{width:44px;height:22px;display:block;margin:0 auto 2px}
+.hd .emp{flex:1;min-width:0;font-size:11px;color:#444;line-height:1.35}
+.hd .emp b{display:block;font-size:13.5px;color:#222}
+.hd .num{text-align:center;font-size:11.5px;border-left:1.5px solid #333;padding-left:10px;flex-shrink:0}
+.hd .num b{display:block;font-family:"Courier New",monospace;font-size:18px;color:#b3141b;margin-top:4px}
+.f{display:flex;align-items:flex-end;gap:8px;margin-top:14px}
+.f label{font-weight:700;white-space:nowrap;font-size:16px;padding-bottom:6px}
+.f input{flex:1;min-width:0;border:none;border-bottom:1.5px solid var(--line);border-radius:0;background:transparent;height:38px;padding:0 4px;font-size:19px;color:var(--ink);outline:none;font-family:inherit}
+.f input:focus{border-bottom:2.5px solid var(--blue);background:#f5f8ff}
+.f input.pl{font-family:"Courier New",monospace;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.g2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:0 12px}
+
+/* veículos */
+.veis{margin-top:12px}
+.vei{position:relative;border:1.5px solid #c9ced5;border-radius:10px;padding:4px 12px 12px;margin-top:12px;background:#fcfcfd}
+.vei .vt{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.vei .x{border:1.5px solid #e2b5b0;color:var(--red);background:#fff;border-radius:8px;height:32px;padding:0 10px;font-size:14px;font-weight:700;cursor:pointer}
+.addv{width:100%;margin-top:12px;height:58px;border:2px dashed var(--blue);border-radius:12px;background:#f2f6ff;color:var(--blue);font-size:18px;font-weight:800;cursor:pointer}
+.conhecidos{margin-top:12px;background:#fff7e3;border:1.5px solid #f0d89c;border-radius:10px;padding:10px 12px}
+.conhecidos p{font-size:14.5px;font-weight:700;color:#6b5420;margin-bottom:8px}
+.conhecidos .chips{display:flex;flex-wrap:wrap;gap:8px}
+.cp{border:2px solid #222;border-radius:6px;background:#fff;font-family:"Courier New",monospace;font-weight:800;font-size:17px;padding:6px 10px;cursor:pointer}
+.cp small{display:block;font-family:Arial;font-weight:600;font-size:11px;color:var(--mut)}
+.cp.usado{opacity:.35;pointer-events:none}
+
+.sec{font-weight:700;font-size:16px;margin-top:22px}
+textarea.ruled{display:block;width:100%;border:none;outline:none;resize:vertical;font-size:19px;color:var(--ink);font-family:inherit;padding:0 4px;line-height:38px;height:268px;background:transparent;
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 37px,var(--line) 37px,var(--line) 38px);background-attachment:local}
+textarea.ruled:focus{background-color:#f5f8ff}
+.rod{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px;margin-top:22px;font-size:16px}
+.rod u{text-decoration:none;border-bottom:1.5px solid var(--line);color:var(--ink);padding:0 8px;font-size:18px}
+.ass{margin-top:16px}
+.padwrap{position:relative;border:2px dashed #b2b9c2;border-radius:10px;overflow:hidden;background:#fff}
+#pad{display:block;width:100%;height:150px;touch-action:none}
+#padHint{position:absolute;inset:0;display:grid;place-items:center;color:#a5adb7;font-size:16px;pointer-events:none}
+.ass .ln{border-top:1.5px solid #333;margin:0 20px;text-align:center;font-weight:700;padding-top:4px;font-size:15px}
+.ass .apaga{background:none;border:none;color:var(--mut);text-decoration:underline;font-size:15px;padding:8px;cursor:pointer;display:block;margin:0 auto}
+.ass img{display:block;max-width:80%;max-height:110px;margin:0 auto}
+
+.B{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:68px;border:none;border-radius:16px;font-size:21px;font-weight:800;color:#fff;background:var(--green);cursor:pointer;margin-top:14px;text-decoration:none;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.B:active{transform:translateY(2px);box-shadow:none}
+.B.blue{background:var(--blue)}.B.wa{background:var(--wa)}
+.B.white{background:#fff;color:#222;border:2px solid #cfd4da;box-shadow:none}
+.lnk{display:block;width:100%;background:none;border:none;color:var(--mut);text-decoration:underline;font-size:16px;padding:14px;cursor:pointer}
+.err{background:#fde8e6;color:#9b2216;border-radius:12px;padding:12px 14px;font-weight:700;margin-top:14px}
+
+/* lista */
+.busca{width:100%;height:58px;border-radius:14px;border:2px solid #cfd4da;padding:0 16px;font-size:19px;outline:none;margin-bottom:12px;background:#fff}
+.card{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer}
+.card b{font-size:19px}
+.card .s{color:var(--mut);font-size:15px;margin-top:3px}
+.placas{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.placa{border:2px solid #222;border-radius:5px;font-family:"Courier New",monospace;font-weight:800;font-size:15px;padding:2px 7px;background:#fff}
+.h2{font-size:14px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 8px}
+.fic{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.fic .n{font-family:"Courier New",monospace;font-weight:800;color:#b3141b}
+.back{background:none;border:none;color:var(--blue);font-size:18px;font-weight:800;padding:4px 0 12px;cursor:pointer}
+.ok{background:#e1f5ea;color:#0e6e41;border-radius:14px;padding:16px;text-align:center;font-size:20px;font-weight:800;margin-bottom:12px}
+.paperBox{background:#cfd4da;border-radius:10px;padding:8px;overflow:hidden}
+.paperScale{transform-origin:top left}
+.empty{text-align:center;color:var(--mut);padding:26px;border:2px dashed #c3c9d0;border-radius:14px}
+.ex{background:#fff7e3;border:1.5px solid #f0d89c;border-radius:12px;padding:12px 14px;font-size:15px;color:#6b5420;margin-bottom:12px}
+.ex button{margin-top:8px;background:#8a5a00;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+.gear{display:block;margin:24px auto 0;background:none;border:none;color:#8a9097;font-size:14px;text-decoration:underline;cursor:pointer}
+
+#modal{position:fixed;inset:0;background:rgba(10,14,20,.55);z-index:50;display:none;align-items:flex-end;justify-content:center}
+#modal.show{display:flex}
+#modal .box{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:640px;padding:20px 16px calc(24px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+#modal h3{font-size:21px;margin-bottom:10px}
+#modal label{display:block;font-weight:700;margin:10px 0 4px}
+#modal input{width:100%;height:52px;border:2px solid #cfd4da;border-radius:12px;padding:0 12px;font-size:17px;outline:none}
+#toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;font-weight:800;padding:14px 20px;border-radius:14px;opacity:0;transition:.25s;z-index:60;pointer-events:none;font-size:17px;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* impressão (A4 igual ao talão) */
+.paper{width:760px;background:#fff;color:#151515;font-family:Arial,Helvetica,sans-serif;padding:30px 36px 34px;font-size:13px;line-height:1.3}
+.ph{display:grid;grid-template-columns:210px 1fr 190px;align-items:center;gap:10px;border-bottom:3px solid #3a3a3a;padding-bottom:10px;margin-bottom:12px}
+.plogo{display:flex;align-items:center;justify-content:center;min-height:80px}
+.plogo img{max-width:200px;max-height:90px}
+.defmark{text-align:center}
+.defmark .t{display:inline-flex;border:2.5px solid #222;font-weight:900;font-size:19px}
+.defmark .t span{padding:2px 6px}.defmark .t span+span{background:#222;color:#fff}
+.defmark small{display:block;font-size:8.5px;font-weight:700;margin-top:3px;color:#333}
+.defmark svg{width:70px;height:34px;display:block;margin:0 auto 4px}
+.pinfo{text-align:center;display:flex;flex-direction:column;font-size:11.5px;color:#333}
+.pinfo b{font-size:15.5px;color:#222;margin-bottom:4px}
+.pnum{border-left:1.5px solid #333;padding-left:14px;font-size:12px;display:flex;flex-direction:column;gap:14px;text-align:center;align-self:stretch;justify-content:center}
+.pnum .nn b{font-family:"Courier New",monospace;font-size:19px;color:#b3141b;border-bottom:1px solid #333;padding:0 8px}
+.prow{display:flex;align-items:flex-end;gap:6px;margin:10px 0}
+.prow label{font-weight:700;white-space:nowrap;color:#222}
+.prow .v{border-bottom:1px solid #555;min-height:20px;padding:0 4px 1px;color:#0c2a80;font-size:14px;white-space:nowrap;overflow:hidden}
+.prow .grow{flex:1}.prow .w1{width:150px}.prow .w2{width:96px}.prow .w3{width:110px}
+.psec{font-weight:700;margin-top:14px;color:#222}
+.pl{border-bottom:1px solid #8a8a8a;min-height:26px;padding:5px 4px 2px;color:#0c2a80;font-size:14px}
+.pfoot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px;gap:20px}
+.pdate{font-size:14px;white-space:nowrap}
+.pdate u{text-decoration:none;border-bottom:1px solid #444;padding:0 8px;color:#0c2a80;display:inline-block;min-width:30px;text-align:center}
+.psig{width:290px;text-align:center}
+.psig img{max-height:72px;max-width:270px;display:block;margin:0 auto -8px}
+.psig .sl{border-bottom:1px solid #333;height:1px}
+.psig span{display:block;font-weight:700;margin-top:4px}
+#printArea{display:none}
+@page{size:A4;margin:10mm}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{background:#fff}
+  #shell,#modal,#toast{display:none!important}
+  #printArea{display:block!important}
+  .paper{width:100%;padding:0}
+}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div class="top"><button id="tNova" data-act="nova">📝 Nova ficha</button><button id="tSalvas" data-act="salvas">👥 Clientes</button></div>
+  <main class="wrap" id="app"></main>
+</div>
+<div id="modal"><div class="box" id="mbox"></div></div>
+<div id="toast"></div>
+<div id="printArea"></div>
+
+<script>
+const KEY='mrtruck_ficha_papel_v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad6=n=>String(n).padStart(6,'0');
+const normPlaca=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const int=s=>parseInt(String(s||'').replace(/\D/g,''))||0;
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const hoje=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);};
+const dt=s=>s?new Date(s).toLocaleDateString('pt-BR'):'';
+const hr=s=>s?new Date(s).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+const linhas=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
+const kmTxt=k=>k?(+k).toLocaleString('pt-BR'):'';
+const nomeKey=n=>String(n||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ');
+const truckSvg=`<svg viewBox="0 0 64 32" fill="none" stroke="#222" stroke-width="2.6"><path d="M4 6h34v18H4zM38 11h12l8 8v5H38z"/><circle cx="14" cy="25" r="4" fill="#fff"/><circle cx="48" cy="25" r="4" fill="#fff"/></svg>`;
+
+const CONFIG_PADRAO={nome:'MR Truck Service LTDA - ME',slogan:'Mecatrônica Especializada em Caminhões Volvo',end1:'Rua Vitorio Maziero 00930',end2:'Jardim Bom Pastor II',end3:'São Manuel - SP - CEP 18650-000',cnpj:'21.749.210/0001-57',ie:'649.042.714.110',fone:'(14) 3841 5980',cidade:'São Manuel',logo:null};
+function seed(){
+  return {config:{...CONFIG_PADRAO},seq:4,exemplo:true,
+    clientes:[
+      {id:'c1',nome:'Transportadora Exemplo',tel:'',veiculos:[
+        {placa:'ABC1D23',modelo:'Volvo FH 540',chassi:'680980',km:512300},
+        {placa:'BRA2E19',modelo:'Volvo FH 460',chassi:'712455',km:388120},
+        {placa:'QWE4R56',modelo:'Volvo VM 270',chassi:'655102',km:274900}]},
+      {id:'c2',nome:'João Batista',tel:'',veiculos:[{placa:'JBS7A88',modelo:'Volvo FH 420',chassi:'598731',km:861450}]}],
+    fichas:[
+      {id:'f1',num:1,cid:'c1',cliente:'Transportadora Exemplo',data:'2026-09-02T07:40',motorista:'Gabriel',veiculos:[{placa:'ABC1D23',modelo:'Volvo FH 540',chassi:'680980',km:498700}],servico:'Revisão\nTroca de óleo e filtros',pecas:'38 L óleo\n1 filtro de óleo',assinatura:null},
+      {id:'f2',num:2,cid:'c2',cliente:'João Batista',data:'2026-10-21T13:00',motorista:'João Batista',veiculos:[{placa:'JBS7A88',modelo:'Volvo FH 420',chassi:'598731',km:861450}],servico:'Troca de embreagem',pecas:'1 kit embreagem\n1 rolamento',assinatura:null},
+      {id:'f3',num:3,cid:'c1',cliente:'Transportadora Exemplo',data:'2026-11-12T07:30',motorista:'Rodrigo',veiculos:[{placa:'BRA2E19',modelo:'Volvo FH 460',chassi:'712455',km:388120},{placa:'QWE4R56',modelo:'Volvo VM 270',chassi:'655102',km:274900}],servico:'Revisão dos freios nos dois caminhões',pecas:'',assinatura:null}]};
+}
+let db;
+function load(){try{const s=localStorage.getItem(KEY);if(s){db=JSON.parse(s);db.config={...CONFIG_PADRAO,...db.config};return;}}catch(e){} db=seed();}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){toast('Não deu para salvar neste aparelho');}}
+load();
+const cliById=id=>db.clientes.find(c=>c.id===id);
+const cliByNome=n=>db.clientes.find(c=>nomeKey(c.nome)===nomeKey(n));
+const fichaById=id=>db.fichas.find(f=>f.id===id);
+const donoDaPlaca=p=>db.clientes.find(c=>c.veiculos.some(v=>v.placa===p));
+
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2300);}
+function modal(h){$('#mbox').innerHTML=h;$('#modal').classList.add('show');}
+function closeModal(){$('#modal').classList.remove('show');}
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+/* ---------- estado ---------- */
+let tela={v:'nova'};          // nova | salvas | cliente | ver
+let edit=null;                // ficha sendo editada (id) ou null
+let F=null;                   // dados do formulário
+function novoForm(){F={cliente:'',motorista:'',data:hoje(),veiculos:[{placa:'',modelo:'',chassi:'',km:''}],servico:'',pecas:'',assinatura:null};edit=null;}
+novoForm();
+
+/* ---------- tela: ficha (igual ao papel) ---------- */
+function logoMini(){const C=db.config;return C.logo?`<img src="${C.logo}" alt="">`:`${truckSvg}<div class="t"><span>MR</span><span>TRUCK SERVICE</span></div>`;}
+function vNova(){
+  const C=db.config,d=new Date(F.data),num=edit?fichaById(edit).num:db.seq;
+  return `<div class="sheet">
+    <div class="hd"><div class="logo">${logoMini()}</div>
+      <div class="emp"><b>${esc(C.nome)}</b>${esc(C.cidade)} · Fone ${esc(C.fone)}<br>CNPJ ${esc(C.cnpj)}</div>
+      <div class="num">Pré Ordem<br>de Serviço<b>Nº ${pad6(num)}</b></div></div>
+
+    <div class="f"><label>Cliente:</label><input id="iCliente" list="lClientes" value="${esc(F.cliente)}" autocomplete="off" autocapitalize="words"></div>
+    <datalist id="lClientes">${db.clientes.map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>
+    <div id="conhecidos">${conhecidosHTML()}</div>
+    <div class="f"><label>Data entrada:</label><input value="${dt(F.data)} ${hr(F.data)}" readonly style="color:#555"></div>
+    <div class="f"><label>Nome do Motorista:</label><input id="iMotorista" value="${esc(F.motorista)}" autocomplete="off" autocapitalize="words"></div>
+
+    <div class="veis" id="veis">${veisHTML()}</div>
+    <button class="addv" data-act="addVei">➕ Adicionar mais um veículo</button>
+
+    <div class="sec">Descrição do Serviço</div>
+    <textarea class="ruled" id="iServico">${esc(F.servico)}</textarea>
+    <div class="sec">Descrição Peças</div>
+    <textarea class="ruled" id="iPecas">${esc(F.pecas)}</textarea>
+
+    <div class="rod">${esc(C.cidade)} <u>${d.getDate()}</u> de <u>${MESES[d.getMonth()]}</u> de <u>${d.getFullYear()}</u></div>
+    <div class="ass">
+      ${F.assinatura?`<img src="${F.assinatura}" alt=""><div class="ln">Assinatura do Motorista</div><button class="apaga" data-act="refazerAss">Assinar de novo</button>`:
+      `<div class="padwrap"><canvas id="pad"></canvas><div id="padHint">Motorista, assine aqui com o dedo ✍️</div></div><div class="ln">Assinatura do Motorista</div><button class="apaga" data-act="limparAss">Apagar assinatura</button>`}
+    </div>
+  </div>
+  <div id="erro"></div>
+  <button class="B" data-act="salvar">💾 SALVAR FICHA</button>
+  ${edit?`<button class="lnk" data-act="cancelarEd">Cancelar alteração</button>`:`<button class="lnk" data-act="limparForm">Limpar tudo e começar outra</button>`}`;
+}
+function veisHTML(){
+  return F.veiculos.map((v,i)=>`<div class="vei" data-i="${i}">
+    <div class="vt"><span>Veículo ${i+1}</span>${F.veiculos.length>1?`<button class="x" data-act="tiraVei" data-i="${i}">✕ Tirar</button>`:''}</div>
+    <div class="f"><label>Placa Veículo:</label><input class="pl" data-k="placa" data-i="${i}" value="${esc(v.placa)}" maxlength="8" autocomplete="off" autocapitalize="characters"></div>
+    <div class="f"><label>Modelo:</label><input data-k="modelo" data-i="${i}" value="${esc(v.modelo)}" autocomplete="off"></div>
+    <div class="g2"><div class="f"><label>Chassi:</label><input data-k="chassi" data-i="${i}" value="${esc(v.chassi)}" autocomplete="off"></div>
+    <div class="f"><label>Km:</label><input data-k="km" data-i="${i}" value="${esc(v.km)}" inputmode="numeric" autocomplete="off"></div></div>
+  </div>`).join('');
+}
+function conhecidosHTML(){
+  const c=cliByNome(F.cliente);if(!c||!c.veiculos.length)return'';
+  const usadas=F.veiculos.map(v=>normPlaca(v.placa));
+  return `<div class="conhecidos"><p>Caminhões deste cliente — toque para colocar na ficha:</p><div class="chips">
+    ${c.veiculos.map(v=>`<button class="cp ${usadas.includes(v.placa)?'usado':''}" data-act="usaVei" data-p="${v.placa}">${esc(v.placa)}<small>${esc(v.modelo||'')}</small></button>`).join('')}</div></div>`;
+}
+function lerForm(){
+  if(!$('#iCliente'))return;
+  F.cliente=$('#iCliente').value;F.motorista=$('#iMotorista').value;F.servico=$('#iServico').value;F.pecas=$('#iPecas').value;
+  document.querySelectorAll('#veis input[data-k]').forEach(el=>{F.veiculos[+el.dataset.i][el.dataset.k]=el.value;});
+  const s=padData();if(s)F.assinatura=s;
+}
+function redesenhaVeis(){$('#veis').innerHTML=veisHTML();$('#conhecidos').innerHTML=conhecidosHTML();}
+
+/* ---------- tela: fichas salvas ---------- */
+function vSalvas(){
+  return `${db.exemplo?`<div class="ex"><b>Estes são exemplos para treinar.</b> Quando for usar de verdade:<br><button data-act="limparEx">Apagar exemplos</button></div>`:''}
+  <button class="B" data-act="novoCli" style="margin:0 0 14px">➕ CADASTRAR CLIENTE NOVO</button>
+  <input class="busca" id="busca" placeholder="🔍 Procurar cliente ou placa" autocomplete="off">
+  <div id="lista">${listaClientes('')}</div>
+  <button class="gear" data-act="config">⚙︎ Dados da oficina e cópia de segurança</button>`;
+}
+function listaClientes(q){
+  const ql=nomeKey(q),qp=normPlaca(q);
+  const l=db.clientes.filter(c=>!ql||nomeKey(c.nome).includes(ql)||(qp&&c.veiculos.some(v=>v.placa.includes(qp)))).sort((a,b)=>a.nome.localeCompare(b.nome));
+  if(!db.clientes.length)return '<div class="empty">Nenhum cliente ainda.<br>Toque em <b>➕ CADASTRAR CLIENTE NOVO</b>.</div>';
+  return l.map(c=>{const n=db.fichas.filter(f=>f.cid===c.id).length;return `<div class="card" data-act="cliente" data-id="${c.id}"><b>${esc(c.nome)}</b>
+    <div class="s">${c.veiculos.length} veículo${c.veiculos.length===1?'':'s'} · ${n} ficha${n===1?'':'s'}</div>
+    <div class="placas">${c.veiculos.map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')}</div></div>`;}).join('')||'<div class="empty">Nada encontrado.</div>';
+}
+let CAD=null; // cadastro do cliente em edição
+function cadDoCliente(c){return {id:c?c.id:null,nome:c?c.nome:'',tel:c?(c.tel||''):'',veiculos:c&&c.veiculos.length?c.veiculos.map(v=>({...v})):[{placa:'',modelo:'',chassi:'',km:0}]};}
+function vCliente(){
+  const c=CAD.id?cliById(CAD.id):null;
+  const fs=c?db.fichas.filter(f=>f.cid===c.id).sort((a,b)=>b.data.localeCompare(a.data)):[];
+  return `<button class="back" data-act="salvas">‹ Voltar</button>
+  <div class="sheet">
+    <div style="font-size:22px;font-weight:800">${c?'Cadastro do cliente':'Cadastrar cliente novo'}</div>
+    <div class="f"><label>Cliente:</label><input id="cNome" value="${esc(CAD.nome)}" autocomplete="off" autocapitalize="words" placeholder="Nome ou empresa"></div>
+    <div class="f"><label>WhatsApp:</label><input id="cTel" value="${esc(CAD.tel)}" inputmode="tel" autocomplete="off" placeholder="(14) 9...."></div>
+    <div class="sec" style="font-size:18px">🚚 Caminhões deste cliente (${CAD.veiculos.length})</div>
+    <div id="cVeis">${cadVeisHTML()}</div>
+    <button class="addv" data-act="cadAddVei">➕ Adicionar mais um caminhão</button>
+  </div>
+  <div id="erro"></div>
+  <button class="B" data-act="cadSalvar">💾 SALVAR CADASTRO</button>
+  ${c?`<button class="B blue" data-act="fichaPara" data-id="${c.id}">📝 Fazer ficha para este cliente</button>
+  <div class="h2">Fichas deste cliente (${fs.length})</div>
+  ${fs.map(f=>`<div class="card" data-act="ver" data-id="${f.id}"><div class="fic"><span class="n">Nº ${pad6(f.num)}</span><span class="s" style="margin:0">${dt(f.data)}</span></div>
+    <div class="placas">${f.veiculos.map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')}</div>
+    <div class="s" style="color:#222;margin-top:8px">${esc(linhas(f.servico)[0]||'')}</div></div>`).join('')||'<div class="empty">Nenhuma ficha ainda.</div>'}`:''}`;
+}
+function cadVeisHTML(){
+  return CAD.veiculos.map((v,i)=>`<div class="vei">
+    <div class="vt"><span>Caminhão ${i+1}</span><button class="x" data-act="cadTiraVei" data-i="${i}">✕ Tirar</button></div>
+    <div class="f"><label>Placa:</label><input class="pl" data-c="placa" data-i="${i}" value="${esc(v.placa)}" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="ABC1D23"></div>
+    <div class="f"><label>Modelo:</label><input data-c="modelo" data-i="${i}" value="${esc(v.modelo||'')}" autocomplete="off" placeholder="Ex.: Volvo FH 540"></div>
+    <div class="f"><label>Chassi:</label><input data-c="chassi" data-i="${i}" value="${esc(v.chassi||'')}" autocomplete="off"></div>
+  </div>`).join('')||'<div class="empty" style="margin-top:12px">Nenhum caminhão. Toque em ➕ abaixo.</div>';
+}
+function lerCad(){
+  if(!$('#cNome'))return;CAD.nome=$('#cNome').value;CAD.tel=$('#cTel').value;
+  document.querySelectorAll('#cVeis input[data-c]').forEach(el=>{CAD.veiculos[+el.dataset.i][el.dataset.c]=el.value;});
+}
+function cadSalvar(quieto){
+  lerCad();
+  const er=m=>{$('#erro').innerHTML=`<div class="err">${m}</div>`;$('#erro').scrollIntoView({behavior:'smooth',block:'center'});return null;};
+  const nome=CAD.nome.trim();if(!nome)return er('Escreva o nome do cliente.');
+  const outro=db.clientes.find(x=>nomeKey(x.nome)===nomeKey(nome)&&x.id!==CAD.id);
+  if(outro)return er(`Já existe um cliente chamado <b>${esc(outro.nome)}</b>. Volte e abra o cadastro dele.`);
+  const vs=CAD.veiculos.map(v=>({placa:normPlaca(v.placa),modelo:String(v.modelo||'').trim(),chassi:String(v.chassi||'').trim().toUpperCase()})).filter(v=>v.placa||v.modelo||v.chassi);
+  for(const v of vs){
+    if(v.placa.length!==7)return er(`A placa "${esc(v.placa||'(vazia)')}" está incompleta. Placa tem 7 letras/números, ex.: ABC1D23.`);
+    const dono=donoDaPlaca(v.placa);if(dono&&dono.id!==CAD.id)return er(`A placa ${v.placa} já está no cliente <b>${esc(dono.nome)}</b>.`);
+  }
+  if(new Set(vs.map(v=>v.placa)).size!==vs.length)return er('Tem placa repetida na lista.');
+  let c=CAD.id?cliById(CAD.id):null;
+  const kmAntigo=p=>((c&&c.veiculos.find(x=>x.placa===p))||{}).km||0;
+  const veiculos=vs.map(v=>({...v,km:kmAntigo(v.placa)}));
+  if(!c){c={id:uid('c'),nome,tel:CAD.tel.trim(),veiculos};db.clientes.push(c);}
+  else{c.nome=nome;c.tel=CAD.tel.trim();c.veiculos=veiculos;db.fichas.filter(f=>f.cid===c.id).forEach(f=>f.cliente=nome);}
+  save();CAD=cadDoCliente(c);
+  if(!quieto){tela={v:'cliente',id:c.id};render();toast('✅ Cadastro salvo');}
+  return c;
+}
+
+function vVer(){
+  const f=fichaById(tela.id);if(!f)return'';const c=cliById(f.cid)||{};
+  return `<button class="back" data-act="voltaCli" data-id="${f.cid}">‹ Voltar</button>
+  ${tela.salvo?`<div class="ok">✅ Ficha Nº ${pad6(f.num)} salva!</div>`:''}
+  <button class="B blue" data-act="imprimir" style="margin-top:0">🖨️ IMPRIMIR</button>
+  ${c.tel?`<a class="B wa" href="${waLink(f)}" target="_blank" rel="noopener">📲 MANDAR NO WHATSAPP</a>`:''}
+  <button class="B white" data-act="editar" data-id="${f.id}">✏️ COMPLETAR / CORRIGIR</button>
+  <div class="paperBox" id="pbox" style="margin-top:14px"><div class="paperScale" id="pscale">${paperHTML(f)}</div></div>
+  <button class="B" data-act="nova">📝 FAZER OUTRA FICHA</button>
+  <button class="lnk" style="color:var(--red)" data-act="apagar">Apagar esta ficha</button>`;
+}
+
+/* ---------- folha A4 ---------- */
+function paperHTML(f){
+  const C=db.config,d=new Date(f.data);
+  const L=(t,min)=>{const a=linhas(t);while(a.length<min)a.push('');return a.map(l=>`<div class="pl">${esc(l)||'&nbsp;'}</div>`).join('');};
+  const logo=C.logo?`<img src="${C.logo}" alt="">`:`<div class="defmark">${truckSvg}<div class="t"><span>MR</span><span>TRUCK SERVICE</span></div><small>${esc(C.slogan)}</small></div>`;
+  const vs=f.veiculos.map(v=>`<div class="prow"><label>Modelo:</label><span class="v grow">${esc(v.modelo)}</span><label>Chassi:</label><span class="v w2">${esc(v.chassi)}</span><label>Km:</label><span class="v w3">${kmTxt(v.km)}</span><label>Placa Veículo:</label><span class="v w2">${esc(v.placa)}</span></div>`).join('');
+  const extra=Math.max(0,f.veiculos.length-1);
+  return `<div class="paper"><div class="ph"><div class="plogo">${logo}</div>
+    <div class="pinfo"><b>${esc(C.nome)}</b><span>${esc(C.end1)}</span><span>${esc(C.end2)}</span><span>${esc(C.end3)}</span><span>CNPJ ${esc(C.cnpj)}</span><span>IE: ${esc(C.ie)}</span></div>
+    <div class="pnum"><span>Fone: ${esc(C.fone)}</span><span>Pré Ordem de Serviço</span><div class="nn">Nº <b>${pad6(f.num)}</b></div></div></div>
+    <div class="prow"><label>Cliente:</label><span class="v grow">${esc(f.cliente)}</span><label>Data entrada:</label><span class="v w1">${dt(f.data)} ${hr(f.data)}</span></div>
+    <div class="prow"><label>Nome do Motorista:</label><span class="v grow">${esc(f.motorista)}</span></div>
+    ${vs}
+    <div class="psec">Descrição do Serviço</div>${L(f.servico,Math.max(5,9-extra))}
+    <div class="psec">Descrição Peças</div>${L(f.pecas,Math.max(5,9-extra))}
+    <div class="pfoot"><div class="pdate">${esc(C.cidade)} <u>${d.getDate()}</u> de <u style="min-width:110px">${MESES[d.getMonth()]}</u> de <u>${d.getFullYear()}</u></div>
+      <div class="psig">${f.assinatura?`<img src="${f.assinatura}" alt="">`:''}<div class="sl"></div><span>Assinatura do Motorista</span></div></div></div>`;
+}
+function fitPaper(){const b=$('#pbox'),s=$('#pscale');if(!b||!s)return;const sc=Math.min(1,(b.clientWidth-16)/760);s.style.transform=`scale(${sc})`;b.style.height=(s.firstElementChild.offsetHeight*sc+16)+'px';}
+window.addEventListener('resize',fitPaper);
+function waNum(t){let d=String(t||'').replace(/\D/g,'');if(d&&!d.startsWith('55'))d='55'+d;return d;}
+function waLink(f){
+  const c=cliById(f.cid)||{};
+  let t=`*${db.config.nome}*\nPré Ordem de Serviço Nº ${pad6(f.num)}\nCliente: ${f.cliente}\nEntrada: ${dt(f.data)} ${hr(f.data)}\nMotorista: ${f.motorista||'-'}\n\n*Veículo${f.veiculos.length>1?'s':''}:*\n`+f.veiculos.map(v=>`• ${v.placa} ${v.modelo||''}`).join('\n');
+  if(f.servico)t+=`\n\n*Serviço:*\n`+linhas(f.servico).map(s=>'• '+s).join('\n');
+  if(f.pecas)t+=`\n\n*Peças:*\n`+linhas(f.pecas).map(s=>'• '+s).join('\n');
+  return `https://wa.me/${waNum(c.tel)}?text=${encodeURIComponent(t)}`;
+}
+
+/* ---------- assinatura ---------- */
+let padDirty=false;
+function initPad(){
+  const c=$('#pad');if(!c)return;padDirty=false;
+  const r=c.getBoundingClientRect(),dpr=window.devicePixelRatio||1;c.width=r.width*dpr;c.height=r.height*dpr;
+  const g=c.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.lineWidth=2.8;g.lineCap='round';g.lineJoin='round';g.strokeStyle='#0c2a80';
+  let on=false,last=null;const pt=e=>{const b=c.getBoundingClientRect();return{x:e.clientX-b.left,y:e.clientY-b.top};};
+  c.onpointerdown=e=>{on=true;last=pt(e);try{c.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();};
+  c.onpointermove=e=>{if(!on)return;const p=pt(e);g.beginPath();g.moveTo(last.x,last.y);g.lineTo(p.x,p.y);g.stroke();last=p;if(!padDirty){padDirty=true;$('#padHint').style.display='none';}};
+  c.onpointerup=c.onpointercancel=()=>{on=false;};
+}
+function padData(){const c=$('#pad');if(!c||!padDirty)return null;const w=520,o=document.createElement('canvas');o.width=w;o.height=Math.round(w*c.height/c.width);o.getContext('2d').drawImage(c,0,0,o.width,o.height);return o.toDataURL('image/png');}
+
+/* ---------- render ---------- */
+function render(){
+  const V={nova:vNova,salvas:vSalvas,cliente:vCliente,ver:vVer};
+  $('#app').innerHTML=V[tela.v]();
+  $('#tNova').classList.toggle('on',tela.v==='nova');
+  $('#tSalvas').classList.toggle('on',tela.v!=='nova');
+  window.scrollTo(0,0);
+  if(tela.v==='nova')initPad();
+  if(tela.v==='ver')requestAnimationFrame(fitPaper);
+}
+
+/* ---------- salvar ---------- */
+function salvar(){
+  lerForm();
+  const er=m=>{$('#erro').innerHTML=`<div class="err">${m}</div>`;$('#erro').scrollIntoView({behavior:'smooth',block:'center'});};
+  const nome=F.cliente.trim();
+  if(!nome)return er('Escreva o nome do cliente.');
+  const vs=F.veiculos.map(v=>({placa:normPlaca(v.placa),modelo:v.modelo.trim(),chassi:v.chassi.trim().toUpperCase(),km:int(v.km)})).filter(v=>v.placa||v.modelo||v.chassi);
+  if(!vs.length)return er('Escreva a placa do veículo.');
+  for(const v of vs){
+    if(v.placa.length!==7)return er(`A placa "${esc(v.placa||'(vazia)')}" está incompleta. Placa tem 7 letras/números, ex.: ABC1D23.`);
+    const dono=donoDaPlaca(v.placa);
+    if(dono&&nomeKey(dono.nome)!==nomeKey(nome))return er(`A placa ${v.placa} já é do cliente <b>${esc(dono.nome)}</b>. Confira o nome do cliente.`);
+  }
+  if(new Set(vs.map(v=>v.placa)).size!==vs.length)return er('A mesma placa está repetida na ficha.');
+  // cliente: acha ou cria
+  let c=cliByNome(nome);if(!c){c={id:uid('c'),nome,tel:'',veiculos:[]};db.clientes.push(c);}
+  // veículos: registra no cliente
+  vs.forEach(v=>{const ex=c.veiculos.find(x=>x.placa===v.placa);
+    if(ex){if(v.modelo)ex.modelo=v.modelo;if(v.chassi)ex.chassi=v.chassi;if(v.km>(ex.km||0))ex.km=v.km;}
+    else c.veiculos.push({...v});});
+  const dados={cid:c.id,cliente:c.nome,motorista:F.motorista.trim(),veiculos:vs,servico:F.servico.trim(),pecas:F.pecas.trim(),assinatura:F.assinatura};
+  let f;
+  if(edit){f=fichaById(edit);Object.assign(f,dados);}
+  else{f={id:uid('f'),num:db.seq++,data:F.data,...dados};db.fichas.push(f);}
+  save();novoForm();tela={v:'ver',id:f.id,salvo:true};render();
+}
+
+/* ---------- cliques ---------- */
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act,d=el.dataset;
+  const A={
+    nova:()=>{if(tela.v!=='nova'){tela={v:'nova'};render();}},
+    salvas:()=>{if(tela.v==='nova')lerForm();tela={v:'salvas'};render();},
+    cliente:()=>{CAD=cadDoCliente(cliById(d.id));tela={v:'cliente',id:d.id};render();},
+    voltaCli:()=>{CAD=cadDoCliente(cliById(d.id));tela={v:'cliente',id:d.id};render();},
+    novoCli:()=>{CAD=cadDoCliente(null);tela={v:'cliente',id:null};render();setTimeout(()=>$('#cNome').focus(),80);},
+    cadAddVei:()=>{lerCad();CAD.veiculos.push({placa:'',modelo:'',chassi:'',km:0});$('#cVeis').innerHTML=cadVeisHTML();document.querySelector('.sheet .sec').textContent=`🚚 Caminhões deste cliente (${CAD.veiculos.length})`;const ins=document.querySelectorAll('#cVeis input.pl');ins[ins.length-1].focus();},
+    cadTiraVei:()=>{lerCad();CAD.veiculos.splice(+d.i,1);$('#cVeis').innerHTML=cadVeisHTML();document.querySelector('.sheet .sec').textContent=`🚚 Caminhões deste cliente (${CAD.veiculos.length})`;},
+    cadSalvar:()=>cadSalvar(false),
+    ver:()=>{tela={v:'ver',id:d.id};render();},
+    addVei:()=>{lerForm();F.veiculos.push({placa:'',modelo:'',chassi:'',km:''});redesenhaVeis();const ins=document.querySelectorAll('#veis input.pl');ins[ins.length-1].focus();},
+    tiraVei:()=>{lerForm();F.veiculos.splice(+d.i,1);redesenhaVeis();},
+    usaVei:()=>{lerForm();const c=cliByNome(F.cliente),v=c.veiculos.find(x=>x.placa===d.p);
+      const vazio=F.veiculos.findIndex(x=>!x.placa&&!x.modelo&&!x.chassi);
+      const novo={placa:v.placa,modelo:v.modelo||'',chassi:v.chassi||'',km:''};
+      if(vazio>=0)F.veiculos[vazio]=novo;else F.veiculos.push(novo);
+      redesenhaVeis();toast(v.placa+' colocado na ficha');},
+    limparAss:()=>{const c=$('#pad');c.getContext('2d').clearRect(0,0,c.width,c.height);padDirty=false;$('#padHint').style.display='';},
+    refazerAss:()=>{lerForm();F.assinatura=null;const y=window.scrollY;render();window.scrollTo(0,y);},
+    salvar:()=>salvar(),
+    limparForm:()=>{novoForm();render();},
+    cancelarEd:()=>{const id=edit;novoForm();tela={v:'ver',id};render();},
+    fichaPara:()=>{if(tela.v==='cliente'&&!cadSalvar(true))return;const c=cliById(d.id);novoForm();F.cliente=c.nome;if(c.veiculos.length===1)F.veiculos=[{placa:c.veiculos[0].placa,modelo:c.veiculos[0].modelo||'',chassi:c.veiculos[0].chassi||'',km:''}];tela={v:'nova'};render();},
+    editar:()=>{const f=fichaById(d.id);edit=f.id;F={cliente:f.cliente,motorista:f.motorista,data:f.data,veiculos:f.veiculos.map(v=>({...v,km:v.km||''})),servico:f.servico,pecas:f.pecas,assinatura:f.assinatura};tela={v:'nova'};render();},
+    imprimir:()=>{$('#printArea').innerHTML=paperHTML(fichaById(tela.id));setTimeout(()=>window.print(),80);},
+    apagar:()=>modal(`<h3>Apagar esta ficha?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
+    apagarOk:()=>{const f=fichaById(tela.id);db.fichas=db.fichas.filter(x=>x.id!==f.id);save();closeModal();CAD=cadDoCliente(cliById(f.cid));tela={v:'cliente',id:f.cid};render();toast('Ficha apagada');},
+    fechar:()=>closeModal(),
+    addVeiC:()=>modal(`<h3>Adicionar veículo</h3><form id="fVeiC" autocomplete="off"><div id="mErro"></div><label>Placa</label><input name="placa" maxlength="8" style="text-transform:uppercase;font-family:'Courier New';font-weight:800;font-size:20px"><label>Modelo</label><input name="modelo" placeholder="Ex.: Volvo FH 540"><label>Chassi</label><input name="chassi"><button class="B">SALVAR</button></form><button class="lnk" data-act="fechar">Cancelar</button>`),
+    editVeiC:()=>{const v=cliById(tela.id).veiculos[+d.i];modal(`<h3>Corrigir veículo</h3><form id="fVeiC" data-i="${d.i}" autocomplete="off"><div id="mErro"></div><label>Placa</label><input name="placa" maxlength="8" value="${esc(v.placa)}" style="text-transform:uppercase;font-family:'Courier New';font-weight:800;font-size:20px"><label>Modelo</label><input name="modelo" value="${esc(v.modelo||'')}"><label>Chassi</label><input name="chassi" value="${esc(v.chassi||'')}"><button class="B">SALVAR</button></form><button class="lnk" style="color:var(--red)" data-act="tiraVeiC" data-i="${d.i}">Tirar este veículo do cliente</button><button class="lnk" data-act="fechar">Cancelar</button>`);},
+    tiraVeiC:()=>{cliById(tela.id).veiculos.splice(+d.i,1);save();closeModal();render();toast('Veículo tirado');},
+    editCli:()=>{const c=cliById(tela.id);modal(`<h3>Corrigir cliente</h3><form id="fCli" autocomplete="off"><label>Nome</label><input name="nome" value="${esc(c.nome)}"><label>WhatsApp</label><input name="tel" inputmode="tel" value="${esc(c.tel||'')}" placeholder="(14) 9...."><button class="B">SALVAR</button></form><button class="lnk" data-act="fechar">Cancelar</button>`);},
+    limparEx:()=>modal(`<h3>Apagar os exemplos?</h3><label>Número da próxima ficha (o do talão de papel)</label><input id="seqIn" inputmode="numeric" value="1"><button class="B" data-act="limparExOk">SIM, COMEÇAR DE VERDADE</button><button class="B white" data-act="fechar">AGORA NÃO</button>`),
+    limparExOk:()=>{db={config:db.config,seq:int($('#seqIn').value)||1,exemplo:false,clientes:[],fichas:[]};save();closeModal();novoForm();tela={v:'nova'};render();toast('Pronto! Pode usar 👍');},
+    config:()=>{const C=db.config;modal(`<h3>Dados da oficina</h3><form id="fCfg" autocomplete="off">
+      <label>Logo (foto da logo)</label><input type="file" accept="image/*" id="logoIn" style="padding-top:12px">
+      <label>Nome da empresa</label><input name="nome" value="${esc(C.nome)}">
+      <label>Endereço</label><input name="end1" value="${esc(C.end1)}"><label>Bairro</label><input name="end2" value="${esc(C.end2)}"><label>Cidade / CEP</label><input name="end3" value="${esc(C.end3)}">
+      <label>CNPJ</label><input name="cnpj" value="${esc(C.cnpj)}"><label>IE</label><input name="ie" value="${esc(C.ie)}"><label>Telefone</label><input name="fone" value="${esc(C.fone)}"><label>Cidade (rodapé)</label><input name="cidade" value="${esc(C.cidade)}">
+      <label>Número da próxima ficha</label><input name="seq" inputmode="numeric" value="${db.seq}">
+      <button class="B">SALVAR</button></form>
+      <h3 style="margin-top:20px;font-size:18px">Cópia de segurança</h3>
+      <button class="B white" data-act="exportar">⬇️ Baixar cópia</button>
+      <label class="B white" style="cursor:pointer;margin-top:14px">⬆️ Restaurar cópia<input type="file" accept=".json,application/json" id="impIn" hidden></label>
+      <button class="lnk" data-act="fechar">Fechar</button>`);},
+    exportar:()=>{const u=URL.createObjectURL(new Blob([JSON.stringify(db)],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download='mrtruck-fichas-'+hoje().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Cópia baixada');}
+  };
+  if(A[a])A[a]();
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
+  if(t.id==='busca'){$('#lista').innerHTML=listaClientes(t.value);return;}
+  if(t.dataset&&t.dataset.k==='placa'){ // placa conhecida: preenche sozinho
+    const p=normPlaca(t.value);if(p.length!==7)return;const dono=donoDaPlaca(p);if(!dono)return;
+    const v=dono.veiculos.find(x=>x.placa===p),i=+t.dataset.i,box=t.closest('.vei');
+    const m=box.querySelector('[data-k=modelo]'),c=box.querySelector('[data-k=chassi]');
+    if(!m.value)m.value=v.modelo||'';if(!c.value)c.value=v.chassi||'';
+    if(!$('#iCliente').value.trim()){$('#iCliente').value=dono.nome;F.cliente=dono.nome;$('#conhecidos').innerHTML=conhecidosHTML();}
+  }
+});
+document.addEventListener('submit',e=>{
+  e.preventDefault();const f=e.target,Fd=new FormData(f),g=k=>String(Fd.get(k)||'').trim();
+  if(f.id==='fVeiC'){const c=cliById(tela.id),p=normPlaca(g('placa')),i=f.dataset.i;
+    const err=m=>{$('#mErro').innerHTML=`<div class="err" style="margin:0 0 6px">${m}</div>`;};
+    if(p.length!==7)return err('Placa tem 7 letras/números. Ex.: ABC1D23');
+    const dono=donoDaPlaca(p);if(dono&&(dono.id!==c.id||(i===undefined||c.veiculos[+i].placa!==p)))return err(`Essa placa já está no cliente ${esc(dono.nome)}.`);
+    const v={placa:p,modelo:g('modelo'),chassi:g('chassi').toUpperCase()};
+    if(i!==undefined)Object.assign(c.veiculos[+i],v);else c.veiculos.push({...v,km:0});
+    save();closeModal();render();toast('Salvo');return;}
+  if(f.id==='fCli'){const c=cliById(tela.id);const n=g('nome');if(n){c.nome=n;db.fichas.filter(x=>x.cid===c.id).forEach(x=>x.cliente=n);}c.tel=g('tel');save();closeModal();render();toast('Salvo');return;}
+  if(f.id==='fCfg'){const C=db.config;['nome','end1','end2','end3','cnpj','ie','fone','cidade'].forEach(k=>C[k]=g(k));const s=int(g('seq'));if(s)db.seq=s;save();closeModal();render();toast('Salvo');return;}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.id==='logoIn'&&t.files[0]){const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,400/im.width),c=document.createElement('canvas');c.width=im.width*sc;c.height=im.height*sc;c.getContext('2d').drawImage(im,0,0,c.width,c.height);db.config.logo=c.toDataURL('image/png');save();closeModal();render();toast('Logo colocada');};im.src=r.result;};r.readAsDataURL(t.files[0]);}
+  if(t.id==='impIn'&&t.files[0]){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.clientes)||!Array.isArray(d.fichas))throw 0;db=d;db.config={...CONFIG_PADRAO,...db.config};save();closeModal();tela={v:'salvas'};render();toast('Cópia restaurada');}catch(_){toast('Esse arquivo não é uma cópia válida');}};r.readAsText(t.files[0]);}
+});
+window.addEventListener('afterprint',()=>{$('#printArea').innerHTML='';});
+render();
+</script>
+</body>
+</html>

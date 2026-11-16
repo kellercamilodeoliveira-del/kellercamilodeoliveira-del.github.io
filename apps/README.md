@@ -42,3 +42,10 @@ Regras para o agente Mecânico:
 - Começa em homologação (teste). Produção só depois de 1 nota de teste autorizada + digitar PRODUCAO.
 - Versão 1: só Simples Nacional (CRT 1) e MEI (CRT 4). Regime normal (CRT 3) ainda não.
 - Busca de CEP (ViaCEP), CNPJ e NCM (BrasilAPI) direto do navegador.
+
+## MR Truck Service — Fichas (Pré Ordem de Serviço)
+- App: https://kellercamilodeoliveira-del.github.io/apps/mrtruck/ (arquivo único `apps/mrtruck/index.html`).
+- Cliente: MR Truck Service LTDA - ME (São Manuel-SP), oficina de caminhões Volvo.
+- Ficha igual ao talão de papel; cada cliente tem cadastro com vários caminhões (botão "Adicionar mais um caminhão").
+- O número da ficha só avança ao salvar uma FICHA (cadastro de cliente não gasta número).
+- Dados ficam só no aparelho (localStorage `mrtruck_ficha_papel_v1`), com cópia de segurança em Ajustes. Não mudar essa chave sem passar pelo Keller.
