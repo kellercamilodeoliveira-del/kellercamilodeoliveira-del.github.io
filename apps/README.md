@@ -49,3 +49,10 @@ Regras para o agente Mecânico:
 - Ficha igual ao talão de papel; cada cliente tem cadastro com vários caminhões (botão "Adicionar mais um caminhão").
 - O Nº da ordem de serviço é digitado à mão pelo dono (campo no canto direito da folha), obrigatório e sem repetir. Nada de número automático.
 - Dados ficam só no aparelho (localStorage `mrtruck_ficha_papel_v1`), com cópia de segurança em Ajustes. Não mudar essa chave sem passar pelo Keller.
+
+## Painel dos Sistemas (uso do Keller)
+- Link: https://kellercamilodeoliveira-del.github.io/apps/painel/ (arquivo único `apps/painel/index.html`).
+- Mostra todos os sistemas no ar ao mesmo tempo, em telinhas; clicar numa tela amplia (Esc ou "Voltar ao painel" volta). Bolinha verde = respondeu, vermelha = sem resposta (verifica a cada 1 min).
+- Lista padrão no array `PADRAO` do index.html. Sistema novo do Keller → acrescentar lá (entra sozinho no painel dele). Sistema que sair do ar de vez → tirar de lá.
+- O que o Keller marca/desmarca, a ordem e os extras ficam só no navegador dele (localStorage `painel-sistemas-keller-v1`).
+- Motor do WhatsApp recarrega sozinho a cada 2 min (mantém o Render acordado e o status atualizado).

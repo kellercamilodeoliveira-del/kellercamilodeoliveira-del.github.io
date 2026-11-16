@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel dos Sistemas · Keller IA</title>
+<link rel="icon" href="../../favicon.png">
+<link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+<style>
+@font-face{font-family:"Inter";src:url(../../fonts/inter-400.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"Inter";src:url(../../fonts/inter-500.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"Inter";src:url(../../fonts/inter-600.woff2) format("woff2");font-weight:600;font-display:swap}
+:root{
+  --fundo:#141413; --cartao:#1E1E1C; --cartao-2:#262624; --linha:#34332F;
+  --texto:#FAF9F5; --apoio:#A8A69E; --destaque:#B5512F; --destaque-claro:#D9774F;
+  --ok:#3FB37A; --erro:#E5534B; --espera:#8A887F;
+  --topo:58px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--fundo);color:var(--texto);font-family:"Inter",system-ui,sans-serif;font-size:14px}
+body{display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+
+/* ---------- topo ---------- */
+.topo{flex:none;min-height:var(--topo);display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid var(--linha);background:#181817}
+.marca{display:flex;align-items:center;gap:10px;flex:none}
+.marca img{width:30px;height:30px;border-radius:7px;background:var(--texto)}
+.marca h1{font-size:15px;font-weight:600;white-space:nowrap}
+.marca small{display:block;font-size:11px;color:var(--apoio);font-weight:400}
+.resumo{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--cartao-2);font-weight:500;white-space:nowrap;min-width:0;flex:0 1 auto}
+.resumo #resumoTxt{overflow:hidden;text-overflow:ellipsis}
+.resumo .ponto{flex:none}
+.resumo.alerta{background:rgba(229,83,75,.16);color:#FFB3AE}
+.relogio{margin-left:auto;flex:none;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:500;font-size:20px;letter-spacing:.5px}
+.relogio small{display:block;font-size:11px;color:var(--apoio);font-weight:400;text-align:right;letter-spacing:0}
+.acoes{display:flex;gap:6px;flex:none}
+.btn{height:36px;padding:0 12px;border-radius:9px;background:var(--cartao-2);border:1px solid var(--linha);display:inline-flex;align-items:center;gap:6px;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:#55534D}
+.btn.principal{background:var(--destaque);border-color:var(--destaque)}
+.btn.principal:hover{background:var(--destaque-claro)}
+select.btn{appearance:none;padding-right:12px;color:var(--texto);font:inherit;font-weight:500}
+select.btn option{background:var(--cartao-2);color:var(--texto)}
+
+/* ---------- grade ---------- */
+.grade{flex:1;min-height:0;padding:10px;display:grid;gap:10px;overflow:auto}
+.tile{display:flex;flex-direction:column;min-height:0;border-radius:12px;background:var(--cartao);border:1px solid var(--linha);overflow:hidden}
+.tile .cab{height:36px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px 0 12px;border-bottom:1px solid var(--linha);background:var(--cartao-2)}
+.ponto{width:9px;height:9px;border-radius:50%;background:var(--espera);flex:none}
+.ponto.ok{background:var(--ok);box-shadow:0 0 0 3px rgba(63,179,122,.18)}
+.ponto.erro{background:var(--erro);box-shadow:0 0 0 3px rgba(229,83,75,.22);animation:pisca 1.2s infinite}
+@keyframes pisca{50%{opacity:.35}}
+.tile .nome{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
+.tile .host{font-size:11px;color:var(--apoio);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 0;min-width:0}
+.tile .mini{margin-left:auto;display:flex;gap:2px;flex:none}
+.ico{width:30px;height:28px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;color:var(--apoio)}
+.ico:hover{background:#34332F;color:var(--texto)}
+.ico.texto{width:auto;padding:0 10px;font-size:13px;font-weight:500;color:var(--texto)}
+.corpo{position:relative;flex:1;min-height:0;overflow:hidden;background:#fff}
+.corpo iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;background:#fff}
+.capa{position:absolute;inset:0;cursor:zoom-in;display:flex;align-items:flex-end;justify-content:flex-end;padding:10px}
+.capa span{opacity:0;transition:opacity .15s;background:rgba(20,20,19,.82);color:#fff;font-size:12px;font-weight:500;padding:6px 10px;border-radius:8px}
+.capa:hover span{opacity:1}
+.capa:hover{box-shadow:inset 0 0 0 3px var(--destaque)}
+.so-aberto{display:none !important}
+.tile.aberto .so-grade{display:none !important}
+
+/* ---------- tela ampliada ---------- */
+.tile.aberto{position:fixed;inset:0;z-index:50;border-radius:0;border:0}
+.tile.aberto .cab{height:50px;padding:0 10px 0 16px}
+.tile.aberto .nome{font-size:16px}
+.tile.aberto .capa{display:none}
+.tile.aberto .so-aberto{display:inline-flex !important}
+.tile.aberto .corpo iframe{width:100% !important;height:100% !important;transform:none !important}
+
+/* ---------- janela de sistemas ---------- */
+.fundo-modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}
+.fundo-modal.on{display:flex}
+.modal{width:min(640px,100%);max-height:90vh;display:flex;flex-direction:column;background:var(--cartao);border:1px solid var(--linha);border-radius:14px;overflow:hidden}
+.modal header{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--linha)}
+.modal header h2{font-size:16px;font-weight:600}
+.modal header .ico{margin-left:auto}
+.lista{overflow:auto;padding:8px}
+.item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:8px;border-radius:9px}
+.item:hover{background:var(--cartao-2)}
+.item input[type=checkbox]{width:18px;height:18px;accent-color:var(--destaque)}
+.item .info b{display:block;font-weight:500}
+.item .info small{color:var(--apoio);font-size:11.5px;word-break:break-all}
+.item .ord{display:flex;gap:2px;align-items:center}
+.item select{background:var(--cartao-2);border:1px solid var(--linha);color:var(--texto);border-radius:7px;height:28px;font:inherit;font-size:12px;padding:0 4px}
+.novo{border-top:1px solid var(--linha);padding:14px 16px;display:grid;gap:8px}
+.novo h3{font-size:13px;font-weight:600}
+.novo .linha{display:grid;grid-template-columns:1fr 1.4fr auto;gap:8px}
+.novo input{height:36px;border-radius:9px;border:1px solid var(--linha);background:var(--fundo);color:var(--texto);padding:0 10px;font:inherit;min-width:0}
+.rodape-modal{display:flex;justify-content:space-between;align-items:center;padding:0 16px 14px;color:var(--apoio);font-size:12px;gap:10px}
+.aviso{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:90;background:var(--cartao-2);border:1px solid var(--linha);padding:10px 14px;border-radius:10px;font-weight:500;display:none}
+.aviso.on{display:block}
+
+@media (max-width:760px){
+  .marca small,.relogio small,.btn .rot{display:none}
+  .relogio{font-size:16px}
+  .resumo{padding:5px 9px;font-size:12px}
+  .topo{gap:8px;padding:8px 10px;flex-wrap:wrap}
+  .resumo{order:5;flex:1 1 100%}
+  .acoes .btn{padding:0 10px}
+  .grade{grid-template-columns:1fr !important;grid-auto-rows:280px !important}
+  .novo .linha{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="marca">
+    <img src="../../logo-k.png" alt="">
+    <h1>Painel dos Sistemas<small>Keller IA · tudo numa tela só</small></h1>
+  </div>
+  <div class="resumo" id="resumo"><span class="ponto"></span><span id="resumoTxt">Verificando…</span></div>
+  <div class="relogio" id="relogio">--:--<small id="data"></small></div>
+  <div class="acoes">
+    <select class="btn" id="colunas" title="Quantas telas por linha">
+      <option value="auto">Grade automática</option>
+      <option value="1">1 por linha</option>
+      <option value="2">2 por linha</option>
+      <option value="3">3 por linha</option>
+      <option value="4">4 por linha</option>
+      <option value="5">5 por linha</option>
+    </select>
+    <button class="btn" id="btnAtualizar" title="Recarregar todas as telas">⟳<span class="rot"> Atualizar</span></button>
+    <button class="btn" id="btnCheia" title="Tela cheia (bom para monitor ou TV)">⛶<span class="rot"> Tela cheia</span></button>
+    <button class="btn principal" id="btnSistemas" title="Escolher quais sistemas aparecem">⚙<span class="rot"> Sistemas</span></button>
+  </div>
+</header>
+
+<main class="grade" id="grade"></main>
+
+<div class="fundo-modal" id="modal">
+  <div class="modal" role="dialog" aria-labelledby="tituloModal">
+    <header><h2 id="tituloModal">Sistemas do painel</h2><button class="ico" id="fecharModal" title="Fechar">✕</button></header>
+    <div class="lista" id="lista"></div>
+    <div class="novo">
+      <h3>Colocar outro sistema no painel</h3>
+      <div class="linha">
+        <input id="novoNome" placeholder="Nome (ex.: App da Oficina)">
+        <input id="novoUrl" placeholder="Link (https://…)" inputmode="url">
+        <button class="btn principal" id="btnAdd">Adicionar</button>
+      </div>
+    </div>
+    <div class="rodape-modal">
+      <span>Marque o que aparece na tela. As setas mudam a ordem.</span>
+      <button class="btn" id="btnPadrao">Voltar ao padrão</button>
+    </div>
+  </div>
+</div>
+
+<div class="aviso" id="aviso"></div>
+
+<script>
+/* =========================================================
+   Painel dos Sistemas — Keller IA
+   Para pôr um sistema novo no padrão, acrescente na lista PADRAO.
+   recarregar = minutos entre recarregas automáticas (0 = não recarrega)
+   ========================================================= */
+const SITE = 'https://kellercamilodeoliveira-del.github.io';
+const PADRAO = [
+  {id:'motor',      nome:'Motor do WhatsApp',             url:'https://motor-whatsapp-keller-ia.onrender.com/', recarregar:2},
+  {id:'ponto',      nome:'Ponto Eletrônico',              url:SITE+'/apps/ponto/'},
+  {id:'leads',      nome:'Leads Keller IA',               url:'https://leads-keller-ia.netlify.app/'},
+  {id:'chk-gers',   nome:'Checklist de Frota · Gers',     url:SITE+'/apps/checklist-gers/'},
+  {id:'chk-frota',  nome:'Checklist de Frota · Empresas', url:'https://checklist-frota-app.netlify.app/'},
+  {id:'epi-foto',   nome:'Registro EPI por Foto',         url:'https://registro-epi-foto.netlify.app/'},
+  {id:'nfe',        nome:'DuaPi.NFe · Nota Fiscal',       url:SITE+'/apps/nfe/'},
+  {id:'mrtruck',    nome:'MR Truck · Fichas',             url:SITE+'/apps/mrtruck/'},
+  {id:'pallet',     nome:'Conferência de Pallet',         url:SITE+'/apps/pallet/'},
+  {id:'clientes',   nome:'Gestão de Clientes e Projetos', url:'https://checklist-briefing-keller.netlify.app/'},
+  {id:'cerimonias', nome:'Minhas Cerimônias',             url:'https://minhas-cerimonias.netlify.app/'},
+  {id:'calendario', nome:'Meu Calendário',                url:'https://sparkly-druid-dc9f51.netlify.app/'},
+  {id:'falaja',     nome:'Fala Já · Idiomas',             url:'https://monumental-cupcake-92c3db.netlify.app/'},
+  {id:'site',       nome:'Site Keller IA',                url:SITE+'/'},
+];
+const CHAVE = 'painel-sistemas-keller-v1';
+const LARGURA_VIRTUAL = 1280;      // as telinhas mostram o app como num computador
+const CHECAR_A_CADA = 60 * 1000;   // verifica se cada sistema está no ar a cada 1 min
+
+/* ---------- estado salvo neste navegador ---------- */
+function lerEstado(){
+  let e = null;
+  try { e = JSON.parse(localStorage.getItem(CHAVE)); } catch(_){}
+  if(!e || !Array.isArray(e.sistemas)) e = {sistemas:[], removidos:[], colunas:'auto'};
+  const ids = new Set(e.sistemas.map(s=>s.id));
+  for(const p of PADRAO){            // sistemas novos do padrão entram sozinhos
+    if(!ids.has(p.id) && !(e.removidos||[]).includes(p.id)) e.sistemas.push({...p, visivel:true});
+  }
+  e.sistemas = e.sistemas.map(s=>{   // nome e link do padrão sempre atualizados
+    const p = PADRAO.find(x=>x.id===s.id);
+    return p ? {...p, visivel:s.visivel!==false, recarregar:(s.recarregar ?? p.recarregar ?? 0)} : s;
+  });
+  e.removidos = e.removidos || [];
+  e.colunas = e.colunas || 'auto';
+  return e;
+}
+function salvar(){ try { localStorage.setItem(CHAVE, JSON.stringify(estado)); } catch(_){} }
+let estado = lerEstado();
+
+/* ---------- utilidades ---------- */
+const $ = s => document.querySelector(s);
+const host = u => { try { const x = new URL(u); return x.host + (x.pathname!=='/'?x.pathname.replace(/\/$/,''):''); } catch(_){ return u; } };
+const mesmaOrigem = u => { try { return new URL(u, location.href).origin === location.origin; } catch(_){ return false; } };
+function aviso(t){ const a=$('#aviso'); a.textContent=t; a.classList.add('on'); clearTimeout(aviso.t); aviso.t=setTimeout(()=>a.classList.remove('on'),2600); }
+function esc(t){ return String(t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- montar as telas ---------- */
+const tiles = new Map();   // id -> {el, iframe, sis, status, ultima}
+const grade = $('#grade');
+
+function montar(){
+  const visiveis = estado.sistemas.filter(s=>s.visivel!==false);
+  // tira as telas que não estão mais visíveis
+  for(const [id,t] of tiles){ if(!visiveis.find(s=>s.id===id)){ t.el.remove(); tiles.delete(id); } }
+  // cria as novas e coloca na ordem (sem recarregar as que já existem)
+  visiveis.forEach((s,i)=>{
+    let t = tiles.get(s.id);
+    if(!t){ t = criarTile(s); tiles.set(s.id,t); }
+    else t.sis = s;
+    if(grade.children[i] !== t.el) grade.insertBefore(t.el, grade.children[i] || null);
+  });
+  if(!visiveis.length) grade.innerHTML = '<p style="color:var(--apoio);padding:30px">Nenhum sistema marcado. Toque em ⚙ Sistemas para escolher.</p>';
+  else { const p = grade.querySelector(':scope > p'); if(p) p.remove(); }
+  organizar();
+  resumo();
+}
+
+function criarTile(s){
+  const el = document.createElement('section');
+  el.className = 'tile';
+  el.dataset.id = s.id;
+  el.innerHTML = `
+    <div class="cab">
+      <button class="ico so-aberto" data-acao="ant" title="Sistema anterior">‹</button>
+      <span class="ponto" title="Verificando…"></span>
+      <span class="nome">${esc(s.nome)}</span>
+      <span class="host">${esc(host(s.url))}</span>
+      <span class="mini">
+        <button class="ico so-aberto" data-acao="prox" title="Próximo sistema">›</button>
+        <button class="ico" data-acao="recarregar" title="Recarregar esta tela">↻</button>
+        <a class="ico" href="${esc(s.url)}" target="_blank" rel="noopener" title="Abrir em outra aba">↗</a>
+        <button class="ico so-grade" data-acao="ampliar" title="Ampliar">⤢</button>
+        <button class="ico texto so-aberto" data-acao="fechar" title="Voltar ao painel (Esc)">✕ Voltar ao painel</button>
+      </span>
+    </div>
+    <div class="corpo">
+      <iframe loading="eager" referrerpolicy="no-referrer-when-downgrade"
+        allow="clipboard-write; geolocation; camera; microphone; fullscreen"
+        title="${esc(s.nome)}"></iframe>
+      <button class="capa" data-acao="ampliar" aria-label="Ampliar ${esc(s.nome)}"><span>Clique para ampliar ⤢</span></button>
+    </div>`;
+  const t = {el, sis:s, iframe:el.querySelector('iframe'), status:'espera', ultima:null, carregado:Date.now()};
+  t.iframe.src = s.url;
+  t.iframe.addEventListener('load', ()=>{ t.carregado = Date.now(); });
+  el.addEventListener('click', ev=>{
+    const b = ev.target.closest('[data-acao]'); if(!b) return;
+    const a = b.dataset.acao;
+    if(a==='ampliar') abrir(s.id);
+    else if(a==='fechar') fechar();
+    else if(a==='recarregar') recarregar(t);
+    else if(a==='ant') vizinho(-1);
+    else if(a==='prox') vizinho(1);
+  });
+  new ResizeObserver(()=>escala(t)).observe(el.querySelector('.corpo'));
+  checar(t);
+  return t;
+}
+
+/* a tela pequena mostra o app inteiro "encolhido", como um monitor */
+function escala(t){
+  if(t.el.classList.contains('aberto')) return;
+  const c = t.el.querySelector('.corpo');
+  const w = c.clientWidth, h = c.clientHeight; if(!w||!h) return;
+  const lv = w < 520 ? Math.max(w, 390) : LARGURA_VIRTUAL; // tela bem estreita: mostra versão celular
+  const k = w / lv;
+  t.iframe.style.width = lv + 'px';
+  t.iframe.style.height = (h / k) + 'px';
+  t.iframe.style.transform = `scale(${k})`;
+}
+
+function recarregar(t){
+  try { t.iframe.src = t.sis.url; } catch(_){}
+  t.carregado = Date.now();
+  checar(t);
+}
+
+/* ---------- grade automática ---------- */
+function organizar(){
+  const n = tiles.size; if(!n) return;
+  if(innerWidth <= 760){ grade.style.gridTemplateColumns=''; grade.style.gridAutoRows=''; return; }
+  const W = grade.clientWidth - 20, H = grade.clientHeight - 20;
+  let cols;
+  if(estado.colunas !== 'auto') cols = +estado.colunas;
+  else {
+    let melhor = 1, nota = Infinity;
+    for(let c=1; c<=6; c++){
+      const r = Math.ceil(n/c), w = (W-(c-1)*10)/c, h = (H-(r-1)*10)/r;
+      let p = Math.abs(Math.log((w/h)/1.6));      // perto de 16:10
+      if(h < 170) p += (170-h)/30;                // não deixa ficar baixinho demais
+      if(w < 300) p += (300-w)/40;
+      if(p < nota){ nota = p; melhor = c; }
+    }
+    cols = melhor;
+  }
+  const rows = Math.ceil(n/cols);
+  const h = Math.max(160, (H-(rows-1)*10)/rows);
+  grade.style.gridTemplateColumns = `repeat(${cols}, minmax(0,1fr))`;
+  grade.style.gridAutoRows = h + 'px';
+}
+addEventListener('resize', organizar);
+
+/* ---------- ampliar / voltar ---------- */
+let abertoId = null;
+function abrir(id){
+  if(abertoId) tiles.get(abertoId)?.el.classList.remove('aberto');
+  const t = tiles.get(id); if(!t) return;
+  abertoId = id;
+  t.el.classList.add('aberto');
+  document.title = t.sis.nome + ' · Painel';
+}
+function fechar(){
+  const t = tiles.get(abertoId);
+  abertoId = null;
+  if(t){ t.el.classList.remove('aberto'); requestAnimationFrame(()=>escala(t)); }
+  document.title = 'Painel dos Sistemas · Keller IA';
+}
+function vizinho(d){
+  const ids = [...tiles.keys()]; if(!abertoId) return;
+  const i = ids.indexOf(abertoId);
+  abrir(ids[(i + d + ids.length) % ids.length]);
+}
+addEventListener('keydown', e=>{
+  if($('#modal').classList.contains('on')){ if(e.key==='Escape') fecharModal(); return; }
+  if(e.key==='Escape' && abertoId) fechar();
+  if(abertoId && e.key==='ArrowRight') vizinho(1);
+  if(abertoId && e.key==='ArrowLeft') vizinho(-1);
+});
+
+/* ---------- está no ar? ---------- */
+async function checar(t){
+  const ctl = new AbortController();
+  const limite = setTimeout(()=>ctl.abort(), 25000);  // Render grátis pode levar ~20 s pra acordar
+  let ok = false;
+  try{
+    const u = t.sis.url + (t.sis.url.includes('?')?'&':'?') + '_painel=' + Date.now();
+    if(mesmaOrigem(t.sis.url)){
+      const r = await fetch(u, {cache:'no-store', signal:ctl.signal});
+      ok = r.ok;
+    } else {
+      await fetch(u, {mode:'no-cors', cache:'no-store', signal:ctl.signal});
+      ok = true;   // respondeu
+    }
+  }catch(_){ ok = false; }
+  clearTimeout(limite);
+  t.status = ok ? 'ok' : 'erro';
+  t.ultima = new Date();
+  const p = t.el.querySelector('.cab .ponto');
+  p.className = 'ponto ' + t.status;
+  p.title = (ok ? 'No ar' : 'Sem resposta') + ' · verificado às ' + t.ultima.toLocaleTimeString('pt-BR');
+  resumo();
+}
+function resumo(){
+  const todos = [...tiles.values()];
+  const fora = todos.filter(t=>t.status==='erro');
+  const verif = todos.filter(t=>t.status==='espera').length;
+  const r = $('#resumo');
+  r.classList.toggle('alerta', fora.length>0);
+  r.querySelector('.ponto').className = 'ponto ' + (fora.length ? 'erro' : (verif===todos.length ? '' : 'ok'));
+  $('#resumoTxt').textContent = !todos.length ? 'Nenhum sistema'
+    : fora.length ? `${fora.length} fora do ar: ${fora.map(t=>t.sis.nome).join(', ')}`
+    : verif ? `Verificando ${verif}…` : `${todos.length} de ${todos.length} no ar`;
+  $('#resumoTxt').parentElement.title = fora.length ? 'Sem resposta: ' + fora.map(t=>t.sis.nome).join(', ') : '';
+}
+setInterval(()=>{ for(const t of tiles.values()) checar(t); }, CHECAR_A_CADA);
+
+/* recarrega sozinho as telas que pedem (ex.: motor). Nunca recarrega a tela que está ampliada. */
+setInterval(()=>{
+  const agora = Date.now();
+  for(const t of tiles.values()){
+    const m = +t.sis.recarregar || 0;
+    if(m && t.sis.id !== abertoId && agora - t.carregado >= m*60000) recarregar(t);
+  }
+}, 15000);
+
+/* ---------- relógio ---------- */
+function relogio(){
+  const d = new Date();
+  $('#relogio').firstChild.nodeValue = d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  $('#data').textContent = d.toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit', month:'short'});
+}
+relogio(); setInterval(relogio, 10000);
+
+/* ---------- botões do topo ---------- */
+$('#colunas').value = estado.colunas;
+$('#colunas').addEventListener('change', e=>{ estado.colunas = e.target.value; salvar(); organizar(); });
+$('#btnAtualizar').addEventListener('click', ()=>{ for(const t of tiles.values()) recarregar(t); aviso('Atualizando todas as telas…'); });
+
+let trava = null;   // mantém a tela acesa (monitor/TV ligado 24 h)
+async function manterAcesa(){ try{ if('wakeLock' in navigator && !trava) { trava = await navigator.wakeLock.request('screen'); trava.addEventListener('release',()=>trava=null); } }catch(_){} }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && document.fullscreenElement) manterAcesa(); });
+$('#btnCheia').addEventListener('click', async ()=>{
+  try{
+    if(!document.fullscreenElement){ await document.documentElement.requestFullscreen(); manterAcesa(); aviso('Tela cheia ligada · Esc para sair'); }
+    else await document.exitFullscreen();
+  }catch(_){ aviso('Seu navegador não deixou abrir em tela cheia'); }
+});
+
+/* ---------- janela "Sistemas" ---------- */
+function abrirModal(){ desenharLista(); $('#modal').classList.add('on'); }
+function fecharModal(){ $('#modal').classList.remove('on'); }
+$('#btnSistemas').addEventListener('click', abrirModal);
+$('#fecharModal').addEventListener('click', fecharModal);
+$('#modal').addEventListener('click', e=>{ if(e.target.id==='modal') fecharModal(); });
+
+function desenharLista(){
+  const L = $('#lista');
+  L.innerHTML = estado.sistemas.map((s,i)=>`
+    <div class="item" data-i="${i}">
+      <input type="checkbox" ${s.visivel!==false?'checked':''} data-campo="visivel" title="Mostrar no painel">
+      <div class="info"><b>${esc(s.nome)}</b><small>${esc(host(s.url))}</small></div>
+      <div class="ord">
+        <select data-campo="recarregar" title="Recarregar sozinho">
+          ${[0,1,2,5,10,30,60].map(m=>`<option value="${m}" ${(+s.recarregar||0)===m?'selected':''}>${m? '↻ '+m+' min' : 'Sem recarregar'}</option>`).join('')}
+        </select>
+        <button class="ico" data-mover="-1" title="Subir">↑</button>
+        <button class="ico" data-mover="1" title="Descer">↓</button>
+        <button class="ico" data-tirar title="Tirar do painel">🗑</button>
+      </div>
+    </div>`).join('');
+}
+$('#lista').addEventListener('change', e=>{
+  const i = +e.target.closest('.item').dataset.i, s = estado.sistemas[i];
+  if(e.target.dataset.campo==='visivel') s.visivel = e.target.checked;
+  if(e.target.dataset.campo==='recarregar'){ s.recarregar = +e.target.value; const t=tiles.get(s.id); if(t) t.sis = s; }
+  salvar(); montar();
+});
+$('#lista').addEventListener('click', e=>{
+  const item = e.target.closest('.item'); if(!item) return;
+  const i = +item.dataset.i;
+  const m = e.target.closest('[data-mover]');
+  if(m){
+    const j = i + (+m.dataset.mover); if(j<0 || j>=estado.sistemas.length) return;
+    [estado.sistemas[i], estado.sistemas[j]] = [estado.sistemas[j], estado.sistemas[i]];
+    salvar(); desenharLista(); montar();
+  }
+  if(e.target.closest('[data-tirar]')){
+    const [s] = estado.sistemas.splice(i,1);
+    if(PADRAO.find(p=>p.id===s.id)) estado.removidos.push(s.id);
+    salvar(); desenharLista(); montar(); aviso(s.nome + ' saiu do painel');
+  }
+});
+$('#btnAdd').addEventListener('click', ()=>{
+  const nome = $('#novoNome').value.trim();
+  let url = $('#novoUrl').value.trim();
+  if(!url){ aviso('Cole o link do sistema'); return; }
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  try{ new URL(url); }catch(_){ aviso('Esse link não parece certo'); return; }
+  estado.sistemas.push({id:'extra-'+Date.now().toString(36), nome: nome || host(url), url, visivel:true, recarregar:0});
+  $('#novoNome').value = ''; $('#novoUrl').value = '';
+  salvar(); desenharLista(); montar(); aviso('Sistema adicionado');
+});
+$('#btnPadrao').addEventListener('click', ()=>{
+  estado = {sistemas:[], removidos:[], colunas:estado.colunas}; estado = (salvar(), lerEstado()); salvar();
+  desenharLista(); montar(); aviso('Lista voltou ao padrão');
+});
+
+montar();
+</script>
+</body>
+</html>
