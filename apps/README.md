@@ -57,7 +57,8 @@ Regras para o agente Mecânico:
 - Lista padrão no array `PADRAO` do index.html. Sistema novo do Keller → acrescentar lá (entra sozinho no painel dele). Sistema que sair do ar de vez → tirar de lá.
 - O que o Keller marca/desmarca, a ordem e os extras ficam só no navegador dele (localStorage `painel-sistemas-keller-v1`).
 - Motor do WhatsApp recarrega sozinho a cada 2 min (mantém o Render acordado e o status atualizado).
-- Versão com LOGIN na nuvem (modelo do Ponto): https://kellercamilodeoliveira-del.github.io/apps/mrtruck-teste/
+- DESDE 17/11/2026 o link oficial `apps/mrtruck/` é a versão com LOGIN na nuvem (mesmo código do `mrtruck-teste/`, que fica para testes). Oficina MR Truck cadastrada (`os_oficinas/mr-truck-service-f7ml`, status ativo; login do dono = e-mail do Fernando, que cria a própria senha pelo e-mail de redefinição).
+- Versão de teste com LOGIN (modelo do Ponto): https://kellercamilodeoliveira-del.github.io/apps/mrtruck-teste/
   - Firebase `escritorio-c3acb`, coleções `os_oficinas/{oficina}/clientes|fichas` e `os_usuarios/{uid}` ({oficinaId, papel:'dono'}).
   - Administrador = mesma regra `pontoMaster()` do Ponto (o app descobre que é admin porque consegue listar `os_oficinas`; o e-mail não fica no código).
   - Painel do administrador: cadastrar oficina (cria login e senha da oficina), Liberar / Teste 7 dias / Bloquear, Ver fichas, Trocar senha.
