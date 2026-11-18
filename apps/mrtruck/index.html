@@ -61,7 +61,7 @@ button,input,textarea{font:inherit;color:inherit}
 textarea.ruled{display:block;width:100%;border:none;outline:none;resize:vertical;font-size:16.5px;color:var(--ink);font-family:inherit;padding:0 4px;line-height:30px;height:362px;background:transparent;
   background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 29px,var(--line) 29px,var(--line) 30px);background-attachment:local}
 textarea.ruled:focus{background-color:#f5f8ff}
-.rod{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px;margin-top:22px;font-size:16px}
+.rod{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px;margin-top:34px;font-size:16px}
 .rod u{text-decoration:none;border-bottom:1.5px solid var(--line);color:var(--ink);padding:0 8px;font-size:18px}
 .ass{margin-top:16px}
 .padwrap{position:relative;border:2px dashed #b2b9c2;border-radius:10px;overflow:hidden;background:#fff}
@@ -192,7 +192,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .prow .grow{flex:1}.prow .w1{width:150px}.prow .w2{width:96px}.prow .w3{width:110px}
 .psec{font-weight:700;margin-top:14px;color:#222;display:flex;justify-content:space-between}.psec small{width:110px;text-align:center;font-size:11px;font-weight:700}
 .pl{box-sizing:border-box;border-bottom:1px solid #8a8a8a;min-height:27px;color:#0c2a80;font-size:13.5px;line-height:19px;display:flex}.pl .pd{flex:1;padding:6px 4px 1px}.pl .pv{width:110px;border-left:1px solid #b9b9b9;text-align:right;padding:6px 6px 1px;white-space:nowrap}.ptot{text-align:right;font-weight:700;font-size:13px;padding:4px 6px 0;color:#151515}.ptot.g{font-size:14.5px;border-top:2px solid #333;margin-top:8px;padding-top:5px}
-.pfoot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px;gap:20px}
+.pfoot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:48px;gap:20px}
 .pdate{font-size:14px;white-space:nowrap}
 .pdate u{text-decoration:none;border-bottom:1px solid #444;padding:0 8px;color:#0c2a80;display:inline-block;min-width:30px;text-align:center}
 .psig{width:290px;text-align:center}
@@ -207,7 +207,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
   #shell,#modal,#toast{display:none!important}
   #printArea{display:block!important}
   .paper{width:100%;padding:0}
-  .paper .prow{margin:7px 0}.paper .psec{margin-top:9px}.paper .pfoot{margin-top:16px}.paper .ph{margin-bottom:8px;padding-bottom:8px}.paper .ptot{padding-top:2px;font-size:12.5px}.paper .ptot.g{margin-top:5px;padding-top:3px}
+  .paper .prow{margin:7px 0}.paper .psec{margin-top:9px}.paper .pfoot{margin-top:44px}.paper .ph{margin-bottom:8px;padding-bottom:8px}.paper .ptot{padding-top:2px;font-size:12.5px}.paper .ptot.g{margin-top:5px;padding-top:3px}
 }
 </style>
 </head>
@@ -522,6 +522,24 @@ function linhasHTML(k){return F.itens[k].map((x,i)=>`<div class="ln"><input clas
 function totTxt(k){const t=somaItens(F.itens[k]);return t?`Total ${k==='servico'?'serviço':'peças'}: R$ ${brl(t)}`:'';}
 function totGeralTxt(){const t=somaItens(F.itens.servico)+somaItens(F.itens.pecas);return t?`TOTAL DA ORDEM: R$ ${brl(t)}`:'';}
 function lerItens(){document.querySelectorAll('input[data-l]').forEach(el=>{const it=F.itens[el.dataset.l][+el.dataset.i];if(it)it[el.dataset.v?'v':'d']=el.value;});}
+const _cv=document.createElement('canvas').getContext('2d');
+const larg=(t,font)=>{_cv.font=font;return _cv.measureText(t).width;};
+// a linha "cabe" se couber na tela E na folha impressa (coluna da descrição ~575px em 13,5px)
+function cabe(el,t){const cs=getComputedStyle(el),disp=el.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-3;
+  return larg(t,`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`)<=disp&&larg(t,'13.5px Arial, Helvetica, sans-serif')<=572;}
+function quebraLinha(el){
+  const v=el.value;if(cabe(el,v)||el.selectionStart!==v.length)return;
+  const k=el.dataset.l,i=+el.dataset.i;
+  let c=v.length;while(c>1&&!cabe(el,v.slice(0,c)))c--;
+  const esp=v.lastIndexOf(' ',c),pos=esp>0?esp:c;
+  const fica=v.slice(0,pos).replace(/\s+$/,''),vai=v.slice(pos).replace(/^\s+/,'');
+  lerItens();const a=F.itens[k];a[i].d=fica;
+  if(i+1>=a.length)a.push({d:'',v:''});else if(a[i+1].d)a.splice(i+1,0,{d:'',v:''});
+  a[i+1].d=vai;
+  $('#L_'+k).innerHTML=linhasHTML(k);
+  const nx=document.querySelector(`#L_${k} .ld[data-i="${i+1}"]`);nx.focus();nx.setSelectionRange(vai.length,vai.length);
+  if(!cabe(nx,vai))quebraLinha(nx);
+}
 function pintaTotais(){['servico','pecas'].forEach(k=>{const e=$('#T_'+k);if(e)e.textContent=totTxt(k);});const g=$('#T_geral');if(g)g.textContent=totGeralTxt();}
 function redesenhaVeis(){$('#veis').innerHTML=veisHTML();$('#conhecidos').innerHTML=conhecidosHTML();}
 
@@ -814,7 +832,9 @@ document.addEventListener('click',e=>{
   if(A[a])A[a]();
 });
 document.addEventListener('keydown',e=>{
-  const t=e.target;if(e.key!=='Enter'||!t.dataset||!t.dataset.l)return;e.preventDefault();
+  const t=e.target;
+  if(e.key==='Backspace'&&t.dataset&&t.dataset.l&&!t.dataset.v&&t.value===''&&+t.dataset.i>0){e.preventDefault();const pv=document.querySelector(`#L_${t.dataset.l} .ld[data-i="${+t.dataset.i-1}"]`);if(pv){pv.focus();const n=pv.value.length;pv.setSelectionRange(n,n);}return;}
+  if(e.key!=='Enter'||!t.dataset||!t.dataset.l)return;e.preventDefault();
   const k=t.dataset.l,i=+t.dataset.i,camp=t.dataset.v?'lv':'ld';lerItens();
   if(i+1>=F.itens[k].length){F.itens[k].push({d:'',v:''});$('#L_'+k).innerHTML=linhasHTML(k);}
   const nx=document.querySelector(`#L_${k} .${camp}[data-i="${i+1}"]`);if(nx)nx.focus();
@@ -830,6 +850,7 @@ document.addEventListener('pointercancel',()=>{arr=null;});
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset&&t.dataset.v){lerItens();pintaTotais();return;}
+  if(t.dataset&&t.dataset.l){quebraLinha(t);return;}
   if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
   if(t.id==='busca'){$('#lista').innerHTML=listaClientes(t.value);return;}
   if(t.dataset&&t.dataset.k==='placa'){
