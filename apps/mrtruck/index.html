@@ -294,7 +294,7 @@ let db={config:{},clientes:[],fichas:[]};
 let unsubs=[],unsubMaster=null;
 let tela={v:'carregando'};
 let edit=null,F=null,CAD=null;
-const CONFIG_PADRAO={nome:'MR Truck Service LTDA - ME',slogan:'Mecatrônica Especializada em Caminhões Volvo',end1:'Rua Vitorio Maziero 00930',end2:'Jardim Bom Pastor II',end3:'São Manuel - SP - CEP 18650-000',cnpj:'21.749.210/0001-57',ie:'649.042.714.110',fone:'(14) 3841 5980',cidade:'São Manuel'};
+const CONFIG_PADRAO={nome:'MR Truck Service LTDA - ME',slogan:'Mecatrônica Especializada em Caminhões Volvo',end1:'Rua Vitorio Maziero 00930',end2:'Jardim Bom Pastor II',end3:'São Manuel - SP - CEP 18.654-146',cnpj:'21.749.210/0001-57',ie:'649.042.714.110',fone:'(14) 3841 5980',cidade:'São Manuel'};
 const CAMPOS_CFG=['nome','slogan','end1','end2','end3','cnpj','ie','fone','cidade','logo'];
 
 const cliById=id=>db.clientes.find(c=>c.id===id);
@@ -356,6 +356,8 @@ function abrirOficina(id){
   const erro=e=>{tela={v:'erro',msg:erroTxt(e)};render();};
   unsubs.push(onSnapshot(doc(fs,'os_oficinas',id),s=>{
     OFDOC=s.exists()?s.data():null;db.config={...(OFDOC||{})};
+    // correção pedida em 18/11/2026: CEP novo da MR Truck no cabeçalho
+    if(OFDOC&&/mr\s*truck/i.test(OFDOC.nome||'')&&/18650-000/.test(OFDOC.end3||'')){const n=OFDOC.end3.replace('18650-000','18.654-146');db.config.end3=n;updateDoc(doc(fs,'os_oficinas',id),{end3:n}).catch(()=>{});}
     if(!OFDOC){tela={v:'semCadastro'};render();return;}
     if(tela.v!=='carregando'){
       if(!liberadaOuMaster()){tela={v:'bloqueado'};render();}
