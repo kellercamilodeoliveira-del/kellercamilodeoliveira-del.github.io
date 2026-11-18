@@ -576,14 +576,13 @@ function vVer(){
   const pl=((f.veiculos||[])[0]||{}).placa,aberta=statusDe(f)==='aberta';
   return `<button class="back" data-act="voltar">‹ Voltar</button>
   ${tela.salvo?`<div class="ok">✅ Ficha Nº ${esc(pad6(f.num))} salva!</div>`:''}
-  ${aberta?`<button class="B" data-act="finalizar" style="margin-top:0;min-height:80px;font-size:22px">✅ FINALIZAR ORDEM DE SERVIÇO</button>`:`<div class="okbar" style="margin-top:0">✅ OS finalizada em ${dt(f.fechamento)} ${hr(f.fechamento)}</div>`}
+  ${aberta?`<button class="B" data-act="finalizar" style="margin-top:0;min-height:80px;font-size:22px">✅ FINALIZAR ORDEM DE SERVIÇO</button>`:`<div class="okbar" style="margin-top:0">✅ OS finalizada em ${dt(f.fechamento)} ${hr(f.fechamento)}</div><button class="B white" data-act="reabrir">🔓 REABRIR ORDEM DE SERVIÇO</button>`}
   ${pl?`<button class="B white" data-act="curriculo" data-p="${pl}">📋 CURRÍCULO DO CAMINHÃO ${esc(pl)}</button>`:''}
   <button class="B blue" data-act="imprimir">🖨️ IMPRIMIR</button>
   ${c.tel?`<a class="B wa" href="${waLink(f)}" target="_blank" rel="noopener">📲 MANDAR NO WHATSAPP</a>`:''}
   <button class="B white" data-act="editar" data-id="${f.id}">✏️ COMPLETAR / CORRIGIR</button>
   <div class="paperBox" id="pbox" style="margin-top:14px"><div class="paperScale" id="pscale">${paperHTML(f)}</div></div>
   <button class="B" data-act="nova">📝 FAZER OUTRA FICHA</button>
-  ${aberta?'':`<button class="lnk" data-act="reabrir">Reabrir esta ordem de serviço</button>`}
   <button class="lnk" style="color:var(--red)" data-act="apagar">Apagar esta ficha</button>`;
 }
 
@@ -603,7 +602,8 @@ function vCurriculo(){
     <div class="tlh"><b>📅 ${dt(f.data)}</b>${ab?'<span class="st te">⏳ Em aberto</span>':`<span class="st ok">✅ Finalizada ${dt(f.fechamento)}</span>`}</div>
     <div class="tls">${esc(linhas(f.servico).join('\n')||'Sem descrição')}</div>
     ${f.pecas?`<div class="tlp"><b>Peças:</b> ${esc(linhas(f.pecas).join(', '))}</div>`:''}
-    <div class="tlf">OS Nº ${esc(pad6(f.num))}${kmDe(f)?' · '+kmTxt(kmDe(f))+' km':''}${f.motorista?' · motorista '+esc(f.motorista):''}</div></div>`;}).join('')}</div>`:'<div class="empty">Este caminhão ainda não tem ordem de serviço.</div>'}`;
+    <div class="tlf">OS Nº ${esc(pad6(f.num))}${kmDe(f)?' · '+kmTxt(kmDe(f))+' km':''}${f.motorista?' · motorista '+esc(f.motorista):''}</div>
+    ${ab?'':`<button class="ab" style="margin-top:8px" data-act="reabrirC" data-id="${f.id}">🔓 Reabrir esta ordem</button>`}</div>`;}).join('')}</div>`:'<div class="empty">Este caminhão ainda não tem ordem de serviço.</div>'}`;
 }
 function curriculoPrintHTML(p){
   const C=db.config,{c,v}=caminhaoInfo(p),l=fichasDoCaminhao(p).slice().reverse();
@@ -740,6 +740,7 @@ document.addEventListener('click',e=>{
     voltar:()=>{const vt=tela.volta;if(vt){tela=vt;render();return;}const f=fichaById(tela.id),c=f&&cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:c.id};}else tela={v:'salvas'};render();},
     finalizar:()=>{const f=fichaById(tela.id),pl=((f.veiculos||[])[0]||{}).placa||'';modal(`<h3>Finalizar a OS Nº ${esc(pad6(f.num))}?</h3><p style="color:var(--mut);margin-bottom:6px;font-size:16px">${f.pecas?'':'⚠️ As peças ainda estão em branco. '}Depois de finalizar, ela entra no currículo do caminhão <b>${esc(pl)}</b>.</p><button class="B" data-act="finalizarOk">✅ SIM, FINALIZAR</button>${f.pecas?'':`<button class="B white" data-act="editar" data-id="${f.id}">✏️ PREENCHER AS PEÇAS ANTES</button>`}<button class="lnk" data-act="fechar">Voltar</button>`);},
     finalizarOk:()=>{const f=fichaById(tela.id);f.status='finalizada';f.fechamento=hoje();gravaFicha(f);closeModal();tela.salvo=false;render();toast('✅ OS finalizada — já está no currículo do caminhão');},
+    reabrirC:()=>{const f=fichaById(d.id);f.status='aberta';f.fechamento=null;gravaFicha(f);const y=scrollY;render();scrollTo(0,y);toast('🔓 Ordem reaberta');},
     reabrir:()=>{const f=fichaById(tela.id);f.status='aberta';f.fechamento=null;gravaFicha(f);render();toast('Ordem de serviço reaberta');},
     imprimirCurr:()=>{$('#printArea').innerHTML=curriculoPrintHTML(d.p);setTimeout(()=>window.print(),120);},
     addVei:()=>{lerForm();F.veiculos.push({placa:'',modelo:'',chassi:'',km:''});redesenhaVeis();const ins=document.querySelectorAll('#veis input.pl');ins[ins.length-1].focus();},
