@@ -239,6 +239,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
 </div>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="toast"></div>
+<div id="attbar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:70;background:#f6c418;color:#161616;font-weight:800;text-align:center;padding:10px 14px;font-size:15.5px;box-shadow:0 2px 8px rgba(0,0,0,.2)">🔄 Tem uma versão nova do sistema. Ela entra sozinha assim que você salvar esta ficha. <button data-act="atualizarJa" style="margin-left:8px;background:#161616;color:#f6c418;border:none;border-radius:8px;padding:6px 12px;font-weight:800;cursor:pointer">Atualizar agora</button></div>
 <div id="printArea"></div>
 <button id="instalar"><span>💻 Instalar no computador</span><span class="fx" id="instalarX" title="Agora não">✕</span></button>
 
@@ -796,6 +797,7 @@ function salvar(){
   else{f={id:uid('f'),data:F.data,status:'aberta',fechamento:null,...dados};db.fichas.push(f);}
   gravaFicha(f);
   novoForm();tela={v:'ver',id:f.id,salvo:true};render();
+  if(attPendente)setTimeout(talvezAtualizar,2500);
 }
 
 /* ====== cliques ====== */
@@ -953,6 +955,37 @@ window.addEventListener('appinstalled',()=>{$('#instalar').classList.remove('sho
 if(pedeInstalar&&!jaInstalado())setTimeout(()=>{if(!pedidoInstalar&&!$('#modal').classList.contains('show'))comoInstalar();},3000);
 // mesmo sem o aviso automático do navegador, o botão aparece (abre o passo a passo)
 setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar();},4000);
+/* ====== atualização automática ======
+   Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
+   e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
+const APP_VERSAO='v14';
+let attPendente=false;
+function temDigitacao(){
+  if($('#modal').classList.contains('show'))return true;
+  if(!['nova','cliente'].includes(tela.v))return false;
+  return [...document.querySelectorAll('#app input:not([readonly]),#app textarea')].some(i=>i.type!=='file'&&String(i.value||'').trim()!=='');
+}
+let versaoNova='';
+function recarregar(){
+  // abre o endereço com ?v=versão nova: assim vem a página nova do servidor, sem pegar a guardada
+  const k='mrtruck_tentou_'+versaoNova;let n=0;try{n=+sessionStorage.getItem(k)||0;if(n>=2)return;sessionStorage.setItem(k,String(n+1));sessionStorage.setItem('mrtruck_atualizado','1');}catch(_){}
+  const go=()=>location.replace(location.pathname+'?v='+encodeURIComponent(versaoNova||Date.now()));
+  if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}).finally(()=>setTimeout(go,300));else go();
+}
+function talvezAtualizar(){if(!attPendente)return;if(temDigitacao()){$('#attbar').style.display='block';return;}recarregar();}
+async function checaVersao(){
+  if(APP_VERSAO.startsWith('__'))return;
+  try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
+    if(j.v&&j.v!==APP_VERSAO){versaoNova=j.v;attPendente=true;talvezAtualizar();}}catch(_){}
+}
+setInterval(checaVersao,3*60*1000);
+setInterval(talvezAtualizar,20*1000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checaVersao();});
+window.addEventListener('focus',checaVersao);
+setTimeout(checaVersao,8000);
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act=atualizarJa]');if(el){e.stopPropagation();recarregar();}},true);
+if(new URLSearchParams(location.search).has('v'))history.replaceState(null,'',location.pathname);
+try{if(sessionStorage.getItem('mrtruck_atualizado')){sessionStorage.removeItem('mrtruck_atualizado');setTimeout(()=>toast('✅ Sistema atualizado'),1500);}}catch(_){}
 window.addEventListener('afterprint',()=>{$('#printArea').innerHTML='';});
 render();
 </script>
