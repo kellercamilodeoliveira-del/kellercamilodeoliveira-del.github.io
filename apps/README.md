@@ -64,3 +64,4 @@ Regras para o agente Mecânico:
   - Painel do administrador: cadastrar oficina (cria login e senha da oficina), Liberar / Teste 7 dias / Bloquear, Ver fichas, Trocar senha.
   - Regras: `apps/mrtruck-teste/firestore.rules` — PUBLICADAS no Firebase em 16/11/2026, logo depois do bloco do Ponto.
   - Depois das regras publicadas e testado: copiar `mrtruck-teste/index.html` para `mrtruck/` (título sem TESTE, `PREFIXO='mrtruck-'` no sw.js, subir VERSAO). Na primeira entrada da oficina, as fichas guardadas no aparelho sobem sozinhas para a nuvem.
+- ATUALIZAÇÃO AUTOMÁTICA (desde 18/11/2026): cada publicação do MR Truck precisa mudar `APP_VERSAO` no index.html E o `version.json` da mesma pasta (mesmo valor do VERSAO do sw.js). O app aberto confere a cada 3 min / ao voltar para a janela e se recarrega sozinho; se houver ficha sendo digitada, espera salvar. Sem mudar o version.json, ninguém recebe a versão nova até fechar e abrir.
