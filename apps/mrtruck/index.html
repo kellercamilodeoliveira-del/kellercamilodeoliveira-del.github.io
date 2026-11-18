@@ -16,26 +16,27 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{background:#e7e3dc;color:var(--txt);font-family:Arial,Helvetica,sans-serif;font-size:17px}
 button,input,textarea{font:inherit;color:inherit}
-.top{position:sticky;top:0;z-index:10;background:#2b2f35;display:flex;gap:6px;padding:8px;justify-content:center}
+.top{position:sticky;top:0;z-index:10;background:#161616;border-bottom:3px solid #f6c418;display:flex;gap:6px;padding:8px;justify-content:center}
 .top button{flex:1;max-width:260px;height:50px;border:none;border-radius:12px;background:#3c424a;color:#cfd5dc;font-size:17px;font-weight:800;cursor:pointer}
-.top button.on{background:#fff;color:#111}
+.top button.on{background:#f6c418;color:#161616}
 .wrap{max-width:640px;margin:0 auto;padding:14px 10px 40px}
 
 /* folha */
 .sheet{background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.15);padding:18px 16px 22px}
-.hd{display:flex;gap:12px;align-items:center;border-bottom:3px solid #333;padding-bottom:10px;margin-bottom:6px}
-.hd .logo{width:96px;flex-shrink:0;text-align:center}
-.hd .logo img{max-width:96px;max-height:60px}
-.hd .logo .t{display:inline-flex;border:2px solid #222;font-weight:900;font-size:11px;line-height:1.1}
-.hd .logo .t span{padding:2px 3px}.hd .logo .t span+span{background:#222;color:#fff}
-.hd .logo svg{width:44px;height:22px;display:block;margin:0 auto 2px}
-.hd .emp{flex:1;min-width:0;font-size:11px;color:#444;line-height:1.35}
-.hd .emp b{display:block;font-size:13.5px;color:#222}
-.hd .num{text-align:center;font-size:11.5px;border-left:1.5px solid #333;padding-left:10px;flex-shrink:0}
-.hd .num b{display:block;font-family:"Courier New",monospace;font-size:18px;color:#b3141b;margin-top:4px}
-.hd .num input{display:block;width:118px;margin-top:4px;border:none;border-bottom:2px solid #b3141b;background:#fff5f5;font-family:"Courier New",monospace;font-size:21px;font-weight:700;color:#b3141b;text-align:center;height:38px;outline:none;border-radius:4px 4px 0 0}
-.hd .num input:focus{background:#ffe9e9}
-.hd .num small{display:block;font-size:10.5px;color:#b3141b;margin-top:3px;font-weight:700}
+.hd{display:grid;grid-template-columns:1.1fr 1.4fr;gap:10px 14px;align-items:center;border-bottom:5px solid #3a3a3a;padding-bottom:12px;margin-bottom:6px}
+.hlogo{display:flex;align-items:center;justify-content:center}
+.hlogo img{width:100%;max-width:230px;max-height:130px;object-fit:contain}
+.hlogo .alt{text-align:center}.hlogo .alt svg{width:54px;height:27px}.hlogo .alt b{display:block;font-size:13px}
+.hinfo{text-align:center;display:flex;flex-direction:column;font-size:11.5px;color:#3b3b3b;line-height:1.38}
+.hinfo b{font-size:14.5px;color:#161616;margin-bottom:3px;font-weight:800}
+.hnum{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1.5px solid #e2e2e2;padding-top:10px}
+.hnum .fone{font-weight:800;font-size:14px;color:#161616}
+.hnum .pre{font-size:13px;color:#3b3b3b;text-align:center}
+.hnum .nbox{display:flex;align-items:flex-end;gap:6px;font-weight:800;font-size:15px}
+.hnum input{width:120px;border:none;border-bottom:2.5px solid #161616;background:#fff7d6;font-family:"Courier New",monospace;font-size:21px;font-weight:700;color:#b3141b;text-align:center;height:38px;outline:none;border-radius:4px 4px 0 0}
+.hnum input:focus{background:#ffeea3}
+.hnum small{display:block;font-size:10.5px;color:#8a6a00;font-weight:800;text-align:right;margin-top:3px}
+@media(min-width:600px){.hd{grid-template-columns:1.05fr 1.5fr .95fr}.hnum{grid-column:auto;flex-direction:column;justify-content:center;border-top:0;border-left:1.5px solid #3a3a3a;padding:0 0 0 12px;align-self:stretch;text-align:center}.hnum small{text-align:center}}
 .f{display:flex;align-items:flex-end;gap:8px;margin-top:14px}
 .f label{font-weight:700;white-space:nowrap;font-size:16px;padding-bottom:6px}
 .f input{flex:1;min-width:0;border:none;border-bottom:1.5px solid var(--line);border-radius:0;background:transparent;height:38px;padding:0 4px;font-size:19px;color:var(--ink);outline:none;font-family:inherit}
@@ -135,9 +136,9 @@ textarea.ruled:focus{background-color:#f5f8ff}
 #mbar button{background:#8a5a00;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer;white-space:nowrap}
 /* impressão (A4 igual ao talão) */
 .paper{width:760px;background:#fff;color:#151515;font-family:Arial,Helvetica,sans-serif;padding:30px 36px 34px;font-size:13px;line-height:1.3}
-.ph{display:grid;grid-template-columns:210px 1fr 190px;align-items:center;gap:10px;border-bottom:3px solid #3a3a3a;padding-bottom:10px;margin-bottom:12px}
+.ph{display:grid;grid-template-columns:215px 1fr 190px;align-items:center;gap:10px;border-bottom:5px solid #3a3a3a;padding-bottom:10px;margin-bottom:12px}
 .plogo{display:flex;align-items:center;justify-content:center;min-height:80px}
-.plogo img{max-width:200px;max-height:90px}
+.plogo img{max-width:205px;max-height:118px}
 .defmark{text-align:center}
 .defmark .t{display:inline-flex;border:2.5px solid #222;font-weight:900;font-size:19px}
 .defmark .t span{padding:2px 6px}.defmark .t span+span{background:#222;color:#fff}
@@ -145,7 +146,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .defmark svg{width:70px;height:34px;display:block;margin:0 auto 4px}
 .pinfo{text-align:center;display:flex;flex-direction:column;font-size:11.5px;color:#333}
 .pinfo b{font-size:15.5px;color:#222;margin-bottom:4px}
-.pnum{border-left:1.5px solid #333;padding-left:14px;font-size:12px;display:flex;flex-direction:column;gap:14px;text-align:center;align-self:stretch;justify-content:center}
+.pnum{border-left:1.5px solid #333;padding-left:14px;font-size:12.5px;display:flex;flex-direction:column;gap:14px;text-align:center;align-self:stretch;justify-content:center}
 .pnum .nn b{font-family:"Courier New",monospace;font-size:19px;color:#b3141b;border-bottom:1px solid #333;padding:0 8px}
 .prow{display:flex;align-items:flex-end;gap:6px;margin:10px 0}
 .prow label{font-weight:700;white-space:nowrap;color:#222}
@@ -409,13 +410,14 @@ async function cadastrarOficina(f){
 }
 
 /* ====== tela: ficha (igual ao papel) ====== */
-function logoMini(){const C=db.config;return C.logo?`<img src="${C.logo}" alt="">`:`${truckSvg}<div class="t"><span>${esc(nomeCurto(C.nome)||'OFICINA')}</span></div>`;}
+const logoSrc=C=>C.logo||(/mr\s*truck/i.test(C.nome||'')?'logo-mrtruck.svg':'');
+function logoMini(){const C=db.config,src=logoSrc(C);return src?`<img src="${src}" alt="${esc(nomeCurto(C.nome))}">`:`<div class="alt">${truckSvg}<b>${esc(nomeCurto(C.nome)||'OFICINA')}</b></div>`;}
 function vNova(){
   const C=db.config,d=new Date(F.data);
   return `<div class="sheet">
-    <div class="hd"><div class="logo">${logoMini()}</div>
-      <div class="emp"><b>${esc(C.nome)}</b>${esc(C.cidade)}${C.fone?' · Fone '+esc(C.fone):''}<br>${C.cnpj?'CNPJ '+esc(C.cnpj):''}</div>
-      <div class="num">Pré Ordem<br>de Serviço<input id="iNum" value="${esc(F.num)}" placeholder="Nº" inputmode="numeric" autocomplete="off"><small>↑ digite o Nº</small></div></div>
+    <div class="hd"><div class="hlogo">${logoMini()}</div>
+      <div class="hinfo"><b>${esc(C.nome)}</b>${C.end1?`<span>${esc(C.end1)}</span>`:''}${C.end2?`<span>${esc(C.end2)}</span>`:''}${C.end3?`<span>${esc(C.end3)}</span>`:''}${C.cnpj?`<span>CNPJ ${esc(C.cnpj)}</span>`:''}${C.ie?`<span>IE: ${esc(C.ie)}</span>`:''}</div>
+      <div class="hnum">${C.fone?`<div class="fone">Fone: ${esc(C.fone)}</div>`:''}<div class="pre">Pré Ordem de Serviço</div><div><div class="nbox">Nº <input id="iNum" value="${esc(F.num)}" inputmode="numeric" autocomplete="off"></div><small>↑ digite o Nº</small></div></div></div>
     <div class="f"><label>Cliente:</label><input id="iCliente" list="lClientes" value="${esc(F.cliente)}" autocomplete="off" autocapitalize="words"></div>
     <datalist id="lClientes">${db.clientes.map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>
     <div id="conhecidos">${conhecidosHTML()}</div>
@@ -546,12 +548,12 @@ function vVer(){
 function paperHTML(f){
   const C=db.config,d=new Date(f.data),vsF=f.veiculos||[];
   const L=(t,min)=>{const a=linhas(t);while(a.length<min)a.push('');return a.map(l=>`<div class="pl">${esc(l)||'&nbsp;'}</div>`).join('');};
-  const logo=C.logo?`<img src="${C.logo}" alt="">`:`<div class="defmark">${truckSvg}<div class="t"><span>${esc(nomeCurto(C.nome)||'OFICINA')}</span></div>${C.slogan?`<small>${esc(C.slogan)}</small>`:''}</div>`;
+  const logo=logoSrc(C)?`<img src="${logoSrc(C)}" alt="">`:`<div class="defmark">${truckSvg}<div class="t"><span>${esc(nomeCurto(C.nome)||'OFICINA')}</span></div>${C.slogan?`<small>${esc(C.slogan)}</small>`:''}</div>`;
   const vs=vsF.map(v=>`<div class="prow"><label>Modelo:</label><span class="v grow">${esc(v.modelo)}</span><label>Chassi:</label><span class="v w2">${esc(v.chassi)}</span><label>Km:</label><span class="v w3">${kmTxt(v.km)}</span><label>Placa Veículo:</label><span class="v w2">${esc(v.placa)}</span></div>`).join('');
   const extra=Math.max(0,vsF.length-1);
   return `<div class="paper"><div class="ph"><div class="plogo">${logo}</div>
     <div class="pinfo"><b>${esc(C.nome)}</b><span>${esc(C.end1)}</span><span>${esc(C.end2)}</span><span>${esc(C.end3)}</span>${C.cnpj?`<span>CNPJ ${esc(C.cnpj)}</span>`:''}${C.ie?`<span>IE: ${esc(C.ie)}</span>`:''}</div>
-    <div class="pnum"><span>${C.fone?'Fone: '+esc(C.fone):''}</span><span>Pré Ordem de Serviço</span><div class="nn">Nº <b>${esc(pad6(f.num))}</b></div></div></div>
+    <div class="pnum"><span style="font-weight:700;font-size:14px">${C.fone?'Fone: '+esc(C.fone):''}</span><span>Pré Ordem de Serviço</span><div class="nn">Nº <b>${esc(pad6(f.num))}</b></div></div></div>
     <div class="prow"><label>Cliente:</label><span class="v grow">${esc(f.cliente)}</span><label>Data entrada:</label><span class="v w1">${dt(f.data)} ${hr(f.data)}</span></div>
     <div class="prow"><label>Nome do Motorista:</label><span class="v grow">${esc(f.motorista)}</span></div>
     ${vs}
