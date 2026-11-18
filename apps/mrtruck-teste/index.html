@@ -401,6 +401,7 @@ function vLogin(){
       <button class="B" id="lBtn">ENTRAR</button>
     </form>
     <button class="lnk" data-act="esqueci">Esqueci minha senha</button>
+    ${jaInstalado()?'':`<button class="B white" data-act="instalarApp" style="margin-top:6px">${ehCelular?'📱 Instalar no celular':'💻 Instalar no computador'}</button>`}
   </div>
   <p class="rodape">Sistema da <b>Keller IA</b> · <a href="https://wa.me/${WA_SUPORTE}" target="_blank" rel="noopener">pedir acesso no WhatsApp</a></p>`;
 }
@@ -570,6 +571,7 @@ function vSalvas(){
   <button class="B" data-act="novoCli" style="margin:0 0 14px">➕ CADASTRAR CLIENTE NOVO</button>
   <input class="busca" id="busca" placeholder="🔍 Procurar cliente ou placa" autocomplete="off">
   <div id="lista">${listaClientes('')}</div>
+  ${jaInstalado()?'':`<button class="B white" data-act="instalarApp" style="margin-top:18px">${ehCelular?'📱 Instalar no celular':'💻 Instalar no computador'}</button>`}
   <button class="gear" data-act="config">⚙︎ Dados da oficina, cópia e sair</button>`;
 }
 function listaClientes(q){
@@ -907,14 +909,48 @@ document.addEventListener('change',e=>{
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 let pedidoInstalar=null;
 const ehCelular=/Android|iPhone|iPad/i.test(navigator.userAgent);
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();pedidoInstalar=e;
-  try{if(localStorage.getItem('mrtruck_naoInstalar'))return;}catch(_){}
-  const b=$('#instalar');b.querySelector('span').textContent=ehCelular?'📱 Instalar no celular':'💻 Instalar no computador';b.classList.add('show');});
-$('#instalar').addEventListener('click',async e=>{
-  if(e.target.id==='instalarX'){$('#instalar').classList.remove('show');try{localStorage.setItem('mrtruck_naoInstalar','1');}catch(_){}return;}
-  if(!pedidoInstalar)return;pedidoInstalar.prompt();const r=await pedidoInstalar.userChoice;pedidoInstalar=null;$('#instalar').classList.remove('show');
-  if(r.outcome==='accepted')toast('✅ Instalado! Procure o ícone na área de trabalho');});
-window.addEventListener('appinstalled',()=>{$('#instalar').classList.remove('show');});
+const ehIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const ehEdge=/Edg\//.test(navigator.userAgent),ehChrome=/Chrome\//.test(navigator.userAgent)&&!ehEdge&&!/OPR\//.test(navigator.userAgent);
+const jaInstalado=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const KEY_NAO='mrtruck_naoInstalar_ate';
+const escondido=()=>{try{return +localStorage.getItem(KEY_NAO)>Date.now();}catch(_){return false;}};
+const pedeInstalar=new URLSearchParams(location.search).has('instalar');
+function mostraBotaoInstalar(){
+  if(jaInstalado()||(escondido()&&!pedeInstalar))return;
+  const b=$('#instalar');b.querySelector('span').textContent=ehCelular?'📱 Instalar no celular':'💻 Instalar no computador';b.classList.add('show');
+}
+function comoInstalar(){
+  const link=location.origin+location.pathname;
+  let passos;
+  if(ehIOS)passos=`<li>Abra este link no <b>Safari</b>.</li><li>Toque no botão <b>Compartilhar</b> (quadrado com a setinha para cima).</li><li>Toque em <b>"Adicionar à Tela de Início"</b> e depois em <b>Adicionar</b>.</li>`;
+  else if(ehCelular)passos=`<li>Abra este link no <b>Google Chrome</b>.</li><li>Toque nos <b>três pontinhos ⋮</b> no canto de cima.</li><li>Toque em <b>"Instalar app"</b> ou <b>"Adicionar à tela inicial"</b>.</li>`;
+  else if(ehEdge)passos=`<li>Clique nos <b>três pontinhos ⋯</b> no canto de cima.</li><li>Vá em <b>Aplicativos</b> → <b>"Instalar este site como aplicativo"</b>.</li><li>Clique em <b>Instalar</b>.</li>`;
+  else if(ehChrome)passos=`<li>Na barra de endereço lá em cima, no canto direito, clique no ícone de <b>monitor com uma setinha</b>.</li><li>Ou clique nos <b>três pontinhos ⋮</b> → <b>"Transmitir, salvar e compartilhar"</b> → <b>"Instalar página como app"</b>.</li><li>Clique em <b>Instalar</b>.</li>`;
+  else passos=`<li>Este navegador não instala aplicativos.</li><li>Abra o link abaixo no <b>Google Chrome</b> ou no <b>Microsoft Edge</b> e clique em <b>"Instalar no computador"</b>.</li>`;
+  modal(`<h3>💻 Instalar o sistema</h3>
+    ${pedidoInstalar?`<button class="B" data-act="instalarAgora" style="min-height:76px;font-size:22px">✅ INSTALAR AGORA</button><p style="color:var(--mut);margin:10px 0 4px;font-size:15px">Se não funcionar, faça assim:</p>`:''}
+    <ol style="padding-left:22px;font-size:17px;line-height:1.6;margin:8px 0 12px">${passos}</ol>
+    <p style="font-size:14.5px;color:var(--mut)">Se lá em cima aparecer <b>"Abrir no app"</b>, ele já está instalado: é só clicar ali. Depois de instalado, aparece o ícone <b>MR Truck</b> na área de trabalho.</p>
+    <div class="ex" style="user-select:all;word-break:break-all;margin-top:10px">${esc(link)}</div>
+    <button class="lnk" data-act="fechar">Fechar</button>`);
+}
+async function instalarAgora(){
+  if(!pedidoInstalar){comoInstalar();return;}
+  pedidoInstalar.prompt();const r=await pedidoInstalar.userChoice;pedidoInstalar=null;$('#instalar').classList.remove('show');closeModal();
+  if(r.outcome==='accepted')toast('✅ Instalado! Procure o ícone MR Truck na área de trabalho');
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();pedidoInstalar=e;mostraBotaoInstalar();if(pedeInstalar&&!$('#modal').classList.contains('show'))comoInstalar();});
+$('#instalar').addEventListener('click',e=>{
+  if(e.target.id==='instalarX'){$('#instalar').classList.remove('show');try{localStorage.setItem(KEY_NAO,String(Date.now()+3*864e5));}catch(_){}return;}
+  instalarAgora();});
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;
+  if(el.dataset.act==='instalarApp'){e.stopPropagation();pedidoInstalar?instalarAgora():comoInstalar();}
+  if(el.dataset.act==='instalarAgora'){e.stopPropagation();instalarAgora();}},true);
+window.addEventListener('appinstalled',()=>{$('#instalar').classList.remove('show');closeModal();toast('✅ Instalado!');});
+// link de instalação (…/mrtruck/?instalar): se o navegador não oferecer o botão em 3 s, mostra o passo a passo
+if(pedeInstalar&&!jaInstalado())setTimeout(()=>{if(!pedidoInstalar&&!$('#modal').classList.contains('show'))comoInstalar();},3000);
+// mesmo sem o aviso automático do navegador, o botão aparece (abre o passo a passo)
+setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar();},4000);
 window.addEventListener('afterprint',()=>{$('#printArea').innerHTML='';});
 render();
 </script>
