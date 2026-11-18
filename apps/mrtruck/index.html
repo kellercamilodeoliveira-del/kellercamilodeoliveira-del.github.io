@@ -134,6 +134,19 @@ textarea.ruled:focus{background-color:#f5f8ff}
 #modal select.sel{width:100%;height:52px;border:2px solid #cfd4da;border-radius:12px;padding:0 10px;font-size:17px;background:#fff}
 #mbar{display:none;justify-content:space-between;align-items:center;gap:8px;background:#fff3d6;color:#6b4a00;padding:8px 14px;font-size:15px}
 #mbar button{background:#8a5a00;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer;white-space:nowrap}
+/* linhas com valor (serviço / peças) */
+.sech{display:flex;justify-content:space-between;align-items:flex-end;font-weight:700;font-size:16px;margin-top:22px;padding-bottom:2px}
+.sech small{font-size:12.5px;color:var(--mut);width:104px;text-align:center}
+.ln{display:flex;align-items:stretch;border-bottom:1px solid var(--line);height:30px}
+.ln .ld{flex:1;min-width:0;border:none;background:transparent;font-size:16px;color:var(--ink);outline:none;padding:4px 4px 0;font-family:inherit}
+.ln .lv{width:104px;border:none;border-left:1px solid #d5d9df;background:#fffbea;font-size:15.5px;text-align:right;color:var(--ink);outline:none;padding:4px 6px 0;font-family:inherit}
+.ln .ld:focus,.ln .lv:focus{background:#eef3ff}
+.ln .lv::placeholder{color:#c9c2a5}
+.grip{display:flex;justify-content:flex-end;margin-top:2px}
+.grip span{width:52px;height:24px;display:grid;place-items:center;color:#7d8590;cursor:ns-resize;touch-action:none;user-select:none;font-size:15px;letter-spacing:-2px;border-radius:6px;background:#f2f2ef}
+.grip span:active{background:#e6e2d4}
+.tot{text-align:right;font-weight:800;font-size:15.5px;margin-top:4px;color:#161616}
+.tot.geral{font-size:18px;border-top:2px solid #161616;padding-top:6px;margin-top:12px}
 /* currículo do caminhão / OS em aberto */
 .hist{margin-top:10px;background:#fff7d6;border:1.5px solid #f0d27a;border-radius:10px;padding:10px 12px;font-size:15px;color:#5a4300}
 .hist button,.vcur{margin-top:8px;background:#161616;color:#f6c418;border:none;border-radius:10px;padding:9px 14px;font-weight:800;font-size:15px;cursor:pointer}
@@ -177,8 +190,8 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .prow label{font-weight:700;white-space:nowrap;color:#222}
 .prow .v{border-bottom:1px solid #555;min-height:20px;padding:0 4px 1px;color:#0c2a80;font-size:14px;white-space:nowrap;overflow:hidden}
 .prow .grow{flex:1}.prow .w1{width:150px}.prow .w2{width:96px}.prow .w3{width:110px}
-.psec{font-weight:700;margin-top:14px;color:#222}
-.pl{box-sizing:border-box;border-bottom:1px solid #8a8a8a;min-height:27px;padding:6px 4px 1px;color:#0c2a80;font-size:13.5px;line-height:19px}
+.psec{font-weight:700;margin-top:14px;color:#222;display:flex;justify-content:space-between}.psec small{width:110px;text-align:center;font-size:11px;font-weight:700}
+.pl{box-sizing:border-box;border-bottom:1px solid #8a8a8a;min-height:27px;color:#0c2a80;font-size:13.5px;line-height:19px;display:flex}.pl .pd{flex:1;padding:6px 4px 1px}.pl .pv{width:110px;border-left:1px solid #b9b9b9;text-align:right;padding:6px 6px 1px;white-space:nowrap}.ptot{text-align:right;font-weight:700;font-size:13px;padding:4px 6px 0;color:#151515}.ptot.g{font-size:14.5px;border-top:2px solid #333;margin-top:8px;padding-top:5px}
 .pfoot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:28px;gap:20px}
 .pdate{font-size:14px;white-space:nowrap}
 .pdate u{text-decoration:none;border-bottom:1px solid #444;padding:0 8px;color:#0c2a80;display:inline-block;min-width:30px;text-align:center}
@@ -194,6 +207,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
   #shell,#modal,#toast{display:none!important}
   #printArea{display:block!important}
   .paper{width:100%;padding:0}
+  .paper .prow{margin:7px 0}.paper .psec{margin-top:9px}.paper .pfoot{margin-top:16px}.paper .ph{margin-bottom:8px;padding-bottom:8px}.paper .ptot{padding-top:2px;font-size:12.5px}.paper .ptot.g{margin-top:5px;padding-top:3px}
 }
 </style>
 </head>
@@ -266,6 +280,13 @@ const CAMPOS_CFG=['nome','slogan','end1','end2','end3','cnpj','ie','fone','cidad
 const cliById=id=>db.clientes.find(c=>c.id===id);
 const cliByNome=n=>db.clientes.find(c=>nomeKey(c.nome)===nomeKey(n));
 const fichaById=id=>db.fichas.find(f=>f.id===id);
+const NL=12;
+const money=v=>{v=String(v??'').trim();if(!v)return 0;v=v.replace(/[^\d,.-]/g,'');if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');const n=parseFloat(v);return isNaN(n)?0:n;};
+const brl=n=>(+n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const novasLinhas=n=>Array.from({length:n},()=>({d:'',v:''}));
+const itensDe=(f,k)=>{const it=f[k+'Itens'];if(Array.isArray(it)&&it.length)return it.map(x=>({d:x.d||'',v:x.v||''}));return linhas(f[k]).map(d=>({d,v:''}));};
+const somaItens=it=>it.reduce((t,x)=>t+money(x.v),0);
+const totalFicha=f=>somaItens(itensDe(f,'servico'))+somaItens(itensDe(f,'pecas'));
 const statusDe=f=>f.status==='finalizada'?'finalizada':'aberta';
 const fichasDoCaminhao=p=>db.fichas.filter(f=>(f.veiculos||[]).some(v=>v.placa===p)).sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(b.num).localeCompare(String(a.num),undefined,{numeric:true}));
 const caminhaoInfo=p=>{for(const c of db.clientes){const v=(c.veiculos||[]).find(x=>x.placa===p);if(v)return{c,v};}const f=fichasDoCaminhao(p)[0];return{c:f?cliById(f.cid)||{nome:f.cliente}:{},v:f?(f.veiculos||[]).find(x=>x.placa===p)||{}:{}};};
@@ -275,7 +296,7 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');cl
 function modal(h){$('#mbox').innerHTML=h;$('#modal').classList.add('show');}
 function closeModal(){$('#modal').classList.remove('show');}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
-function novoForm(){F={num:'',cliente:'',motorista:'',data:hoje(),veiculos:[{placa:'',modelo:'',chassi:'',km:''}],servico:'',pecas:'',assinatura:null};edit=null;}
+function novoForm(){F={num:'',cliente:'',motorista:'',data:hoje(),veiculos:[{placa:'',modelo:'',chassi:'',km:''}],itens:{servico:novasLinhas(NL),pecas:novasLinhas(NL)},assinatura:null};edit=null;}
 novoForm();
 
 /* ====== gravação na nuvem (sem internet, guarda e sobe quando voltar) ====== */
@@ -452,10 +473,15 @@ function vNova(){
     <div class="f"><label>Data entrada:</label><input value="${dt(F.data)} ${hr(F.data)}" readonly style="color:#555"></div>
     <div class="f"><label>Nome do Motorista:</label><input id="iMotorista" value="${esc(F.motorista)}" autocomplete="off" autocapitalize="words"></div>
     <div class="veis" id="veis">${veisHTML()}</div>
-    <div class="sec">Descrição do Serviço</div>
-    <textarea class="ruled" id="iServico">${esc(F.servico)}</textarea>
-    <div class="sec">Descrição Peças</div>
-    <textarea class="ruled" id="iPecas">${esc(F.pecas)}</textarea>
+    <div class="sech"><span>Descrição do Serviço</span><small>Valor R$</small></div>
+    <div id="L_servico">${linhasHTML('servico')}</div>
+    <div class="grip"><span data-grip="servico" title="Arraste para cima ou para baixo para tirar ou pôr linhas">⇕ ═</span></div>
+    <div class="tot" id="T_servico">${totTxt('servico')}</div>
+    <div class="sech"><span>Descrição Peças</span><small>Valor R$</small></div>
+    <div id="L_pecas">${linhasHTML('pecas')}</div>
+    <div class="grip"><span data-grip="pecas" title="Arraste para cima ou para baixo para tirar ou pôr linhas">⇕ ═</span></div>
+    <div class="tot" id="T_pecas">${totTxt('pecas')}</div>
+    <div class="tot geral" id="T_geral">${totGeralTxt()}</div>
     <div class="rod">${esc(C.cidade)} <u>${d.getDate()}</u> de <u>${MESES[d.getMonth()]}</u> de <u>${d.getFullYear()}</u></div>
     <div class="ass">
       ${F.assinatura?`<img src="${F.assinatura}" alt=""><div class="ln">Assinatura do Motorista</div><button class="apaga" data-act="refazerAss">Assinar de novo</button>`:
@@ -488,10 +514,15 @@ function conhecidosHTML(){
 }
 function lerForm(){
   if(!$('#iCliente'))return;
-  F.num=$('#iNum').value;F.cliente=$('#iCliente').value;F.motorista=$('#iMotorista').value;F.servico=$('#iServico').value;F.pecas=$('#iPecas').value;
+  F.num=$('#iNum').value;F.cliente=$('#iCliente').value;F.motorista=$('#iMotorista').value;lerItens();
   document.querySelectorAll('#veis input[data-k]').forEach(el=>{F.veiculos[+el.dataset.i][el.dataset.k]=el.value;});
   const s=padData();if(s)F.assinatura=s;
 }
+function linhasHTML(k){return F.itens[k].map((x,i)=>`<div class="ln"><input class="ld" data-l="${k}" data-i="${i}" value="${esc(x.d)}" autocomplete="off" enterkeyhint="next"><input class="lv" data-l="${k}" data-i="${i}" data-v="1" value="${esc(x.v)}" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>`).join('');}
+function totTxt(k){const t=somaItens(F.itens[k]);return t?`Total ${k==='servico'?'serviço':'peças'}: R$ ${brl(t)}`:'';}
+function totGeralTxt(){const t=somaItens(F.itens.servico)+somaItens(F.itens.pecas);return t?`TOTAL DA ORDEM: R$ ${brl(t)}`:'';}
+function lerItens(){document.querySelectorAll('input[data-l]').forEach(el=>{const it=F.itens[el.dataset.l][+el.dataset.i];if(it)it[el.dataset.v?'v':'d']=el.value;});}
+function pintaTotais(){['servico','pecas'].forEach(k=>{const e=$('#T_'+k);if(e)e.textContent=totTxt(k);});const g=$('#T_geral');if(g)g.textContent=totGeralTxt();}
 function redesenhaVeis(){$('#veis').innerHTML=veisHTML();$('#conhecidos').innerHTML=conhecidosHTML();}
 
 /* ====== tela: clientes ====== */
@@ -602,7 +633,7 @@ function vCurriculo(){
     <div class="tlh"><b>📅 ${dt(f.data)}</b>${ab?'<span class="st te">⏳ Em aberto</span>':`<span class="st ok">✅ Finalizada ${dt(f.fechamento)}</span>`}</div>
     <div class="tls">${esc(linhas(f.servico).join('\n')||'Sem descrição')}</div>
     ${f.pecas?`<div class="tlp"><b>Peças:</b> ${esc(linhas(f.pecas).join(', '))}</div>`:''}
-    <div class="tlf">OS Nº ${esc(pad6(f.num))}${kmDe(f)?' · '+kmTxt(kmDe(f))+' km':''}${f.motorista?' · motorista '+esc(f.motorista):''}</div>
+    <div class="tlf">${totalFicha(f)?`<b style="color:#161616">R$ ${brl(totalFicha(f))}</b> · `:''}OS Nº ${esc(pad6(f.num))}${kmDe(f)?' · '+kmTxt(kmDe(f))+' km':''}${f.motorista?' · motorista '+esc(f.motorista):''}</div>
     ${ab?'':`<button class="ab" style="margin-top:8px" data-act="reabrirC" data-id="${f.id}">🔓 Reabrir esta ordem</button>`}</div>`;}).join('')}</div>`:'<div class="empty">Este caminhão ainda não tem ordem de serviço.</div>'}`;
 }
 function curriculoPrintHTML(p){
@@ -614,14 +645,15 @@ function curriculoPrintHTML(p){
     <div class="pnum"><span style="font-weight:700;font-size:14px">${C.fone?'Fone: '+esc(C.fone):''}</span><span style="font-size:15px;font-weight:700">Currículo do Veículo</span><span>${dt(hoje())}</span></div></div>
     <div class="prow"><label>Placa:</label><span class="v w2">${esc(p)}</span><label>Modelo:</label><span class="v grow">${esc(v.modelo||'')}</span><label>Chassi:</label><span class="v w2">${esc(v.chassi||'')}</span></div>
     <div class="prow"><label>Cliente:</label><span class="v grow">${esc(c.nome||'')}</span><label>Passagens:</label><span class="v w2">${l.length}</span></div>
-    <table class="ctab"><tr><th>Entrada</th><th>Finalizada</th><th>OS Nº</th><th>Km</th><th>Serviço</th><th>Peças</th></tr>
-    ${l.map(f=>`<tr><td>${dt(f.data)}</td><td>${statusDe(f)==='finalizada'?dt(f.fechamento):'em aberto'}</td><td>${esc(pad6(f.num))}</td><td>${kmDe(f)?kmTxt(kmDe(f)):''}</td><td>${esc(linhas(f.servico).join('\n'))}</td><td>${esc(linhas(f.pecas).join('\n'))}</td></tr>`).join('')}</table></div>`;
+    <table class="ctab"><tr><th>Entrada</th><th>Finalizada</th><th>OS Nº</th><th>Km</th><th>Serviço</th><th>Peças</th><th>Total</th></tr>
+    ${l.map(f=>`<tr><td>${dt(f.data)}</td><td>${statusDe(f)==='finalizada'?dt(f.fechamento):'em aberto'}</td><td>${esc(pad6(f.num))}</td><td>${kmDe(f)?kmTxt(kmDe(f)):''}</td><td>${esc(linhas(f.servico).join('\n'))}</td><td>${esc(linhas(f.pecas).join('\n'))}</td><td>${totalFicha(f)?'R$ '+brl(totalFicha(f)):''}</td></tr>`).join('')}</table></div>`;
 }
 
 /* ====== folha A4 ====== */
 function paperHTML(f){
   const C=db.config,d=new Date(f.data),vsF=f.veiculos||[];
-  const L=(t,min)=>{const a=linhas(t);while(a.length<min)a.push('');return a.map(l=>`<div class="pl">${esc(l)||'&nbsp;'}</div>`).join('');};
+  const L=(k,n)=>{const a=itensDe(f,k);while(a.length<n)a.push({d:'',v:''});return a.map(x=>`<div class="pl"><span class="pd">${esc(x.d)||'&nbsp;'}</span><span class="pv">${money(x.v)?'R$ '+brl(money(x.v)):''}</span></div>`).join('');};
+  const tS=somaItens(itensDe(f,'servico')),tP=somaItens(itensDe(f,'pecas'));
   const logo=logoSrc(C)?`<img src="${logoSrc(C)}" alt="">`:`<div class="defmark">${truckSvg}<div class="t"><span>${esc(nomeCurto(C.nome)||'OFICINA')}</span></div>${C.slogan?`<small>${esc(C.slogan)}</small>`:''}</div>`;
   const jn=k=>vsF.map(v=>k==='km'?kmTxt(v.km):(v[k]||'')).filter(Boolean).join(' / ');
   const vs=`<div class="prow"><label>Modelo:</label><span class="v grow">${esc(jn('modelo'))}</span><label>Chassi:</label><span class="v w2">${esc(jn('chassi'))}</span><label>Km:</label><span class="v w3">${esc(jn('km'))}</span><label>Placa Veículo:</label><span class="v w2">${esc(jn('placa'))}</span></div>`;
@@ -632,8 +664,8 @@ function paperHTML(f){
     <div class="prow"><label>Cliente:</label><span class="v grow">${esc(f.cliente)}</span><label>Data entrada:</label><span class="v w1">${dt(f.data)} ${hr(f.data)}</span></div>
     <div class="prow"><label>Nome do Motorista:</label><span class="v grow">${esc(f.motorista)}</span></div>
     ${vs}
-    <div class="psec">Descrição do Serviço</div>${L(f.servico,12)}
-    <div class="psec">Descrição Peças</div>${L(f.pecas,12)}
+    <div class="psec"><span>Descrição do Serviço</span><small>Valor</small></div>${L('servico',f.linhasServico||NL)}${tS?`<div class="ptot">Total serviço: R$ ${brl(tS)}</div>`:''}
+    <div class="psec"><span>Descrição Peças</span><small>Valor</small></div>${L('pecas',f.linhasPecas||NL)}${tP?`<div class="ptot">Total peças: R$ ${brl(tP)}</div>`:''}${tS+tP?`<div class="ptot g">TOTAL DA ORDEM: R$ ${brl(tS+tP)}</div>`:''}
     <div class="pfoot"><div class="pdate">${esc(C.cidade)} <u>${d.getDate()}</u> de <u style="min-width:110px">${MESES[d.getMonth()]}</u> de <u>${d.getFullYear()}</u></div>
       <div class="psig">${f.assinatura?`<img src="${f.assinatura}" alt="">`:''}<div class="sl"></div><span>Assinatura do Motorista</span></div></div></div>`;
 }
@@ -643,8 +675,10 @@ function waNum(t){let d=soNum(t);if(d&&!d.startsWith('55'))d='55'+d;return d;}
 function waLink(f){
   const c=cliById(f.cid)||{},vs=f.veiculos||[];
   let t=`*${db.config.nome}*\nPré Ordem de Serviço Nº ${pad6(f.num)}\nCliente: ${f.cliente}\nEntrada: ${dt(f.data)} ${hr(f.data)}\nMotorista: ${f.motorista||'-'}\n\n*Veículo${vs.length>1?'s':''}:*\n`+vs.map(v=>`• ${v.placa} ${v.modelo||''}`).join('\n');
-  if(f.servico)t+=`\n\n*Serviço:*\n`+linhas(f.servico).map(s=>'• '+s).join('\n');
-  if(f.pecas)t+=`\n\n*Peças:*\n`+linhas(f.pecas).map(s=>'• '+s).join('\n');
+  const it=k=>itensDe(f,k).filter(x=>x.d||x.v).map(x=>'• '+x.d+(money(x.v)?' — R$ '+brl(money(x.v)):'')).join('\n');
+  if(f.servico||somaItens(itensDe(f,'servico')))t+=`\n\n*Serviço:*\n`+it('servico');
+  if(f.pecas||somaItens(itensDe(f,'pecas')))t+=`\n\n*Peças:*\n`+it('pecas');
+  if(totalFicha(f))t+=`\n\n*Total da ordem: R$ ${brl(totalFicha(f))}*`;
   return `https://wa.me/${waNum(c.tel)}?text=${encodeURIComponent(t)}`;
 }
 
@@ -704,7 +738,12 @@ function salvar(){
     if(ex){if(v.modelo)ex.modelo=v.modelo;if(v.chassi)ex.chassi=v.chassi;if(v.km>(ex.km||0))ex.km=v.km;}
     else c.veiculos.push({...v});});
   gravaCli(c);
-  const dados={num,cid:c.id,cliente:c.nome,motorista:F.motorista.trim(),veiculos:vs,servico:F.servico.trim(),pecas:F.pecas.trim(),assinatura:F.assinatura||null};
+  const limpa=a=>{a=a.map(x=>({d:String(x.d||'').trim(),v:String(x.v||'').trim()}));let n=a.length;while(n&&!a[n-1].d&&!a[n-1].v)n--;return a.slice(0,n);};
+  const iS=limpa(F.itens.servico),iP=limpa(F.itens.pecas);
+  const dados={num,cid:c.id,cliente:c.nome,motorista:F.motorista.trim(),veiculos:vs,
+    servico:iS.map(x=>x.d).filter(Boolean).join('\n'),pecas:iP.map(x=>x.d).filter(Boolean).join('\n'),
+    servicoItens:iS,pecasItens:iP,linhasServico:F.itens.servico.length,linhasPecas:F.itens.pecas.length,total:somaItens(iS)+somaItens(iP),
+    assinatura:F.assinatura||null};
   let f;
   if(edit){f=fichaById(edit);Object.assign(f,dados);}
   else{f={id:uid('f'),data:F.data,status:'aberta',fechamento:null,...dados};db.fichas.push(f);}
@@ -754,7 +793,7 @@ document.addEventListener('click',e=>{
     limparForm:()=>{novoForm();render();},
     cancelarEd:()=>{const id=edit;novoForm();tela={v:'ver',id};render();},
     fichaPara:()=>{if(tela.v==='cliente'&&!cadSalvar(true))return;const c=cliById(d.id)||cliById(CAD.id);novoForm();F.cliente=c.nome;if((c.veiculos||[]).length===1)F.veiculos=[{placa:c.veiculos[0].placa,modelo:c.veiculos[0].modelo||'',chassi:c.veiculos[0].chassi||'',km:''}];tela={v:'nova'};render();},
-    editar:()=>{closeModal();const f=fichaById(d.id);edit=f.id;F={num:pad6(f.num),cliente:f.cliente,motorista:f.motorista||'',data:f.data,veiculos:(f.veiculos||[]).slice(0,1).map(v=>({...v,km:v.km||''})),servico:f.servico||'',pecas:f.pecas||'',assinatura:f.assinatura||null};if(!F.veiculos.length)F.veiculos=[{placa:'',modelo:'',chassi:'',km:''}];tela={v:'nova'};render();},
+    editar:()=>{closeModal();const f=fichaById(d.id);edit=f.id;F={num:pad6(f.num),cliente:f.cliente,motorista:f.motorista||'',data:f.data,veiculos:(f.veiculos||[]).slice(0,1).map(v=>({...v,km:v.km||''})),itens:{servico:(a=>{while(a.length<(f.linhasServico||NL))a.push({d:'',v:''});return a;})(itensDe(f,'servico')),pecas:(a=>{while(a.length<(f.linhasPecas||NL))a.push({d:'',v:''});return a;})(itensDe(f,'pecas'))},assinatura:f.assinatura||null};if(!F.veiculos.length)F.veiculos=[{placa:'',modelo:'',chassi:'',km:''}];tela={v:'nova'};render();},
     imprimir:()=>{$('#printArea').innerHTML=paperHTML(fichaById(tela.id));setTimeout(()=>window.print(),80);},
     apagar:()=>modal(`<h3>Apagar esta ficha?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
     apagarOk:()=>{const f=fichaById(tela.id);db.fichas=db.fichas.filter(x=>x.id!==f.id);apagaFicha(f.id);closeModal();const c=cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:f.cid};}else tela={v:'salvas'};render();toast('Ficha apagada');},
@@ -774,8 +813,23 @@ document.addEventListener('click',e=>{
   };
   if(A[a])A[a]();
 });
+document.addEventListener('keydown',e=>{
+  const t=e.target;if(e.key!=='Enter'||!t.dataset||!t.dataset.l)return;e.preventDefault();
+  const k=t.dataset.l,i=+t.dataset.i,camp=t.dataset.v?'lv':'ld';lerItens();
+  if(i+1>=F.itens[k].length){F.itens[k].push({d:'',v:''});$('#L_'+k).innerHTML=linhasHTML(k);}
+  const nx=document.querySelector(`#L_${k} .${camp}[data-i="${i+1}"]`);if(nx)nx.focus();
+});
+document.addEventListener('focusout',e=>{const t=e.target;if(t.dataset&&t.dataset.v&&t.value.trim()){const n=money(t.value);t.value=n?brl(n):'';}});
+let arr=null;
+document.addEventListener('pointerdown',e=>{const g=e.target.closest('[data-grip]');if(!g)return;lerItens();arr={k:g.dataset.grip,y:e.clientY,n:F.itens[g.dataset.grip].length};try{g.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();});
+document.addEventListener('pointermove',e=>{if(!arr)return;const k=arr.k,a=F.itens[k];lerItens();
+  const cheias=a.reduce((m,x,i)=>(x.d||x.v)?i+1:m,0),n=Math.max(1,cheias,arr.n+Math.round((e.clientY-arr.y)/30));
+  if(n!==a.length){while(a.length<n)a.push({d:'',v:''});a.length=n;$('#L_'+k).innerHTML=linhasHTML(k);}});
+document.addEventListener('pointerup',()=>{arr=null;});
+document.addEventListener('pointercancel',()=>{arr=null;});
 document.addEventListener('input',e=>{
   const t=e.target;
+  if(t.dataset&&t.dataset.v){lerItens();pintaTotais();return;}
   if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
   if(t.id==='busca'){$('#lista').innerHTML=listaClientes(t.value);return;}
   if(t.dataset&&t.dataset.k==='placa'){
