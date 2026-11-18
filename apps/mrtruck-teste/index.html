@@ -134,6 +134,31 @@ textarea.ruled:focus{background-color:#f5f8ff}
 #modal select.sel{width:100%;height:52px;border:2px solid #cfd4da;border-radius:12px;padding:0 10px;font-size:17px;background:#fff}
 #mbar{display:none;justify-content:space-between;align-items:center;gap:8px;background:#fff3d6;color:#6b4a00;padding:8px 14px;font-size:15px}
 #mbar button{background:#8a5a00;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer;white-space:nowrap}
+/* currículo do caminhão / OS em aberto */
+.hist{margin-top:10px;background:#fff7d6;border:1.5px solid #f0d27a;border-radius:10px;padding:10px 12px;font-size:15px;color:#5a4300}
+.hist button,.vcur{margin-top:8px;background:#161616;color:#f6c418;border:none;border-radius:10px;padding:9px 14px;font-weight:800;font-size:15px;cursor:pointer}
+.okbar{background:#e1f5ea;color:#0e6e41;border-radius:14px;padding:14px;text-align:center;font-size:18px;font-weight:800;margin-top:14px}
+.cvh{display:flex;gap:14px;align-items:center}
+.cvh .placa{font-size:24px;padding:4px 10px}
+.cvh b{display:block;font-size:19px}.cvh span.s{display:block;color:var(--mut);font-size:15px}
+.cvs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.cvs div{background:#f6f6f4;border-radius:12px;padding:10px 6px;text-align:center}
+.cvs b{display:block;font-size:18px}.cvs span{font-size:12.5px;color:var(--mut)}
+.tl{position:relative;padding-left:22px}
+.tl:before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:3px;background:#d9d4c7;border-radius:3px}
+.tli{position:relative;background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer}
+.tli:before{content:"";position:absolute;left:-21px;top:16px;width:14px;height:14px;border-radius:50%;background:#139a5b;border:3px solid #e7e3dc}
+.tli.ab:before{background:#e0a400}
+.tlh{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.tlh b{font-size:17px}
+.tls{margin-top:6px;white-space:pre-line;font-size:16px}
+.tlp{margin-top:6px;color:var(--mut);font-size:14.5px}
+.tlf{margin-top:6px;color:var(--mut);font-size:13.5px}
+.abert{border-left:5px solid #e0a400}
+.ctab{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
+.ctab th{background:#161616;color:#f6c418;text-align:left;padding:6px;font-size:11.5px}
+.ctab td{border-bottom:1px solid #bbb;padding:6px;vertical-align:top;white-space:pre-line}
+.ctit{font-size:18px;font-weight:800;margin:4px 0 2px}
 /* impressão (A4 igual ao talão) */
 .paper{width:760px;background:#fff;color:#151515;font-family:Arial,Helvetica,sans-serif;padding:30px 36px 34px;font-size:13px;line-height:1.3}
 .ph{display:grid;grid-template-columns:215px 1fr 190px;align-items:center;gap:10px;border-bottom:5px solid #3a3a3a;padding-bottom:10px;margin-bottom:12px}
@@ -241,6 +266,9 @@ const CAMPOS_CFG=['nome','slogan','end1','end2','end3','cnpj','ie','fone','cidad
 const cliById=id=>db.clientes.find(c=>c.id===id);
 const cliByNome=n=>db.clientes.find(c=>nomeKey(c.nome)===nomeKey(n));
 const fichaById=id=>db.fichas.find(f=>f.id===id);
+const statusDe=f=>f.status==='finalizada'?'finalizada':'aberta';
+const fichasDoCaminhao=p=>db.fichas.filter(f=>(f.veiculos||[]).some(v=>v.placa===p)).sort((a,b)=>String(b.data).localeCompare(String(a.data))||String(b.num).localeCompare(String(a.num),undefined,{numeric:true}));
+const caminhaoInfo=p=>{for(const c of db.clientes){const v=(c.veiculos||[]).find(x=>x.placa===p);if(v)return{c,v};}const f=fichasDoCaminhao(p)[0];return{c:f?cliById(f.cid)||{nome:f.cliente}:{},v:f?(f.veiculos||[]).find(x=>x.placa===p)||{}:{}};};
 const donoDaPlaca=p=>db.clientes.find(c=>(c.veiculos||[]).some(v=>v.placa===p));
 
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600);}
@@ -301,7 +329,7 @@ function abrirOficina(id){
   },erro));
   unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'fichas'),s=>{
     db.fichas=s.docs.map(d=>({id:d.id,...d.data()}));
-    if(tela.v==='salvas')atualizaLista();pronto('f');
+    if(tela.v==='salvas'){if((document.activeElement||{}).id==='busca')atualizaLista();else{const y=scrollY;render();scrollTo(0,y);}}else if(tela.v==='curriculo'){const y=scrollY;render();scrollTo(0,y);}pronto('f');
   },erro));
 }
 const liberadaOuMaster=()=>MODO==='master'||liberada(OFDOC);
@@ -444,7 +472,13 @@ function veisHTML(){
     <div class="f"><label>Modelo:</label><input data-k="modelo" data-i="${i}" value="${esc(v.modelo)}" autocomplete="off"></div>
     <div class="g2"><div class="f"><label>Chassi:</label><input data-k="chassi" data-i="${i}" value="${esc(v.chassi)}" autocomplete="off"></div>
     <div class="f"><label>Km:</label><input data-k="km" data-i="${i}" value="${esc(v.km)}" inputmode="numeric" autocomplete="off"></div></div>
+    <div class="histbox">${histHint(normPlaca(v.placa))}</div>
   </div>`).join('');
+}
+function histHint(p){
+  if(p.length!==7)return'';const l=fichasDoCaminhao(p).filter(f=>f.id!==edit);if(!l.length)return'';
+  const u=l[0];
+  return `<div class="hist">🕘 Este caminhão já passou aqui <b>${l.length} vez${l.length>1?'es':''}</b>. Última entrada: <b>${dt(u.data)}</b> — ${esc(linhas(u.servico)[0]||'')}<br><button type="button" data-act="curriculo" data-p="${p}">📋 Ver currículo do caminhão</button></div>`;
 }
 function conhecidosHTML(){
   const c=cliByNome(F.cliente);if(!c||!(c.veiculos||[]).length)return'';
@@ -462,7 +496,13 @@ function redesenhaVeis(){$('#veis').innerHTML=veisHTML();$('#conhecidos').innerH
 
 /* ====== tela: clientes ====== */
 function vSalvas(){
-  return `<button class="B" data-act="novoCli" style="margin:0 0 14px">➕ CADASTRAR CLIENTE NOVO</button>
+  const ab=db.fichas.filter(f=>statusDe(f)==='aberta').sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+  return `${ab.length?`<div class="h2" style="margin-top:4px">⏳ Ordens de serviço em aberto (${ab.length})</div>
+  ${ab.map(f=>`<div class="card abert" data-act="ver" data-id="${f.id}"><div class="fic"><span class="n">Nº ${esc(pad6(f.num))}</span><span class="s" style="margin:0">entrou ${dt(f.data)}</span></div>
+    <div class="placas">${(f.veiculos||[]).map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')} <b style="font-size:16px;margin-left:4px">${esc(f.cliente)}</b></div>
+    <div class="s" style="color:#222;margin-top:6px">${esc(linhas(f.servico)[0]||'')}</div></div>`).join('')}
+  <div class="h2">Clientes</div>`:''}
+  <button class="B" data-act="novoCli" style="margin:0 0 14px">➕ CADASTRAR CLIENTE NOVO</button>
   <input class="busca" id="busca" placeholder="🔍 Procurar cliente ou placa" autocomplete="off">
   <div id="lista">${listaClientes('')}</div>
   <button class="gear" data-act="config">⚙︎ Dados da oficina, cópia e sair</button>`;
@@ -502,6 +542,7 @@ function cadVeisHTML(){
     <div class="f"><label>Placa:</label><input class="pl" data-c="placa" data-i="${i}" value="${esc(v.placa)}" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="ABC1D23"></div>
     <div class="f"><label>Modelo:</label><input data-c="modelo" data-i="${i}" value="${esc(v.modelo||'')}" autocomplete="off" placeholder="Ex.: Volvo FH 540"></div>
     <div class="f"><label>Chassi:</label><input data-c="chassi" data-i="${i}" value="${esc(v.chassi||'')}" autocomplete="off"></div>
+    ${v.placa&&fichasDoCaminhao(v.placa).length?`<button type="button" class="vcur" data-act="curriculo" data-p="${esc(v.placa)}">📋 Currículo (${fichasDoCaminhao(v.placa).length})</button>`:''}
   </div>`).join('')||'<div class="empty" style="margin-top:12px">Nenhum caminhão. Toque em ➕ abaixo.</div>';
 }
 function lerCad(){
@@ -532,14 +573,49 @@ function cadSalvar(quieto){
 }
 function vVer(){
   const f=fichaById(tela.id);if(!f)return '<div class="empty">Ficha não encontrada.</div>';const c=cliById(f.cid)||{};
-  return `<button class="back" data-act="voltaCli" data-id="${f.cid}">‹ Voltar</button>
+  const pl=((f.veiculos||[])[0]||{}).placa,aberta=statusDe(f)==='aberta';
+  return `<button class="back" data-act="voltar">‹ Voltar</button>
   ${tela.salvo?`<div class="ok">✅ Ficha Nº ${esc(pad6(f.num))} salva!</div>`:''}
-  <button class="B blue" data-act="imprimir" style="margin-top:0">🖨️ IMPRIMIR</button>
+  ${aberta?`<button class="B" data-act="finalizar" style="margin-top:0;min-height:80px;font-size:22px">✅ FINALIZAR ORDEM DE SERVIÇO</button>`:`<div class="okbar" style="margin-top:0">✅ OS finalizada em ${dt(f.fechamento)} ${hr(f.fechamento)}</div>`}
+  ${pl?`<button class="B white" data-act="curriculo" data-p="${pl}">📋 CURRÍCULO DO CAMINHÃO ${esc(pl)}</button>`:''}
+  <button class="B blue" data-act="imprimir">🖨️ IMPRIMIR</button>
   ${c.tel?`<a class="B wa" href="${waLink(f)}" target="_blank" rel="noopener">📲 MANDAR NO WHATSAPP</a>`:''}
   <button class="B white" data-act="editar" data-id="${f.id}">✏️ COMPLETAR / CORRIGIR</button>
   <div class="paperBox" id="pbox" style="margin-top:14px"><div class="paperScale" id="pscale">${paperHTML(f)}</div></div>
   <button class="B" data-act="nova">📝 FAZER OUTRA FICHA</button>
+  ${aberta?'':`<button class="lnk" data-act="reabrir">Reabrir esta ordem de serviço</button>`}
   <button class="lnk" style="color:var(--red)" data-act="apagar">Apagar esta ficha</button>`;
+}
+
+/* ====== currículo do caminhão ====== */
+function vCurriculo(){
+  const p=tela.placa,{c,v}=caminhaoInfo(p),l=fichasDoCaminhao(p);
+  const kmDe=f=>((f.veiculos||[]).find(x=>x.placa===p)||{}).km||0;
+  const ultKm=l.reduce((m,f)=>Math.max(m,kmDe(f)),0),fin=l.filter(f=>statusDe(f)==='finalizada').length;
+  return `<button class="back" data-act="voltar">‹ Voltar</button>
+  <div class="sheet"><div class="ctit">📋 Currículo do caminhão</div>
+    <div class="cvh" style="margin-top:10px"><span class="placa">${esc(p)}</span><div><b>${esc(v.modelo||'Caminhão')}</b><span class="s">${v.chassi?'Chassi '+esc(v.chassi):'Chassi não informado'}</span><span class="s">Cliente: ${esc(c.nome||'—')}</span></div></div>
+    <div class="cvs"><div><b>${l.length}</b><span>vezes na oficina</span></div><div><b>${ultKm?kmTxt(ultKm):'—'}</b><span>último km</span></div><div><b>${l.length?dt(l[l.length-1].data):'—'}</b><span>primeira vez</span></div></div>
+  </div>
+  ${l.length?`<button class="B blue" data-act="imprimirCurr" data-p="${esc(p)}">🖨️ IMPRIMIR CURRÍCULO</button>`:''}
+  <div class="h2">Tudo que foi feito neste caminhão (${l.length})${fin<l.length?` · ${l.length-fin} em aberto`:''}</div>
+  ${l.length?`<div class="tl">${l.map(f=>{const ab=statusDe(f)==='aberta';return `<div class="tli ${ab?'ab':''}" data-act="ver" data-id="${f.id}">
+    <div class="tlh"><b>📅 ${dt(f.data)}</b>${ab?'<span class="st te">⏳ Em aberto</span>':`<span class="st ok">✅ Finalizada ${dt(f.fechamento)}</span>`}</div>
+    <div class="tls">${esc(linhas(f.servico).join('\n')||'Sem descrição')}</div>
+    ${f.pecas?`<div class="tlp"><b>Peças:</b> ${esc(linhas(f.pecas).join(', '))}</div>`:''}
+    <div class="tlf">OS Nº ${esc(pad6(f.num))}${kmDe(f)?' · '+kmTxt(kmDe(f))+' km':''}${f.motorista?' · motorista '+esc(f.motorista):''}</div></div>`;}).join('')}</div>`:'<div class="empty">Este caminhão ainda não tem ordem de serviço.</div>'}`;
+}
+function curriculoPrintHTML(p){
+  const C=db.config,{c,v}=caminhaoInfo(p),l=fichasDoCaminhao(p).slice().reverse();
+  const kmDe=f=>((f.veiculos||[]).find(x=>x.placa===p)||{}).km||0;
+  const logo=logoSrc(C)?`<img src="${logoSrc(C)}" alt="">`:'';
+  return `<div class="paper"><div class="ph"><div class="plogo">${logo}</div>
+    <div class="pinfo"><b>${esc(C.nome)}</b><span>${esc(C.end1)}</span><span>${esc(C.end2)}</span><span>${esc(C.end3)}</span>${C.cnpj?`<span>CNPJ ${esc(C.cnpj)}</span>`:''}</div>
+    <div class="pnum"><span style="font-weight:700;font-size:14px">${C.fone?'Fone: '+esc(C.fone):''}</span><span style="font-size:15px;font-weight:700">Currículo do Veículo</span><span>${dt(hoje())}</span></div></div>
+    <div class="prow"><label>Placa:</label><span class="v w2">${esc(p)}</span><label>Modelo:</label><span class="v grow">${esc(v.modelo||'')}</span><label>Chassi:</label><span class="v w2">${esc(v.chassi||'')}</span></div>
+    <div class="prow"><label>Cliente:</label><span class="v grow">${esc(c.nome||'')}</span><label>Passagens:</label><span class="v w2">${l.length}</span></div>
+    <table class="ctab"><tr><th>Entrada</th><th>Finalizada</th><th>OS Nº</th><th>Km</th><th>Serviço</th><th>Peças</th></tr>
+    ${l.map(f=>`<tr><td>${dt(f.data)}</td><td>${statusDe(f)==='finalizada'?dt(f.fechamento):'em aberto'}</td><td>${esc(pad6(f.num))}</td><td>${kmDe(f)?kmTxt(kmDe(f)):''}</td><td>${esc(linhas(f.servico).join('\n'))}</td><td>${esc(linhas(f.pecas).join('\n'))}</td></tr>`).join('')}</table></div>`;
 }
 
 /* ====== folha A4 ====== */
@@ -586,7 +662,7 @@ function initPad(){
 function padData(){const c=$('#pad');if(!c||!padDirty)return null;const w=520,o=document.createElement('canvas');o.width=w;o.height=Math.round(w*c.height/c.width);o.getContext('2d').drawImage(c,0,0,o.width,o.height);return o.toDataURL('image/png');}
 
 /* ====== render ====== */
-const TELAS_OFICINA=['nova','salvas','cliente','ver'];
+const TELAS_OFICINA=['nova','salvas','cliente','ver','curriculo'];
 function pintaTopo(){
   const naOficina=TELAS_OFICINA.includes(tela.v);
   $('.top').style.display=naOficina?'':'none';
@@ -597,7 +673,7 @@ function pintaTopo(){
   $('#tSalvas').classList.toggle('on',tela.v!=='nova');
 }
 function render(){
-  const V={carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,nova:vNova,salvas:vSalvas,cliente:vCliente,ver:vVer};
+  const V={curriculo:vCurriculo,carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,nova:vNova,salvas:vSalvas,cliente:vCliente,ver:vVer};
   $('#app').innerHTML=(V[tela.v]||vCarregando)();
   pintaTopo();window.scrollTo(0,0);
   if(tela.v==='nova')initPad();
@@ -631,7 +707,7 @@ function salvar(){
   const dados={num,cid:c.id,cliente:c.nome,motorista:F.motorista.trim(),veiculos:vs,servico:F.servico.trim(),pecas:F.pecas.trim(),assinatura:F.assinatura||null};
   let f;
   if(edit){f=fichaById(edit);Object.assign(f,dados);}
-  else{f={id:uid('f'),data:F.data,...dados};db.fichas.push(f);}
+  else{f={id:uid('f'),data:F.data,status:'aberta',fechamento:null,...dados};db.fichas.push(f);}
   gravaFicha(f);
   novoForm();tela={v:'ver',id:f.id,salvo:true};render();
 }
@@ -659,7 +735,13 @@ document.addEventListener('click',e=>{
     cadAddVei:()=>{lerCad();CAD.veiculos.push({placa:'',modelo:'',chassi:'',km:0});$('#cVeis').innerHTML=cadVeisHTML();$('#cQt').textContent=`🚚 Caminhões deste cliente (${CAD.veiculos.length})`;const ins=document.querySelectorAll('#cVeis input.pl');ins[ins.length-1].focus();},
     cadTiraVei:()=>{lerCad();CAD.veiculos.splice(+d.i,1);$('#cVeis').innerHTML=cadVeisHTML();$('#cQt').textContent=`🚚 Caminhões deste cliente (${CAD.veiculos.length})`;},
     cadSalvar:()=>cadSalvar(false),
-    ver:()=>{tela={v:'ver',id:d.id};render();},
+    ver:()=>{tela={v:'ver',id:d.id,volta:['cliente','curriculo','salvas'].includes(tela.v)?tela:null};render();},
+    curriculo:()=>{if(tela.v==='nova')lerForm();if(tela.v==='cliente')lerCad();tela={v:'curriculo',placa:d.p,volta:tela};render();},
+    voltar:()=>{const vt=tela.volta;if(vt){tela=vt;render();return;}const f=fichaById(tela.id),c=f&&cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:c.id};}else tela={v:'salvas'};render();},
+    finalizar:()=>{const f=fichaById(tela.id),pl=((f.veiculos||[])[0]||{}).placa||'';modal(`<h3>Finalizar a OS Nº ${esc(pad6(f.num))}?</h3><p style="color:var(--mut);margin-bottom:6px;font-size:16px">${f.pecas?'':'⚠️ As peças ainda estão em branco. '}Depois de finalizar, ela entra no currículo do caminhão <b>${esc(pl)}</b>.</p><button class="B" data-act="finalizarOk">✅ SIM, FINALIZAR</button>${f.pecas?'':`<button class="B white" data-act="editar" data-id="${f.id}">✏️ PREENCHER AS PEÇAS ANTES</button>`}<button class="lnk" data-act="fechar">Voltar</button>`);},
+    finalizarOk:()=>{const f=fichaById(tela.id);f.status='finalizada';f.fechamento=hoje();gravaFicha(f);closeModal();tela.salvo=false;render();toast('✅ OS finalizada — já está no currículo do caminhão');},
+    reabrir:()=>{const f=fichaById(tela.id);f.status='aberta';f.fechamento=null;gravaFicha(f);render();toast('Ordem de serviço reaberta');},
+    imprimirCurr:()=>{$('#printArea').innerHTML=curriculoPrintHTML(d.p);setTimeout(()=>window.print(),120);},
     addVei:()=>{lerForm();F.veiculos.push({placa:'',modelo:'',chassi:'',km:''});redesenhaVeis();const ins=document.querySelectorAll('#veis input.pl');ins[ins.length-1].focus();},
     tiraVei:()=>{lerForm();F.veiculos.splice(+d.i,1);redesenhaVeis();},
     usaVei:()=>{lerForm();const c=cliByNome(F.cliente),v=c.veiculos.find(x=>x.placa===d.p);
@@ -671,7 +753,7 @@ document.addEventListener('click',e=>{
     limparForm:()=>{novoForm();render();},
     cancelarEd:()=>{const id=edit;novoForm();tela={v:'ver',id};render();},
     fichaPara:()=>{if(tela.v==='cliente'&&!cadSalvar(true))return;const c=cliById(d.id)||cliById(CAD.id);novoForm();F.cliente=c.nome;if((c.veiculos||[]).length===1)F.veiculos=[{placa:c.veiculos[0].placa,modelo:c.veiculos[0].modelo||'',chassi:c.veiculos[0].chassi||'',km:''}];tela={v:'nova'};render();},
-    editar:()=>{const f=fichaById(d.id);edit=f.id;F={num:pad6(f.num),cliente:f.cliente,motorista:f.motorista||'',data:f.data,veiculos:(f.veiculos||[]).slice(0,1).map(v=>({...v,km:v.km||''})),servico:f.servico||'',pecas:f.pecas||'',assinatura:f.assinatura||null};if(!F.veiculos.length)F.veiculos=[{placa:'',modelo:'',chassi:'',km:''}];tela={v:'nova'};render();},
+    editar:()=>{closeModal();const f=fichaById(d.id);edit=f.id;F={num:pad6(f.num),cliente:f.cliente,motorista:f.motorista||'',data:f.data,veiculos:(f.veiculos||[]).slice(0,1).map(v=>({...v,km:v.km||''})),servico:f.servico||'',pecas:f.pecas||'',assinatura:f.assinatura||null};if(!F.veiculos.length)F.veiculos=[{placa:'',modelo:'',chassi:'',km:''}];tela={v:'nova'};render();},
     imprimir:()=>{$('#printArea').innerHTML=paperHTML(fichaById(tela.id));setTimeout(()=>window.print(),80);},
     apagar:()=>modal(`<h3>Apagar esta ficha?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
     apagarOk:()=>{const f=fichaById(tela.id);db.fichas=db.fichas.filter(x=>x.id!==f.id);apagaFicha(f.id);closeModal();const c=cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:f.cid};}else tela={v:'salvas'};render();toast('Ficha apagada');},
@@ -696,6 +778,7 @@ document.addEventListener('input',e=>{
   if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
   if(t.id==='busca'){$('#lista').innerHTML=listaClientes(t.value);return;}
   if(t.dataset&&t.dataset.k==='placa'){
+    const hb=t.closest('.vei').querySelector('.histbox');if(hb)hb.innerHTML=histHint(normPlaca(t.value));
     const p=normPlaca(t.value);if(p.length!==7)return;const dono=donoDaPlaca(p);if(!dono)return;
     const v=dono.veiculos.find(x=>x.placa===p),box=t.closest('.vei');
     const m=box.querySelector('[data-k=modelo]'),c=box.querySelector('[data-k=chassi]');
