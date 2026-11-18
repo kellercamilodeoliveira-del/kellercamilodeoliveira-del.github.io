@@ -20,17 +20,28 @@ button,input,textarea{font:inherit;color:inherit}
 .top button{flex:1;max-width:260px;height:50px;border:none;border-radius:12px;background:#3c424a;color:#cfd5dc;font-size:17px;font-weight:800;cursor:pointer}
 .top button.on{background:#f6c418;color:#161616}
 .wrap{max-width:640px;margin:0 auto;padding:14px 10px 40px}
+@media(min-width:700px){.wrap{max-width:860px}}
 
 /* folha */
 .sheet{background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.15);padding:18px 16px 22px}
 .hd{display:grid;grid-template-columns:1.1fr 1.4fr;gap:10px 14px;align-items:center;border-bottom:5px solid #3a3a3a;padding-bottom:12px;margin-bottom:6px}
 .hlogo{display:flex;align-items:center;justify-content:center}
-.hlogo img{width:100%;max-width:230px;max-height:130px;object-fit:contain}
+.hlogo{min-width:0}
+.hlogo img{display:block;width:100%;height:auto;max-width:230px;max-height:130px;object-fit:contain}
 .hlogo .alt{text-align:center}.hlogo .alt svg{width:54px;height:27px}.hlogo .alt b{display:block;font-size:13px}
 .hinfo{text-align:center;display:flex;flex-direction:column;font-size:11.5px;color:#3b3b3b;line-height:1.38}
 .hinfo b{font-size:14.5px;color:#161616;margin-bottom:3px;font-weight:800}
 .hnum{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1.5px solid #e2e2e2;padding-top:10px}
-.hnum .fone{font-weight:800;font-size:14px;color:#161616}
+.hnum .fone{font-weight:800;font-size:14px;color:#161616;white-space:nowrap}
+/* linhas de campos iguais ao talão */
+.pr{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 14px;margin-top:14px}
+.pr .fx{display:flex;align-items:flex-end;gap:6px;min-width:0}
+.pr label{font-weight:700;white-space:nowrap;font-size:16px;padding-bottom:6px;color:#1b1e22}
+.pr input{flex:1;min-width:0;width:100%;border:none;border-bottom:1.5px solid var(--line);border-radius:0;background:transparent;height:36px;padding:0 4px;font-size:17.5px;color:var(--ink);outline:none;font-family:inherit}
+.pr input:focus{border-bottom:2.5px solid var(--blue);background:#f5f8ff}
+.pr input.pl{font-family:"Courier New",monospace;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.fx.g3{flex:3 1 260px}.fx.wdt{flex:1 1 230px}.fx.g2{flex:2 1 210px}.fx.wch{flex:1 1 150px}.fx.wkm{flex:1 1 120px}.fx.wpl{flex:1 1 200px}
+.vei.vlin{border:none;padding:0;margin:0;background:none;border-radius:0}
 .hnum .pre{font-size:13px;color:#3b3b3b;text-align:center}
 .hnum .nbox{display:flex;align-items:flex-end;gap:6px;font-weight:800;font-size:15px}
 .hnum input{width:120px;border:none;border-bottom:2.5px solid #161616;background:#fff7d6;font-family:"Courier New",monospace;font-size:21px;font-weight:700;color:#b3141b;text-align:center;height:38px;outline:none;border-radius:4px 4px 0 0}
@@ -476,12 +487,11 @@ function vNova(){
     <div class="hd"><div class="hlogo">${logoMini()}</div>
       <div class="hinfo"><b>${esc(C.nome)}</b>${C.end1?`<span>${esc(C.end1)}</span>`:''}${C.end2?`<span>${esc(C.end2)}</span>`:''}${C.end3?`<span>${esc(C.end3)}</span>`:''}${C.cnpj?`<span>CNPJ ${esc(C.cnpj)}</span>`:''}${C.ie?`<span>IE: ${esc(C.ie)}</span>`:''}</div>
       <div class="hnum">${C.fone?`<div class="fone">Fone: ${esc(C.fone)}</div>`:''}<div class="pre">Pré Ordem de Serviço</div><div><div class="nbox">Nº <input id="iNum" value="${esc(F.num)}" inputmode="numeric" autocomplete="off"></div><small>↑ digite o Nº</small></div></div></div>
-    <div class="f"><label>Cliente:</label><input id="iCliente" list="lClientes" value="${esc(F.cliente)}" autocomplete="off" autocapitalize="words"></div>
+    <div class="pr"><div class="fx g3"><label>Cliente:</label><input id="iCliente" list="lClientes" value="${esc(F.cliente)}" autocomplete="off" autocapitalize="words"></div><div class="fx wdt"><label>Data entrada:</label><input value="${dt(F.data)} ${hr(F.data)}" readonly style="color:#444"></div></div>
     <datalist id="lClientes">${db.clientes.map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>
-    <div id="conhecidos">${conhecidosHTML()}</div>
-    <div class="f"><label>Data entrada:</label><input value="${dt(F.data)} ${hr(F.data)}" readonly style="color:#555"></div>
-    <div class="f"><label>Nome do Motorista:</label><input id="iMotorista" value="${esc(F.motorista)}" autocomplete="off" autocapitalize="words"></div>
+    <div class="pr"><div class="fx g3"><label>Nome do Motorista:</label><input id="iMotorista" value="${esc(F.motorista)}" autocomplete="off" autocapitalize="words"></div></div>
     <div class="veis" id="veis">${veisHTML()}</div>
+    <div id="conhecidos">${conhecidosHTML()}</div>
     <div class="sech"><span>Descrição do Serviço</span><small>Valor R$</small></div>
     <div id="L_servico">${linhasHTML('servico')}</div>
     <div class="grip"><span data-grip="servico" title="Arraste para cima ou para baixo para tirar ou pôr linhas">⇕ ═</span></div>
@@ -499,11 +509,11 @@ function vNova(){
   ${edit?`<button class="lnk" data-act="cancelarEd">Cancelar alteração</button>`:`<button class="lnk" data-act="limparForm">Limpar tudo e começar outra</button>`}`;
 }
 function veisHTML(){
-  return F.veiculos.map((v,i)=>`<div class="vei" data-i="${i}">
-    <div class="f"><label>Placa Veículo:</label><input class="pl" data-k="placa" data-i="${i}" value="${esc(v.placa)}" maxlength="8" autocomplete="off" autocapitalize="characters"></div>
-    <div class="f"><label>Modelo:</label><input data-k="modelo" data-i="${i}" value="${esc(v.modelo)}" autocomplete="off"></div>
-    <div class="g2"><div class="f"><label>Chassi:</label><input data-k="chassi" data-i="${i}" value="${esc(v.chassi)}" autocomplete="off"></div>
-    <div class="f"><label>Km:</label><input data-k="km" data-i="${i}" value="${esc(v.km)}" inputmode="numeric" autocomplete="off"></div></div>
+  return F.veiculos.map((v,i)=>`<div class="vei vlin" data-i="${i}"><div class="pr">
+    <div class="fx g2"><label>Modelo:</label><input data-k="modelo" data-i="${i}" value="${esc(v.modelo)}" autocomplete="off"></div>
+    <div class="fx wch"><label>Chassi:</label><input data-k="chassi" data-i="${i}" value="${esc(v.chassi)}" autocomplete="off"></div>
+    <div class="fx wkm"><label>Km:</label><input data-k="km" data-i="${i}" value="${esc(v.km)}" inputmode="numeric" autocomplete="off"></div>
+    <div class="fx wpl"><label>Placa Veículo:</label><input class="pl" data-k="placa" data-i="${i}" value="${esc(v.placa)}" maxlength="8" autocomplete="off" autocapitalize="characters"></div></div>
     <div class="histbox">${histHint(normPlaca(v.placa))}</div>
   </div>`).join('');
 }
