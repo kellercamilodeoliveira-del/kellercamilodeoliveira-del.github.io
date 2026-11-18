@@ -424,7 +424,6 @@ function vNova(){
     <div class="f"><label>Data entrada:</label><input value="${dt(F.data)} ${hr(F.data)}" readonly style="color:#555"></div>
     <div class="f"><label>Nome do Motorista:</label><input id="iMotorista" value="${esc(F.motorista)}" autocomplete="off" autocapitalize="words"></div>
     <div class="veis" id="veis">${veisHTML()}</div>
-    <button class="addv" data-act="addVei">➕ Adicionar mais um veículo</button>
     <div class="sec">Descrição do Serviço</div>
     <textarea class="ruled" id="iServico">${esc(F.servico)}</textarea>
     <div class="sec">Descrição Peças</div>
@@ -441,7 +440,6 @@ function vNova(){
 }
 function veisHTML(){
   return F.veiculos.map((v,i)=>`<div class="vei" data-i="${i}">
-    <div class="vt"><span>Veículo ${i+1}</span>${F.veiculos.length>1?`<button class="x" data-act="tiraVei" data-i="${i}">✕ Tirar</button>`:''}</div>
     <div class="f"><label>Placa Veículo:</label><input class="pl" data-k="placa" data-i="${i}" value="${esc(v.placa)}" maxlength="8" autocomplete="off" autocapitalize="characters"></div>
     <div class="f"><label>Modelo:</label><input data-k="modelo" data-i="${i}" value="${esc(v.modelo)}" autocomplete="off"></div>
     <div class="g2"><div class="f"><label>Chassi:</label><input data-k="chassi" data-i="${i}" value="${esc(v.chassi)}" autocomplete="off"></div>
@@ -451,7 +449,7 @@ function veisHTML(){
 function conhecidosHTML(){
   const c=cliByNome(F.cliente);if(!c||!(c.veiculos||[]).length)return'';
   const usadas=F.veiculos.map(v=>normPlaca(v.placa));
-  return `<div class="conhecidos"><p>Caminhões deste cliente — toque para colocar na ficha:</p><div class="chips">
+  return `<div class="conhecidos"><p>Caminhões deste cliente — toque no que chegou:</p><div class="chips">
     ${c.veiculos.map(v=>`<button class="cp ${usadas.includes(v.placa)?'usado':''}" data-act="usaVei" data-p="${v.placa}">${esc(v.placa)}<small>${esc(v.modelo||'')}</small></button>`).join('')}</div></div>`;
 }
 function lerForm(){
@@ -549,7 +547,8 @@ function paperHTML(f){
   const C=db.config,d=new Date(f.data),vsF=f.veiculos||[];
   const L=(t,min)=>{const a=linhas(t);while(a.length<min)a.push('');return a.map(l=>`<div class="pl">${esc(l)||'&nbsp;'}</div>`).join('');};
   const logo=logoSrc(C)?`<img src="${logoSrc(C)}" alt="">`:`<div class="defmark">${truckSvg}<div class="t"><span>${esc(nomeCurto(C.nome)||'OFICINA')}</span></div>${C.slogan?`<small>${esc(C.slogan)}</small>`:''}</div>`;
-  const vs=vsF.map(v=>`<div class="prow"><label>Modelo:</label><span class="v grow">${esc(v.modelo)}</span><label>Chassi:</label><span class="v w2">${esc(v.chassi)}</span><label>Km:</label><span class="v w3">${kmTxt(v.km)}</span><label>Placa Veículo:</label><span class="v w2">${esc(v.placa)}</span></div>`).join('');
+  const jn=k=>vsF.map(v=>k==='km'?kmTxt(v.km):(v[k]||'')).filter(Boolean).join(' / ');
+  const vs=`<div class="prow"><label>Modelo:</label><span class="v grow">${esc(jn('modelo'))}</span><label>Chassi:</label><span class="v w2">${esc(jn('chassi'))}</span><label>Km:</label><span class="v w3">${esc(jn('km'))}</span><label>Placa Veículo:</label><span class="v w2">${esc(jn('placa'))}</span></div>`;
   const extra=Math.max(0,vsF.length-1);
   return `<div class="paper"><div class="ph"><div class="plogo">${logo}</div>
     <div class="pinfo"><b>${esc(C.nome)}</b><span>${esc(C.end1)}</span><span>${esc(C.end2)}</span><span>${esc(C.end3)}</span>${C.cnpj?`<span>CNPJ ${esc(C.cnpj)}</span>`:''}${C.ie?`<span>IE: ${esc(C.ie)}</span>`:''}</div>
@@ -664,9 +663,7 @@ document.addEventListener('click',e=>{
     addVei:()=>{lerForm();F.veiculos.push({placa:'',modelo:'',chassi:'',km:''});redesenhaVeis();const ins=document.querySelectorAll('#veis input.pl');ins[ins.length-1].focus();},
     tiraVei:()=>{lerForm();F.veiculos.splice(+d.i,1);redesenhaVeis();},
     usaVei:()=>{lerForm();const c=cliByNome(F.cliente),v=c.veiculos.find(x=>x.placa===d.p);
-      const vazio=F.veiculos.findIndex(x=>!x.placa&&!x.modelo&&!x.chassi);
-      const novo={placa:v.placa,modelo:v.modelo||'',chassi:v.chassi||'',km:''};
-      if(vazio>=0)F.veiculos[vazio]=novo;else F.veiculos.push(novo);
+      F.veiculos=[{placa:v.placa,modelo:v.modelo||'',chassi:v.chassi||'',km:''}];
       redesenhaVeis();toast(v.placa+' colocado na ficha');},
     limparAss:()=>{const c=$('#pad');c.getContext('2d').clearRect(0,0,c.width,c.height);padDirty=false;$('#padHint').style.display='';},
     refazerAss:()=>{lerForm();F.assinatura=null;const y=window.scrollY;render();window.scrollTo(0,y);},
@@ -674,7 +671,7 @@ document.addEventListener('click',e=>{
     limparForm:()=>{novoForm();render();},
     cancelarEd:()=>{const id=edit;novoForm();tela={v:'ver',id};render();},
     fichaPara:()=>{if(tela.v==='cliente'&&!cadSalvar(true))return;const c=cliById(d.id)||cliById(CAD.id);novoForm();F.cliente=c.nome;if((c.veiculos||[]).length===1)F.veiculos=[{placa:c.veiculos[0].placa,modelo:c.veiculos[0].modelo||'',chassi:c.veiculos[0].chassi||'',km:''}];tela={v:'nova'};render();},
-    editar:()=>{const f=fichaById(d.id);edit=f.id;F={num:pad6(f.num),cliente:f.cliente,motorista:f.motorista||'',data:f.data,veiculos:(f.veiculos||[]).map(v=>({...v,km:v.km||''})),servico:f.servico||'',pecas:f.pecas||'',assinatura:f.assinatura||null};if(!F.veiculos.length)F.veiculos=[{placa:'',modelo:'',chassi:'',km:''}];tela={v:'nova'};render();},
+    editar:()=>{const f=fichaById(d.id);edit=f.id;F={num:pad6(f.num),cliente:f.cliente,motorista:f.motorista||'',data:f.data,veiculos:(f.veiculos||[]).slice(0,1).map(v=>({...v,km:v.km||''})),servico:f.servico||'',pecas:f.pecas||'',assinatura:f.assinatura||null};if(!F.veiculos.length)F.veiculos=[{placa:'',modelo:'',chassi:'',km:''}];tela={v:'nova'};render();},
     imprimir:()=>{$('#printArea').innerHTML=paperHTML(fichaById(tela.id));setTimeout(()=>window.print(),80);},
     apagar:()=>modal(`<h3>Apagar esta ficha?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
     apagarOk:()=>{const f=fichaById(tela.id);db.fichas=db.fichas.filter(x=>x.id!==f.id);apagaFicha(f.id);closeModal();const c=cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:f.cid};}else tela={v:'salvas'};render();toast('Ficha apagada');},
