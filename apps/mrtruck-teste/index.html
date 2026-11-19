@@ -247,6 +247,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
   #printArea{display:block!important}
   .paper.imp{page-break-after:avoid;break-after:avoid}
 }
+.demora{margin-top:22px;max-width:420px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:stretch}.demora .B{margin-top:0}.demora .dica2{font-size:15px;color:#555;line-height:1.4}.demora a.dica2{color:#0a7a3e;font-weight:700}
 </style>
 </head>
 <body>
@@ -263,8 +264,8 @@ textarea.ruled:focus{background-color:#f5f8ff}
 
 <script type="module">
 import {initializeApp,deleteApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,getDoc,setDoc,updateDoc,deleteDoc,onSnapshot,writeBatch,serverTimestamp,Timestamp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {getAuth,initializeAuth,indexedDBLocalPersistence,browserLocalPersistence,inMemoryPersistence,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,memoryLocalCache,collection,doc,getDoc,setDoc,updateDoc,deleteDoc,onSnapshot,writeBatch,serverTimestamp,Timestamp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 /* ====== Firebase (mesmo projeto do Ponto Eletrônico) ======
    Quem é administrador é decidido pelas regras do Firebase (mesma regra do Ponto):
@@ -272,8 +273,14 @@ import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,co
 const firebaseConfig={apiKey:'AIzaSyBZyZ4Dqs0BI5VSsm3HB2TNGpk7Z7330CE',authDomain:'escritorio-c3acb.firebaseapp.com',projectId:'escritorio-c3acb',storageBucket:'escritorio-c3acb.firebasestorage.app',messagingSenderId:'752996396852',appId:'1:752996396852:web:13569631f01d301d5a3f61'};
 const DIAS_TESTE=7;
 const WA_SUPORTE='5514988324456';
-const app=initializeApp(firebaseConfig),auth=getAuth(app);
-let fs;try{fs=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});}catch(e){fs=initializeFirestore(app,{});}
+/* Alguns navegadores de dentro de apps (WhatsApp, Instagram, Claude…) no iPhone travam o banco local (IndexedDB)
+   e o sistema ficava parado em "Abrindo…". Testa rápido: se o banco local não responder, usa a memória. */
+const BANCO_LOCAL_OK=await new Promise(res=>{let feito=false;const fim=v=>{if(!feito){feito=true;res(v);}};
+  setTimeout(()=>fim(false),1500);
+  try{const r=indexedDB.open('kia-teste-banco');r.onsuccess=()=>{try{r.result.close();}catch(_){}fim(true);};r.onerror=()=>fim(false);}catch(e){fim(false);}});
+const app=initializeApp(firebaseConfig);
+const auth=initializeAuth(app,{persistence:BANCO_LOCAL_OK?[indexedDBLocalPersistence,browserLocalPersistence,inMemoryPersistence]:[browserLocalPersistence,inMemoryPersistence]});
+let fs;try{fs=initializeFirestore(app,{localCache:BANCO_LOCAL_OK?persistentLocalCache({tabManager:persistentMultipleTabManager()}):memoryLocalCache()});}catch(e){fs=initializeFirestore(app,{localCache:memoryLocalCache()});}
 
 /* ====== utilidades ====== */
 const KEY_LOCAL='mrtruck_ficha_papel_v1'; // dados da versão antiga (só no aparelho): sobem sozinhos para a nuvem
@@ -931,9 +938,20 @@ function pintaTopo(){
   $('#tLemb').classList.toggle('on',emLemb);
   $('#tSalvas').classList.toggle('on',tela.v!=='nova'&&!emOrc&&!emLemb);
 }
+/* Se ficar muito tempo em "Abrindo…", mostra ajuda (sem trocar de tela: se abrir depois, segue normal) */
+let _vigia=null;
+function vigiaAbrindo(){clearTimeout(_vigia);if(tela.v!=='carregando')return;
+  _vigia=setTimeout(()=>{const c=document.querySelector('#app .center');if(tela.v!=='carregando'||!c||c.querySelector('.demora'))return;
+    c.insertAdjacentHTML('beforeend',`<div class="demora"><p><b>Está demorando para abrir.</b></p>
+      <button class="B" onclick="location.reload()">🔄 Tentar de novo</button>
+      <button class="B white" onclick="window.__limpaRecarrega()">🧹 Limpar e abrir de novo</button>
+      <p class="dica2">Se você abriu pelo link dentro do WhatsApp, Instagram ou outro aplicativo, toque em <b>⋯</b> ou na <b>bússola</b> e escolha <b>Abrir no Safari</b> (ou Chrome). Melhor ainda: use o ícone instalado na tela inicial.</p>
+      <a class="B wa" href="https://wa.me/5514988324456" target="_blank" rel="noopener">📲 Ajuda no WhatsApp</a></div>`);},10000);}
+window.__limpaRecarrega=async()=>{try{for(const r of (await navigator.serviceWorker?.getRegistrations?.())||[])await r.unregister();}catch(_){}
+  try{for(const k of await caches.keys())await caches.delete(k);}catch(_){}location.reload();};
 function render(){
   const V={curriculo:vCurriculo,carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,nova:vNova,orc:vNova,salvas:vSalvas,cliente:vCliente,ver:vVer,verOrc:vVerOrc,lemb:vLemb,lembCam:vLembCam};
-  $('#app').innerHTML=(V[tela.v]||vCarregando)();
+  $('#app').innerHTML=(V[tela.v]||vCarregando)();vigiaAbrindo();
   pintaTopo();window.scrollTo(0,0);
   if(tela.v==='nova'||tela.v==='orc')initPad();
   if(tela.v==='ver'||tela.v==='verOrc')requestAnimationFrame(fitPaper);
@@ -1188,7 +1206,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v17';
+const APP_VERSAO='v18';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
