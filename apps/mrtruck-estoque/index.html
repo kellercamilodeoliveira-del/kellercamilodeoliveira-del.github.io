@@ -272,11 +272,13 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .qsel input{flex:1;min-width:0;text-align:center;font-size:30px;font-weight:800;border:2px solid #c9cdd3;border-radius:12px;height:64px}
 .st.bl{background:#fdecea;color:#b3141b}
 .demora{margin-top:22px;max-width:420px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:stretch}.demora .B{margin-top:0}.demora .dica2{font-size:15px;color:#555;line-height:1.4}.demora a.dica2{color:#0a7a3e;font-weight:700}
+.faixa{display:block;background:#c0392b;color:#fff;border-radius:14px;padding:12px 14px;margin:2px 0 12px;cursor:pointer;box-shadow:0 2px 6px rgba(192,57,43,.35)}.faixa b{display:block;font-size:19px}.faixa span{display:block;font-size:15px;margin-top:4px;opacity:.95}.faixa em{display:block;font-style:normal;font-weight:800;margin-top:6px;text-decoration:underline}
+.top button.temal{background:#c0392b;color:#fff}
 </style>
 </head>
 <body>
 <div id="shell">
-  <div class="top" style="display:none"><button id="tEst" data-act="estoque">📦 Estoque</button><button id="tNovo" data-act="novoProd">➕ Novo produto</button><button id="tMovs" data-act="movs">📜 Movimentos</button></div>
+  <div class="top" style="display:none"><button id="tEst" data-act="estoque">📦 Estoque</button><button id="tNovo" data-act="novoProd">➕ Nova peça</button><button id="tMovs" data-act="alertas">⚠️ Alertas<span id="nAl"></span></button></div>
   <div id="mbar"></div>
   <main class="wrap" id="app"></main>
 </div>
@@ -378,10 +380,10 @@ function abrirPainelMaster(testando){
 const podeUsar=()=>MODO==='master'||(liberada(OFDOC)&&estoqueLiberado(OFDOC));
 function abrirOficina(id){
   limpar();OF=id;tela={v:'carregando'};render();
-  const ok={};const pronto=k=>{ok[k]=1;if(ok.o&&ok.p&&ok.m&&tela.v==='carregando'){tela=podeUsar()?{v:'estoque'}:{v:'bloqueado'};render();}};
+  const ok={};const pronto=k=>{ok[k]=1;if(ok.o&&ok.p&&ok.m&&tela.v==='carregando'){tela=podeUsar()?{v:'estoque'}:{v:'bloqueado'};render();avisoAbrir();}};
   const erro=e=>{tela={v:'erro',msg:erroTxt(e)};render();};
-  const reRender=()=>{if(['estoque','produto','movs'].includes(tela.v)&&!$('#modal').classList.contains('show')){
-    const a=document.activeElement;if(a&&a.id&&['busca','pCod','pNome','pMin','pPreco','pLocal','pQtd'].includes(a.id)){if(tela.v==='estoque')atualizaLista();return;}
+  const reRender=()=>{if(['estoque','produto','alertas'].includes(tela.v)&&!$('#modal').classList.contains('show')){
+    const a=document.activeElement;if(a&&a.id&&['busca','pCod','pNome','pMin','pPreco','pLocal','pQtd','pMax'].includes(a.id)){if(tela.v==='estoque')atualizaLista();return;}
     const y=scrollY;render();scrollTo(0,y);}};
   unsubs.push(onSnapshot(doc(fs,'os_oficinas',id),s=>{
     OFDOC=s.exists()?s.data():null;
@@ -393,6 +395,11 @@ function abrirOficina(id){
   unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'estoque_movs'),s=>{db.movs=s.docs.map(d=>({id:d.id,...d.data()}));reRender();pronto('m');},erro));
 }
 
+let _avisou=false;
+function avisoAbrir(){if(_avisou||tela.v!=='estoque')return;const l=db.produtos.filter(precisaRepor);if(!l.length)return;_avisou=true;
+  modal(`<h3>⚠️ Estoque mínimo</h3><p style="font-size:18px;margin:6px 0 10px">${l.length===1?'Esta peça chegou':'Estas peças chegaram'} no mínimo:</p>
+  ${l.slice(0,8).map(p=>`<p style="margin:4px 0"><b>${esc(p.codigo)}</b> · ${esc(p.nome)} — tem <b style="color:var(--red)">${qtxt(qtdDe(p.id))}</b></p>`).join('')}${l.length>8?'<p>…</p>':''}
+  <button class="B" data-act="alertasOk">VER O QUE COMPRAR</button><button class="lnk" data-act="fechar">Depois</button>`);}
 /* ====== telas de acesso ====== */
 function vCarregando(){return `<div class="center"><div class="spin"></div><p>Abrindo…</p></div>`;}
 function vLogin(){
@@ -438,20 +445,22 @@ function vMaster(){
 /* ====== estoque ====== */
 function resumo(){
   const n=db.produtos.length,r=db.produtos.filter(precisaRepor).length;
-  return `<div class="resumo"><div><b>${n}</b><span>produto${n===1?'':'s'}</span></div><div class="${r?'alerta':''}" data-act="soRepor"><b>${r}</b><span>${r===1?'precisa':'precisam'} repor${soRepor?' · mostrando':''}</span></div></div>`;
+  return `<div class="resumo"><div><b>${n}</b><span>peça${n===1?'':'s'} cadastrada${n===1?'':'s'}</span></div><div class="${r?'alerta':''}" data-act="soRepor"><b>${r}</b><span>no mínimo${soRepor?' · mostrando':''}</span></div></div>`;
 }
+function faixaAlerta(){const l=db.produtos.filter(precisaRepor);if(!l.length)return '';
+  return `<div class="faixa" data-act="alertas"><b>⚠️ ${l.length===1?'1 peça chegou':l.length+' peças chegaram'} no estoque mínimo</b>
+  <span>${l.slice(0,4).map(p=>`${esc(p.codigo)} · ${esc(p.nome)} (${qtxt(qtdDe(p.id))})`).join('<br>')}${l.length>4?'<br>…':''}</span><em>Ver o que precisa comprar ›</em></div>`;}
 function vEstoque(){
-  return `${resumo()}
+  return `${faixaAlerta()}${resumo()}
   <input class="busca" id="busca" placeholder="🔍 Procurar por código ou nome" autocomplete="off" value="">
   ${soRepor?`<button class="lnk" data-act="soRepor" style="padding:4px 0 10px">Mostrar todos os produtos</button>`:''}
   <div id="lista">${listaProdutos('')}</div>
-  <button class="B" data-act="novoProd">➕ CADASTRAR PRODUTO</button>
+  <button class="B" data-act="novoProd">➕ CADASTRAR PEÇA NOVA</button>
   ${jaInstalado()?'':`<button class="B white" data-act="instalarApp" style="margin-top:18px">${ehCelular?'📱 Instalar no celular':'💻 Instalar no computador'}</button>`}
-  <a class="B white" href="${LINK_FICHAS}" style="margin-top:12px">📝 Abrir as Fichas de Serviço</a>
   ${MODO==='master'?'':'<button class="gear" data-act="sair">🚪 Sair desta conta</button>'}`;
 }
 function listaProdutos(q){
-  if(!db.produtos.length)return `<div class="empty">Nenhum produto ainda.<br>Toque em <b>➕ CADASTRAR PRODUTO</b>.<br><br><small>Exemplo: código <b>15</b> — Bomba d'água</small></div>`;
+  if(!db.produtos.length)return `<div class="empty">Nenhuma peça ainda.<br>Toque em <b>➕ CADASTRAR PEÇA NOVA</b>.<br><br><small>Exemplo: código <b>15</b> — Bomba d'água</small></div>`;
   const qk=nomeKey(q),qc=codKey(q);
   let l=db.produtos.filter(p=>!q||codKey(p.codigo).includes(qc)||nomeKey(p.nome).includes(qk));
   if(soRepor)l=l.filter(precisaRepor);
@@ -460,7 +469,7 @@ function listaProdutos(q){
     <span class="pc">${esc(p.codigo)}</span>
     <div class="pn"><b>${esc(p.nome)}</b><span class="s">${p.local?'📍 '+esc(p.local)+' · ':''}${p.preco?'R$ '+brl(p.preco):''}${rep?' <b class="avs">⚠️ repor</b>':''}</span></div>
     <div class="pq"><b>${qtxt(qt)}</b><small>${esc(p.unidade||'un')}</small></div>
-    <div class="pbt"><button class="mais" data-act="movModal" data-id="${p.id}" data-t="entrada" title="Entrou">＋</button><button class="menos" data-act="movModal" data-id="${p.id}" data-t="saida" title="Saiu">−</button></div>
+    <div class="pbt"><button class="mais" data-act="movModal" data-id="${p.id}" data-t="entrada" title="Chegou peça">＋</button></div>
   </div>`;}).join('')||'<div class="empty">Nada encontrado.</div>';
 }
 function atualizaLista(){const b=$('#busca');if(b&&$('#lista'))$('#lista').innerHTML=listaProdutos(b.value);}
@@ -469,13 +478,16 @@ function vProduto(){
   const p=PROD.id?prodById(PROD.id):null,qt=p?qtdDe(p.id):0,ms=p?movsDe(p.id):[];
   return `<button class="back" data-act="voltar">‹ Voltar</button>
   ${p?`<div class="qbig ${precisaRepor(p)?'rep':''}"><span>Em estoque agora</span><b>${qtxt(qt)} <small>${esc(p.unidade||'un')}</small></b>${precisaRepor(p)?'<em>⚠️ Precisa repor</em>':''}</div>
-  <div class="dup"><button class="B" data-act="movModal" data-id="${p.id}" data-t="entrada" style="margin:0">＋ ENTROU</button><button class="B red" data-act="movModal" data-id="${p.id}" data-t="saida" style="margin:0">− SAIU</button></div>`:''}
+  <p class="s" style="margin:8px 2px 0">Mínimo: <b>${p.minimo?qtxt(p.minimo):'—'}</b> · Máximo: <b>${p.maximo?qtxt(p.maximo):'—'}</b>${precisaRepor(p)&&p.maximo>qt?` · comprar <b>${qtxt(p.maximo-qt)}</b> para completar`:''}</p>
+  <p class="s" style="margin:6px 2px 0">📝 A saída é sozinha: quando a ordem de serviço com o código <b>${esc(p.codigo)}</b> é finalizada nas Fichas.</p>
+  <button class="B" data-act="movModal" data-id="${p.id}" data-t="entrada">＋ CHEGOU PEÇA (ENTRADA)</button>`:''}
   <div class="sheet" style="margin-top:14px">
-    <div style="font-size:22px;font-weight:800">${p?'Dados do produto':'Cadastrar produto'}</div>
+    <div style="font-size:22px;font-weight:800">${p?'Dados da peça':'Cadastrar peça nova'}</div>
     <div class="f"><label>Código:</label><input id="pCod" value="${esc(PROD.codigo)}" autocomplete="off" autocapitalize="characters" placeholder="Ex.: 15"></div>
     <div class="f"><label>Nome:</label><input id="pNome" value="${esc(PROD.nome)}" autocomplete="off" placeholder="Ex.: Bomba d'água"></div>
     ${p?'':`<div class="f"><label>Quantidade que tem hoje:</label><input id="pQtd" value="${esc(PROD.qtd)}" inputmode="decimal" autocomplete="off" placeholder="0"></div>`}
-    <div class="f"><label>Avisar quando ficar com:</label><input id="pMin" value="${esc(PROD.minimo)}" inputmode="decimal" autocomplete="off" placeholder="Ex.: 2 (estoque mínimo)"></div>
+    <div class="f"><label>Estoque mínimo (avisa):</label><input id="pMin" value="${esc(PROD.minimo)}" inputmode="decimal" autocomplete="off" placeholder="Ex.: 2 — chegou aqui, dá o alerta"></div>
+    <div class="f"><label>Estoque máximo:</label><input id="pMax" value="${esc(PROD.maximo)}" inputmode="decimal" autocomplete="off" placeholder="Ex.: 10 — quanto guardar no máximo"></div>
     <div class="f"><label>Preço de venda (R$):</label><input id="pPreco" value="${esc(PROD.preco)}" inputmode="decimal" autocomplete="off" placeholder="Opcional — vai sozinho para a ficha"></div>
     <div class="f"><label>Onde fica:</label><input id="pLocal" value="${esc(PROD.local)}" autocomplete="off" placeholder="Opcional — ex.: Prateleira 3"></div>
   </div>
@@ -497,6 +509,17 @@ function movHTML(m,comNome){
   const q=+m.q||0;
   return `<div class="mov ${q<0?'neg':'pos'}"><div class="mq">${q>0?'+':''}${qtxt(q)}</div><div class="mt">${comNome?`<b>${esc(m.codigo)} · ${esc(m.nome)}</b>`:''}<span>${movTxt(m)}</span><small>${dt(m.data)} ${hr(m.data)}</small></div></div>`;
 }
+function vAlertas(){
+  const l=db.produtos.filter(precisaRepor).sort((a,b)=>String(a.codigo).localeCompare(String(b.codigo),undefined,{numeric:true}));
+  return `<div class="h2" style="margin-top:4px">⚠️ Peças no estoque mínimo</div>
+  <p class="s" style="margin:0 0 10px">Quando uma peça chega no mínimo que você cadastrou, ela aparece aqui. Comprou? Toque em <b>＋</b> quando chegar.</p>
+  ${l.map(p=>{const q=qtdDe(p.id),c=p.maximo>q?p.maximo-q:0;return `<div class="prod rep" data-act="abrirProd" data-id="${p.id}">
+    <span class="pc">${esc(p.codigo)}</span>
+    <div class="pn"><b>${esc(p.nome)}</b><span class="s">Tem <b>${qtxt(q)}</b> · mínimo ${qtxt(p.minimo||0)}${p.maximo?` · máx ${qtxt(p.maximo)}`:''}${c?`<br><b class="avs">🛒 Comprar ${qtxt(c)}</b>`:''}</span></div>
+    <div class="pbt"><button class="mais" data-act="movModal" data-id="${p.id}" data-t="entrada" title="Chegou peça">＋</button></div></div>`;}).join('')
+  ||'<div class="empty">✅ Nenhuma peça no mínimo.<br>Está tudo abastecido.</div>'}
+  <button class="B white" data-act="estoque">📦 Ver todo o estoque</button>`;
+}
 function vMovs(){
   const l=db.movs.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).slice(0,300);
   const doOS=db.movs.filter(m=>m.tipo==='os').length;
@@ -511,37 +534,39 @@ function movModal(id,t){
     <label class="lbl2">${t==='ajuste'?'Quantos tem de verdade na prateleira?':'Quantidade'}</label>
     <div class="qsel"><button type="button" data-act="qMenos">−</button><input id="mQ" inputmode="decimal" value="${t==='ajuste'?qtxt(qt):'1'}" autocomplete="off"><button type="button" data-act="qMais">+</button></div>
     <label class="lbl2">${t==='entrada'?'De onde veio (opcional)':'Observação (opcional)'}</label><input class="in2" id="mObs" placeholder="${t==='entrada'?'Ex.: Nota 1234 · Fornecedor':t==='saida'?'Ex.: Venda no balcão':'Ex.: Contagem do mês'}" autocomplete="off">
+    ${t==='entrada'&&p.maximo?`<p class="s" style="margin:8px 0 0">Máximo: <b>${qtxt(p.maximo)}</b> · cabe mais <b>${qtxt(Math.max(0,p.maximo-qt))}</b></p>`:''}
     <div id="mErro"></div>
     <button class="B ${t==='saida'?'red':''}" data-act="movOk" data-id="${id}" data-t="${t}">${t==='entrada'?'✅ CONFIRMAR ENTRADA':t==='saida'?'✅ CONFIRMAR SAÍDA':'✅ ACERTAR QUANTIDADE'}</button>
     <button class="lnk" data-act="fechar">Cancelar</button>`);
   setTimeout(()=>{const i=$('#mQ');if(i){i.focus();i.select();}},80);
 }
-function lerProd(){if(!$('#pCod'))return;PROD.codigo=$('#pCod').value;PROD.nome=$('#pNome').value;PROD.minimo=$('#pMin').value;PROD.preco=$('#pPreco').value;PROD.local=$('#pLocal').value;if($('#pQtd'))PROD.qtd=$('#pQtd').value;}
-function prodForm(p){return p?{id:p.id,codigo:p.codigo||'',nome:p.nome||'',minimo:p.minimo?qtxt(p.minimo):'',preco:p.preco?brl(p.preco):'',local:p.local||''}:{id:null,codigo:'',nome:'',qtd:'',minimo:'',preco:'',local:''};}
+function lerProd(){if(!$('#pCod'))return;PROD.codigo=$('#pCod').value;PROD.nome=$('#pNome').value;PROD.minimo=$('#pMin').value;PROD.maximo=$('#pMax').value;PROD.preco=$('#pPreco').value;PROD.local=$('#pLocal').value;if($('#pQtd'))PROD.qtd=$('#pQtd').value;}
+function prodForm(p){return p?{id:p.id,codigo:p.codigo||'',nome:p.nome||'',minimo:p.minimo?qtxt(p.minimo):'',maximo:p.maximo?qtxt(p.maximo):'',preco:p.preco?brl(p.preco):'',local:p.local||''}:{id:null,codigo:'',nome:'',qtd:'',minimo:'',maximo:'',preco:'',local:''};}
 function salvarProd(){
   lerProd();const er=m=>{$('#erro').innerHTML=`<div class="err">${m}</div>`;$('#erro').scrollIntoView({behavior:'smooth',block:'center'});};
   const codigo=String(PROD.codigo).trim(),nome=String(PROD.nome).trim();
-  if(!codigo)return er('Digite o <b>código</b> do produto. Ex.: 15');
+  if(!codigo)return er('Digite o <b>código</b> da peça. Ex.: 15');
   if(/\s/.test(codigo))return er('O código não pode ter espaço. Ex.: 15 ou BA-15');
-  if(!nome)return er('Digite o <b>nome</b> do produto. Ex.: Bomba d\'água');
+  if(!nome)return er('Digite o <b>nome</b> da peça. Ex.: Bomba d\'água');
   const outro=prodByCod(codigo);if(outro&&outro.id!==PROD.id)return er(`O código <b>${esc(codigo)}</b> já é do produto <b>${esc(outro.nome)}</b>.`);
-  const dados={codigo,nome,minimo:qn(PROD.minimo),preco:money(PROD.preco),local:String(PROD.local).trim(),unidade:'un'};
+  const mn=qn(PROD.minimo),mx=qn(PROD.maximo);if(mx&&mn&&mx<mn)return er('O <b>máximo</b> não pode ser menor que o <b>mínimo</b>.');
+  const dados={codigo,nome,minimo:mn,maximo:mx,preco:money(PROD.preco),local:String(PROD.local).trim(),unidade:'un'};
   let p;
   if(PROD.id){p=prodById(PROD.id);Object.assign(p,dados);gravaProd(p);}
   else{p={id:uid('p'),...dados};db.produtos.push(p);gravaProd(p);
     const q0=qn(PROD.qtd);if(q0)gravaMov({id:uid('m'),prodId:p.id,codigo,nome,q:q0,tipo:'inicial',obs:'',data:agora()});}
-  PROD=prodForm(p);tela={v:'produto'};render();toast('✅ Produto salvo');
+  PROD=prodForm(p);tela={v:'produto'};render();toast('✅ Peça salva');
 }
 
 /* ====== topo e desenho ====== */
-const TELAS=['estoque','produto','movs'];
+const TELAS=['estoque','produto','alertas'];
 function pintaTopo(){
   const na=TELAS.includes(tela.v);$('.top').style.display=na?'':'none';
   const mb=$('#mbar');
   if(na&&MODO==='master'){mb.innerHTML=`<span>👁 Vendo: <b>${esc(nomeCurto((OFDOC||{}).nome))}</b></span><button data-act="voltarPainel">‹ Painel</button>`;mb.style.display='flex';}else mb.style.display='none';
   $('#tEst').classList.toggle('on',tela.v==='estoque'||(tela.v==='produto'&&PROD&&PROD.id));
   $('#tNovo').classList.toggle('on',tela.v==='produto'&&PROD&&!PROD.id);
-  $('#tMovs').classList.toggle('on',tela.v==='movs');
+  $('#tMovs').classList.toggle('on',tela.v==='alertas');const na2=db.produtos.filter(precisaRepor).length;$('#nAl').textContent=na2?' '+na2:'';$('#tMovs').classList.toggle('temal',na2>0);
 }
 /* Se ficar muito tempo em "Abrindo…", mostra ajuda (sem trocar de tela: se abrir depois, segue normal) */
 let _vigia=null;
@@ -555,7 +580,7 @@ function vigiaAbrindo(){clearTimeout(_vigia);if(tela.v!=='carregando')return;
 window.__limpaRecarrega=async()=>{try{for(const r of (await navigator.serviceWorker?.getRegistrations?.())||[])await r.unregister();}catch(_){}
   try{for(const k of await caches.keys())await caches.delete(k);}catch(_){}location.reload();};
 function render(){
-  const V={carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,estoque:vEstoque,produto:vProduto,movs:vMovs};
+  const V={carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,estoque:vEstoque,produto:vProduto,alertas:vAlertas};
   $('#app').innerHTML=(V[tela.v]||vCarregando)();vigiaAbrindo();pintaTopo();window.scrollTo(0,0);
 }
 
@@ -573,7 +598,8 @@ document.addEventListener('click',e=>{
     voltarPainel:()=>abrirPainelMaster(false),
     estOficina:()=>updateDoc(doc(fs,'os_oficinas',d.id),{estoque:d.s}).then(()=>toast(d.s==='ativo'?'✅ Estoque liberado':'⛔ Estoque bloqueado')).catch(falhou),
     estoque:()=>{tela={v:'estoque'};render();},
-    movs:()=>{tela={v:'movs'};render();},
+    alertas:()=>{tela={v:'alertas'};render();},
+    alertasOk:()=>{closeModal();tela={v:'alertas'};render();},
     novoProd:()=>{PROD=prodForm(null);tela={v:'produto'};render();setTimeout(()=>$('#pCod').focus(),80);},
     abrirProd:()=>{PROD=prodForm(prodById(d.id));tela={v:'produto'};render();},
     voltar:()=>{tela={v:'estoque'};render();},
@@ -588,7 +614,7 @@ document.addEventListener('click',e=>{
       if(t==='ajuste'&&!q){closeModal();toast('A quantidade já estava certa');return;}
       gravaMov({id:uid('m'),prodId:p.id,codigo:p.codigo,nome:p.nome,q,tipo:t,obs,data:agora()});
       closeModal();const y=scrollY;render();scrollTo(0,y);
-      toast(t==='entrada'?`✅ Entrou ${qtxt(v)} · ${p.nome}`:t==='saida'?`✅ Saiu ${qtxt(v)} · ${p.nome}`:`✅ Quantidade acertada: ${qtxt(v)}`);},
+      const fq=qtdDe(p.id);if(t==='entrada'&&p.maximo&&fq>p.maximo)toast(`⚠️ Passou do máximo: agora tem ${qtxt(fq)} (máx ${qtxt(p.maximo)})`);else toast(t==='entrada'?`✅ Entrou ${qtxt(v)} · ${p.nome}`:t==='saida'?`✅ Saiu ${qtxt(v)} · ${p.nome}`:`✅ Quantidade acertada: ${qtxt(v)}`);},
     apagarProd:()=>modal(`<h3>Apagar este produto?</h3><p style="color:var(--mut);margin-bottom:6px">O produto sai da lista. O histórico do que entrou e saiu continua guardado.</p><button class="B red" data-act="apagarProdOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
     apagarProdOk:()=>{const id=PROD.id;db.produtos=db.produtos.filter(p=>p.id!==id);deleteDoc(refProd(id)).catch(falhou);closeModal();tela={v:'estoque'};render();toast('Produto apagado');},
     fechar:()=>closeModal(),
@@ -657,7 +683,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='e2';
+const APP_VERSAO='e3';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;

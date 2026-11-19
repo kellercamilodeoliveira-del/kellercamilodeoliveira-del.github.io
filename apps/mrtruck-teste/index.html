@@ -657,6 +657,14 @@ function darBaixa(f){ // finalizou a OS: as peças com código saem do estoque
   if(its.length)f.baixa={feita:true,itens:its,data:hoje()};
   return its.length;
 }
+function avisoMinimo(f){ // depois da baixa: se alguma peça chegou no estoque mínimo, avisa na hora
+  if(!f.baixa||!f.baixa.itens)return;const vistos={};
+  const l=f.baixa.itens.map(it=>db.produtos.find(p=>p.id===it.prodId)).filter(p=>{if(!p||vistos[p.id])return false;vistos[p.id]=1;const q=qtdEst(p.id);return q<=0||(p.minimo>0&&q<=p.minimo);});
+  if(!l.length)return;
+  modal(`<h3>⚠️ Estoque mínimo</h3><p style="font-size:18px;margin:6px 0 10px">Com esta OS, ${l.length===1?'esta peça chegou':'estas peças chegaram'} no mínimo:</p>
+  ${l.map(p=>{const q=qtdEst(p.id),c=p.maximo>q?p.maximo-q:0;return `<p style="margin:6px 0;font-size:17px"><b>${esc(p.codigo)}</b> · ${esc(p.nome)} — sobrou <b style="color:var(--red)">${qtxt(q)}</b>${c?` · comprar <b>${qtxt(c)}</b>`:''}</p>`;}).join('')}
+  <button class="B" data-act="fechar">OK, VOU PROVIDENCIAR</button>`);
+}
 function estornar(f,motivo){ // reabriu/apagou a OS: as peças voltam para o estoque
   if(!f.baixa||!f.baixa.feita)return 0;
   f.baixa.itens.forEach(it=>gravaEMov({id:uid('m'),prodId:it.prodId,codigo:it.codigo,nome:it.nome,q:+it.q,tipo:'estorno',fichaId:f.id,numOS:String(f.num),obs:motivo,data:agora()}));
@@ -1066,7 +1074,7 @@ document.addEventListener('click',e=>{
     curriculo:()=>{if(['nova','orc'].includes(tela.v))lerForm();if(tela.v==='cliente')lerCad();tela={v:'curriculo',placa:d.p,volta:tela};render();},
     voltar:()=>{const vt=tela.volta;if(vt){tela=vt;render();return;}if(tela.v==='verOrc'){tela={v:'salvas'};render();return;}if(tela.v==='lembCam'){tela={v:'lemb'};render();return;}const f=fichaById(tela.id),c=f&&cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:c.id};}else tela={v:'salvas'};render();},
     finalizar:()=>{const f=fichaById(tela.id),pl=((f.veiculos||[])[0]||{}).placa||'';modal(`<h3>Finalizar a OS Nº ${esc(pad6(f.num))}?</h3><p style="color:var(--mut);margin-bottom:6px;font-size:16px">${f.pecas?'':'⚠️ As peças ainda estão em branco. '}Depois de finalizar, ela entra no currículo do caminhão <b>${esc(pl)}</b>.</p>${baixaHTML(f)}<button class="B" data-act="finalizarOk">✅ SIM, FINALIZAR</button>${f.pecas?'':`<button class="B white" data-act="editar" data-id="${f.id}">✏️ PREENCHER AS PEÇAS ANTES</button>`}<button class="lnk" data-act="fechar">Voltar</button>`);},
-    finalizarOk:()=>{const f=fichaById(tela.id);f.status='finalizada';f.fechamento=hoje();const nb=darBaixa(f);gravaFicha(f);closeModal();tela.salvo=false;render();toast(nb?`✅ OS finalizada · 📦 ${nb} peça${nb>1?'s':''} saíram do estoque`:'✅ OS finalizada — já está no currículo do caminhão');},
+    finalizarOk:()=>{const f=fichaById(tela.id);f.status='finalizada';f.fechamento=hoje();const nb=darBaixa(f);gravaFicha(f);closeModal();tela.salvo=false;render();toast(nb?`✅ OS finalizada · 📦 ${nb} peça${nb>1?'s':''} saíram do estoque`:'✅ OS finalizada — já está no currículo do caminhão');avisoMinimo(f);},
     reabrirC:()=>{const f=fichaById(d.id);f.status='aberta';f.fechamento=null;const nb=estornar(f,'reaberta');gravaFicha(f);const y=scrollY;render();scrollTo(0,y);toast(nb?'🔓 Ordem reaberta · 📦 peças voltaram para o estoque':'🔓 Ordem reaberta');},
     reabrir:()=>{const f=fichaById(tela.id);f.status='aberta';f.fechamento=null;const nb=estornar(f,'reaberta');gravaFicha(f);render();toast(nb?'🔓 Ordem reaberta · 📦 peças voltaram para o estoque':'Ordem de serviço reaberta');},
     qtdPeca:()=>{lerItens();const i=+d.i,it=F.itens.pecas[i];modal(`<h3>📦 Quantas peças?</h3><p style="font-size:17px;margin:4px 0 10px"><b>${esc(it.d)}</b> · cód ${esc(it.cod)}</p><input class="in2" id="qPeca" inputmode="decimal" value="${qtxt(it.q||1)}" style="font-size:30px;text-align:center;font-weight:800" autocomplete="off"><button class="B" data-act="qtdPecaOk" data-i="${i}">✅ OK</button><button class="B white" data-act="desligaPeca" data-i="${i}">Esta peça não é do estoque</button><button class="lnk" data-act="fechar">Cancelar</button>`);setTimeout(()=>{const q=$('#qPeca');if(q){q.focus();q.select();}},60);},
@@ -1206,7 +1214,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v18';
+const APP_VERSAO='v19';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
