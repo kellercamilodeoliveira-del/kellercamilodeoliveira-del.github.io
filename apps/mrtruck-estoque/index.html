@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#161616">
+<title>Controle de Estoque</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link rel="icon" href="icone-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Estoque">
+<style>
+:root{--ink:#0c2a80;--line:#8c939c;--txt:#1b1e22;--mut:#6b737d;--green:#139a5b;--blue:#1d4ed8;--wa:#1fa855;--red:#c8372a}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:#e7e3dc;color:var(--txt);font-family:Arial,Helvetica,sans-serif;font-size:17px}
+button,input,textarea{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;background:#161616;border-bottom:3px solid #f6c418;display:flex;gap:6px;padding:8px;justify-content:center}
+.top button{flex:1;max-width:260px;height:50px;border:none;border-radius:12px;background:#3c424a;color:#cfd5dc;font-size:17px;font-weight:800;cursor:pointer}
+.top button.on{background:#f6c418;color:#161616}
+@media(max-width:600px){.top{gap:4px;padding:6px}.top button{font-size:13.5px;height:52px;padding:0 3px;line-height:1.15}}
+.lembbox{margin-top:12px;background:#eef6ff;border:1.5px solid #9cc3ef;border-radius:10px;padding:10px 12px}
+.lembbox label{display:block;font-weight:800;font-size:15px;color:#0d3b78}.lembbox label small{font-weight:600;color:#4b6b93}
+.lembbox input{width:100%;margin-top:6px;border:none;border-bottom:2px solid #0d3b78;background:#fff;font-size:17px;padding:8px 6px;color:#0c2a80}
+.lcam{display:flex;gap:12px;align-items:center}.lcam .placa{font-size:18px}
+.lit{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;border-left:6px solid #2d6fd2;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;gap:12px;align-items:flex-start}
+.lit .lt{font-size:20px;font-weight:800;color:#161616}.lit .ls{font-size:15px;color:#555;margin-top:4px}.lit .lkm{font-size:22px;font-weight:800;color:#0d3b78;white-space:nowrap;margin-left:auto;text-align:right}
+.lit .lkm small{display:block;font-size:12px;color:#6b7f99;font-weight:700}.lit .x{border:none;background:none;color:#b3141b;font-size:22px;cursor:pointer;padding:0 0 0 6px}
+.lform{background:#fff;border-radius:14px;padding:14px 16px;margin-top:14px;border:2px dashed #9cc3ef}
+.lform .f input{font-size:17px}
+.wrap{max-width:640px;margin:0 auto;padding:14px 10px 40px}
+@media(min-width:700px){.wrap{max-width:860px}}
+
+/* folha */
+.sheet{background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.15);padding:18px 16px 22px}
+.hd{display:grid;grid-template-columns:1.1fr 1.4fr;gap:10px 14px;align-items:center;border-bottom:5px solid #3a3a3a;padding-bottom:12px;margin-bottom:6px}
+.hlogo{display:flex;align-items:center;justify-content:center}
+.hlogo{min-width:0}
+.hlogo img{display:block;width:100%;height:auto;max-width:230px;max-height:130px;object-fit:contain}
+.hlogo .alt{text-align:center}.hlogo .alt svg{width:54px;height:27px}.hlogo .alt b{display:block;font-size:13px}
+.hinfo{text-align:center;display:flex;flex-direction:column;font-size:11.5px;color:#3b3b3b;line-height:1.38}
+.hinfo b{font-size:14.5px;color:#161616;margin-bottom:3px;font-weight:800}
+.hnum{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1.5px solid #e2e2e2;padding-top:10px}
+.hnum .fone{font-weight:800;font-size:14px;color:#161616;white-space:nowrap}
+/* linhas de campos iguais ao talão */
+.pr{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 14px;margin-top:14px}
+.pr .fx{display:flex;align-items:flex-end;gap:6px;min-width:0}
+.pr label{font-weight:700;white-space:nowrap;font-size:16px;padding-bottom:6px;color:#1b1e22}
+.pr input{flex:1;min-width:0;width:100%;border:none;border-bottom:1.5px solid var(--line);border-radius:0;background:transparent;height:36px;padding:0 4px;font-size:17.5px;color:var(--ink);outline:none;font-family:inherit}
+.pr input:focus{border-bottom:2.5px solid var(--blue);background:#f5f8ff}
+.pr input.pl{font-family:"Courier New",monospace;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.fx.g3{flex:3 1 260px}.fx.wdt{flex:1 1 230px}.fx.g2{flex:2 1 210px}.fx.wch{flex:1 1 150px}.fx.wkm{flex:1 1 120px}.fx.wpl{flex:1 1 200px}
+.vei.vlin{border:none;padding:0;margin:0;background:none;border-radius:0}
+.hnum .pre{font-size:13px;color:#3b3b3b;text-align:center}
+.hnum .nbox{display:flex;align-items:flex-end;gap:6px;font-weight:800;font-size:15px}
+.hnum input{width:120px;border:none;border-bottom:2.5px solid #161616;background:#fff7d6;font-family:"Courier New",monospace;font-size:21px;font-weight:700;color:#b3141b;text-align:center;height:38px;outline:none;border-radius:4px 4px 0 0}
+.hnum input:focus{background:#ffeea3}
+.hnum input::placeholder{color:#d9a9a9}
+.orct{font-size:20px;color:#161616;letter-spacing:.06em}
+.orcbar{background:#fff3c4;border:2px solid #f6c418;border-radius:12px;padding:10px 14px;font-weight:800;font-size:15px;margin:0 0 10px;color:#161616}
+.hnum small{display:block;font-size:10.5px;color:#8a6a00;font-weight:800;text-align:right;margin-top:3px}
+@media(min-width:600px){.hd{grid-template-columns:1.05fr 1.5fr .95fr}.hnum{grid-column:auto;flex-direction:column;justify-content:center;border-top:0;border-left:1.5px solid #3a3a3a;padding:0 0 0 12px;align-self:stretch;text-align:center}.hnum small{text-align:center}}
+.f{display:flex;align-items:flex-end;gap:8px;margin-top:14px}
+.f label{font-weight:700;white-space:nowrap;font-size:16px;padding-bottom:6px}
+.f input{flex:1;min-width:0;border:none;border-bottom:1.5px solid var(--line);border-radius:0;background:transparent;height:38px;padding:0 4px;font-size:19px;color:var(--ink);outline:none;font-family:inherit}
+.f input:focus{border-bottom:2.5px solid var(--blue);background:#f5f8ff}
+.f input.pl{font-family:"Courier New",monospace;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.g2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:0 12px}
+
+/* veículos */
+.veis{margin-top:12px}
+.vei{position:relative;border:1.5px solid #c9ced5;border-radius:10px;padding:4px 12px 12px;margin-top:12px;background:#fcfcfd}
+.vei .vt{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.vei .x{border:1.5px solid #e2b5b0;color:var(--red);background:#fff;border-radius:8px;height:32px;padding:0 10px;font-size:14px;font-weight:700;cursor:pointer}
+.addv{width:100%;margin-top:12px;height:58px;border:2px dashed var(--blue);border-radius:12px;background:#f2f6ff;color:var(--blue);font-size:18px;font-weight:800;cursor:pointer}
+.conhecidos{margin-top:12px;background:#fff7e3;border:1.5px solid #f0d89c;border-radius:10px;padding:10px 12px}
+.conhecidos p{font-size:14.5px;font-weight:700;color:#6b5420;margin-bottom:8px}
+.conhecidos .chips{display:flex;flex-wrap:wrap;gap:8px}
+.cp{border:2px solid #222;border-radius:6px;background:#fff;font-family:"Courier New",monospace;font-weight:800;font-size:17px;padding:6px 10px;cursor:pointer}
+.cp small{display:block;font-family:Arial;font-weight:600;font-size:11px;color:var(--mut)}
+.cp.usado{opacity:.35;pointer-events:none}
+
+.sec{font-weight:700;font-size:16px;margin-top:22px}
+textarea.ruled{display:block;width:100%;border:none;outline:none;resize:vertical;font-size:16.5px;color:var(--ink);font-family:inherit;padding:0 4px;line-height:30px;height:362px;background:transparent;
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 29px,var(--line) 29px,var(--line) 30px);background-attachment:local}
+textarea.ruled:focus{background-color:#f5f8ff}
+.rod{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px;margin-top:34px;font-size:16px}
+.rod u{text-decoration:none;border-bottom:1.5px solid var(--line);color:var(--ink);padding:0 8px;font-size:18px}
+.ass{margin-top:16px}
+.assl{width:62%;margin:46px 0 6px auto;text-align:center}
+.assl .lnass{border-top:1.5px solid #333;height:0}
+.assl span{display:block;font-weight:700;font-size:15px;margin-top:5px}
+.padwrap{position:relative;border:2px dashed #b2b9c2;border-radius:10px;overflow:hidden;background:#fff}
+#pad{display:block;width:100%;height:150px;touch-action:none}
+#padHint{position:absolute;inset:0;display:grid;place-items:center;color:#a5adb7;font-size:16px;pointer-events:none}
+.ass .ln{border-top:1.5px solid #333;margin:0 20px;text-align:center;font-weight:700;padding-top:4px;font-size:15px}
+.ass .apaga{background:none;border:none;color:var(--mut);text-decoration:underline;font-size:15px;padding:8px;cursor:pointer;display:block;margin:0 auto}
+.ass img{display:block;max-width:80%;max-height:110px;margin:0 auto}
+
+.B{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:68px;border:none;border-radius:16px;font-size:21px;font-weight:800;color:#fff;background:var(--green);cursor:pointer;margin-top:14px;text-decoration:none;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.B:active{transform:translateY(2px);box-shadow:none}
+.B.blue{background:var(--blue)}.B.wa{background:var(--wa)}
+.B.white{background:#fff;color:#222;border:2px solid #cfd4da;box-shadow:none}
+.lnk{display:block;width:100%;background:none;border:none;color:var(--mut);text-decoration:underline;font-size:16px;padding:14px;cursor:pointer}
+.err{background:#fde8e6;color:#9b2216;border-radius:12px;padding:12px 14px;font-weight:700;margin-top:14px}
+
+/* lista */
+.busca{width:100%;height:58px;border-radius:14px;border:2px solid #cfd4da;padding:0 16px;font-size:19px;outline:none;margin-bottom:12px;background:#fff}
+.card{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer}
+.card b{font-size:19px}
+.card .s{color:var(--mut);font-size:15px;margin-top:3px}
+.placas{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.placa{border:2px solid #222;border-radius:5px;font-family:"Courier New",monospace;font-weight:800;font-size:15px;padding:2px 7px;background:#fff}
+.h2{font-size:14px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 8px}
+.fic{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.fic .n{font-family:"Courier New",monospace;font-weight:800;color:#b3141b}
+.back{background:none;border:none;color:var(--blue);font-size:18px;font-weight:800;padding:4px 0 12px;cursor:pointer}
+.ok{background:#e1f5ea;color:#0e6e41;border-radius:14px;padding:16px;text-align:center;font-size:20px;font-weight:800;margin-bottom:12px}
+.paperBox{background:#cfd4da;border-radius:10px;padding:8px;overflow:hidden}
+.paperScale{transform-origin:top left}
+.empty{text-align:center;color:var(--mut);padding:26px;border:2px dashed #c3c9d0;border-radius:14px}
+.ex{background:#fff7e3;border:1.5px solid #f0d89c;border-radius:12px;padding:12px 14px;font-size:15px;color:#6b5420;margin-bottom:12px}
+.ex button{margin-top:8px;background:#8a5a00;color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+.gear{display:block;margin:24px auto 0;background:none;border:none;color:#8a9097;font-size:14px;text-decoration:underline;cursor:pointer}
+
+#modal{position:fixed;inset:0;background:rgba(10,14,20,.55);z-index:50;display:none;align-items:flex-end;justify-content:center}
+#modal.show{display:flex}
+#modal .box{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:640px;padding:20px 16px calc(24px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+#modal h3{font-size:21px;margin-bottom:10px}
+#modal label{display:block;font-weight:700;margin:10px 0 4px}
+#modal input{width:100%;height:52px;border:2px solid #cfd4da;border-radius:12px;padding:0 12px;font-size:17px;outline:none}
+#toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;font-weight:800;padding:14px 20px;border-radius:14px;opacity:0;transition:.25s;z-index:60;pointer-events:none;font-size:17px;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#instalar{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:40;display:none;align-items:center;gap:10px;background:#1d4ed8;color:#fff;border:none;border-radius:16px;padding:16px 22px;font-size:18px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.3);cursor:pointer;white-space:nowrap}
+#instalar.show{display:flex}
+#instalar .fx{background:rgba(255,255,255,.2);border-radius:8px;width:28px;height:28px;display:grid;place-items:center;font-size:15px;margin-left:4px}
+/* acesso / administrador */
+.center{text-align:center;padding:80px 0;color:var(--mut)}
+.spin{width:44px;height:44px;border:4px solid #cfd4da;border-top-color:var(--blue);border-radius:50%;margin:0 auto 14px;animation:gira 1s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.lgbox{margin-top:24px;padding:26px 20px}
+.lglogo{width:90px;height:90px;border-radius:22px;background:#2b2f35;display:grid;place-items:center;margin:0 auto 12px}
+.lglogo svg{width:62px;height:31px}.lglogo svg *{stroke:#fff}.lglogo svg circle{fill:#2b2f35}
+.lgt{font-size:25px;text-align:center;margin:6px 0}
+.lgs{text-align:center;color:var(--mut);font-size:16.5px;margin-bottom:18px;line-height:1.4}
+.lbl2{display:block;font-weight:800;margin:12px 0 6px}
+.in2{width:100%;height:58px;border:2px solid #cfd4da;border-radius:14px;padding:0 14px;font-size:19px;outline:none}
+.in2:focus{border-color:var(--blue)}
+.rodape{text-align:center;color:var(--mut);font-size:14px;margin-top:18px}.rodape a{color:var(--blue)}
+.mini{color:#9aa1a9;font-size:12.5px;text-align:center;margin-top:10px}
+.okm{background:#e1f5ea;color:#0e6e41;border-radius:12px;padding:12px 14px;font-weight:700;margin-top:14px}
+.mtop{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:6px}
+.mtop b{display:block;font-size:18px}.mtop span{color:var(--mut);font-size:13.5px}
+.st{font-size:13px;font-weight:800;border-radius:99px;padding:4px 10px;white-space:nowrap}
+.st.ok{background:#e1f5ea;color:#0e6e41}.st.no{background:#fde8e6;color:#9b2216}.st.te{background:#fff3d6;color:#8a5a00}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ab{border:2px solid #cfd4da;background:#fff;border-radius:10px;padding:9px 12px;font-size:14.5px;font-weight:800;cursor:pointer}
+.ab.blue{background:var(--blue);border-color:var(--blue);color:#fff}.ab.green{background:var(--green);border-color:var(--green);color:#fff}.ab.red{color:var(--red);border-color:#f0c2bc}
+#modal select.sel{width:100%;height:52px;border:2px solid #cfd4da;border-radius:12px;padding:0 10px;font-size:17px;background:#fff}
+#mbar{display:none;justify-content:space-between;align-items:center;gap:8px;background:#fff3d6;color:#6b4a00;padding:8px 14px;font-size:15px}
+#mbar button{background:#8a5a00;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer;white-space:nowrap}
+/* linhas com valor (serviço / peças) */
+.sech{display:flex;justify-content:space-between;align-items:flex-end;font-weight:700;font-size:16px;margin-top:22px;padding-bottom:2px}
+.sech small{font-size:12.5px;color:var(--mut);width:104px;text-align:center}
+.ln{display:flex;align-items:stretch;border-bottom:1px solid var(--line);height:30px}
+.ln .ld{flex:1;min-width:0;border:none;background:transparent;font-size:16px;color:var(--ink);outline:none;padding:4px 4px 0;font-family:inherit}
+.ln .lv{width:104px;border:none;border-left:1px solid #d5d9df;background:#fffbea;font-size:15.5px;text-align:right;color:var(--ink);outline:none;padding:4px 6px 0;font-family:inherit}
+.ln .ld:focus,.ln .lv:focus{background:#eef3ff}
+.ln .lv::placeholder{color:#c9c2a5}
+.grip{display:flex;justify-content:flex-end;margin-top:2px}
+.grip span{width:52px;height:24px;display:grid;place-items:center;color:#7d8590;cursor:ns-resize;touch-action:none;user-select:none;font-size:15px;letter-spacing:-2px;border-radius:6px;background:#f2f2ef}
+.grip span:active{background:#e6e2d4}
+.tot{text-align:right;font-weight:800;font-size:15.5px;margin-top:4px;color:#161616}
+.tot.geral{font-size:18px;border-top:2px solid #161616;padding-top:6px;margin-top:12px}
+/* currículo do caminhão / OS em aberto */
+.hist{margin-top:10px;background:#fff7d6;border:1.5px solid #f0d27a;border-radius:10px;padding:10px 12px;font-size:15px;color:#5a4300}
+.hist button,.vcur{margin-top:8px;background:#161616;color:#f6c418;border:none;border-radius:10px;padding:9px 14px;font-weight:800;font-size:15px;cursor:pointer}
+.okbar{background:#e1f5ea;color:#0e6e41;border-radius:14px;padding:14px;text-align:center;font-size:18px;font-weight:800;margin-top:14px}
+.cvh{display:flex;gap:14px;align-items:center}
+.cvh .placa{font-size:24px;padding:4px 10px}
+.cvh b{display:block;font-size:19px}.cvh span.s{display:block;color:var(--mut);font-size:15px}
+.cvs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.cvs div{background:#f6f6f4;border-radius:12px;padding:10px 6px;text-align:center}
+.cvs b{display:block;font-size:18px}.cvs span{font-size:12.5px;color:var(--mut)}
+.tl{position:relative;padding-left:22px}
+.tl:before{content:"";position:absolute;left:7px;top:8px;bottom:8px;width:3px;background:#d9d4c7;border-radius:3px}
+.tli{position:relative;background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer}
+.tli:before{content:"";position:absolute;left:-21px;top:16px;width:14px;height:14px;border-radius:50%;background:#139a5b;border:3px solid #e7e3dc}
+.tli.ab:before{background:#e0a400}
+.tlh{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.tlh b{font-size:17px}
+.tls{margin-top:6px;white-space:pre-line;font-size:16px}
+.tlp{margin-top:6px;color:var(--mut);font-size:14.5px}
+.tlf{margin-top:6px;color:var(--mut);font-size:13.5px}
+.abert{border-left:5px solid #e0a400}
+.ctab{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
+.ctab th{background:#161616;color:#f6c418;text-align:left;padding:6px;font-size:11.5px}
+.ctab td{border-bottom:1px solid #bbb;padding:6px;vertical-align:top;white-space:pre-line}
+.ctit{font-size:18px;font-weight:800;margin:4px 0 2px}
+/* impressão (A4 igual ao talão) */
+.paper{width:760px;background:#fff;color:#151515;font-family:Arial,Helvetica,sans-serif;padding:30px 36px 34px;font-size:13px;line-height:1.3}
+.ph{display:grid;grid-template-columns:215px 1fr 190px;align-items:center;gap:10px;border-bottom:5px solid #3a3a3a;padding-bottom:10px;margin-bottom:12px}
+.plogo{display:flex;align-items:center;justify-content:center;min-height:80px}
+.plogo img{max-width:205px;max-height:118px}
+.defmark{text-align:center}
+.defmark .t{display:inline-flex;border:2.5px solid #222;font-weight:900;font-size:19px}
+.defmark .t span{padding:2px 6px}.defmark .t span+span{background:#222;color:#fff}
+.defmark small{display:block;font-size:8.5px;font-weight:700;margin-top:3px;color:#333}
+.defmark svg{width:70px;height:34px;display:block;margin:0 auto 4px}
+.pinfo{text-align:center;display:flex;flex-direction:column;font-size:11.5px;color:#333}
+.pinfo b{font-size:15.5px;color:#222;margin-bottom:4px}
+.pnum{border-left:1.5px solid #333;padding-left:14px;font-size:12.5px;display:flex;flex-direction:column;gap:14px;text-align:center;align-self:stretch;justify-content:center}
+.pnum .nn b{font-family:"Courier New",monospace;font-size:19px;color:#b3141b;border-bottom:1px solid #333;padding:0 8px}
+.prow{display:flex;align-items:flex-end;gap:6px;margin:10px 0}
+.prow label{font-weight:700;white-space:nowrap;color:#222}
+.prow .v{border-bottom:1px solid #555;min-height:20px;padding:0 4px 1px;color:#0c2a80;font-size:14px;white-space:nowrap;overflow:hidden}
+.prow .grow{flex:1}.prow .w1{width:150px}.prow .w2{width:96px}.prow .w3{width:110px}
+.psec{font-weight:700;margin-top:14px;color:#222;display:flex;justify-content:space-between}.psec small{width:110px;text-align:center;font-size:11px;font-weight:700}
+.pl{box-sizing:border-box;border-bottom:1px solid #8a8a8a;min-height:27px;color:#0c2a80;font-size:13.5px;line-height:19px;display:flex}.pl .pd{flex:1;padding:6px 4px 1px}.pl .pv{width:110px;border-left:1px solid #b9b9b9;text-align:right;padding:6px 6px 1px;white-space:nowrap}.ptot{text-align:right;font-weight:700;font-size:13px;padding:4px 6px 0;color:#151515}.ptot.g{font-size:14.5px;border-top:2px solid #333;margin-top:8px;padding-top:5px}
+.pfoot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:48px;gap:20px}
+.pdate{font-size:14px;white-space:nowrap}
+.pdate u{text-decoration:none;border-bottom:1px solid #444;padding:0 8px;color:#0c2a80;display:inline-block;min-width:30px;text-align:center}
+.psig{width:290px;text-align:center}
+.psig img{max-height:72px;max-width:270px;display:block;margin:0 auto -8px}
+.psig .sl{border-bottom:1px solid #333;height:1px}
+.psig span{display:block;font-weight:700;margin-top:4px}
+#printArea{display:none}
+/* folha para imprimir: A4 exato (210 x 297 mm), margem de 10 mm dentro da folha */
+.paper.imp{width:210mm;padding:10mm 10mm 8mm;box-sizing:border-box}
+.paper.imp .plogo img{height:105px;width:auto;max-width:205px;object-fit:contain}
+.paper.imp .pl{min-height:var(--lh,27px);padding-top:0;padding-bottom:0}
+.paper.imp .pl .pd,.paper.imp .pl .pv{padding-top:calc(var(--lh,27px) - 21px);padding-bottom:1px}
+.paper.imp .prow{margin:7px 0}.paper.imp .psec{margin-top:9px}.paper.imp .pfoot{margin-top:44px}.paper.imp .ph{margin-bottom:8px;padding-bottom:8px}.paper.imp .ptot{padding-top:2px;font-size:12.5px}.paper.imp .ptot.g{margin-top:5px;padding-top:3px}
+#printArea.medindo{display:block!important;position:absolute;left:-10000px;top:0;visibility:hidden}
+@page{size:A4 portrait;margin:0}
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{background:#fff;margin:0;padding:0}
+  #shell,#modal,#toast,#instalar{display:none!important}
+  #printArea{display:block!important}
+  .paper.imp{page-break-after:avoid;break-after:avoid}
+}
+
+/* ====== Controle de Estoque ====== */
+.top button{max-width:240px}
+.B.red{background:var(--red)}
+.resumo{display:flex;gap:10px;margin:2px 0 12px}
+.resumo>div{flex:1;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer}
+.resumo b{display:block;font-size:30px;line-height:1}.resumo span{font-size:14px;color:var(--mut);font-weight:700}
+.resumo .alerta{background:#fff1ef;border:2px solid #f2b8b0}.resumo .alerta b{color:var(--red)}
+.prod{display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:12px 12px 12px 14px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;border-left:6px solid #139a5b}
+.prod.rep{border-left-color:var(--red)}
+.prod .pc{min-width:58px;text-align:center;font-family:"Courier New",monospace;font-weight:800;font-size:20px;background:#161616;color:#f6c418;border-radius:10px;padding:8px 6px}
+.prod .pn{flex:1;min-width:0}.prod .pn b{display:block;font-size:18px}.prod .pn .s{display:block;margin-top:2px}
+.prod .avs{color:var(--red);font-size:13.5px}
+.prod .pq{text-align:center;min-width:60px}.prod .pq b{display:block;font-size:28px;line-height:1}.prod.rep .pq b{color:var(--red)}.prod .pq small{color:var(--mut);font-weight:700}
+.prod .pbt{display:flex;flex-direction:column;gap:6px}
+.prod .pbt button{width:46px;height:40px;border:none;border-radius:10px;font-size:24px;font-weight:800;cursor:pointer;color:#fff}
+.prod .pbt .mais{background:#139a5b}.prod .pbt .menos{background:var(--red)}
+.qbig{background:#fff;border-radius:16px;padding:16px;text-align:center;border:3px solid #139a5b;margin-top:6px}
+.qbig.rep{border-color:var(--red)}.qbig span{font-weight:800;color:var(--mut);font-size:14px;text-transform:uppercase;letter-spacing:.05em}
+.qbig b{display:block;font-size:54px;line-height:1.1}.qbig b small{font-size:20px;color:var(--mut)}.qbig em{display:block;color:var(--red);font-style:normal;font-weight:800}
+.dup{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.mov{display:flex;gap:12px;align-items:center;background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.mov .mq{min-width:62px;text-align:center;font-size:22px;font-weight:800;border-radius:10px;padding:6px 4px}
+.mov.pos .mq{background:#e3f6ec;color:#0f7a47}.mov.neg .mq{background:#fdecea;color:#b3141b}
+.mov .mt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.mov .mt b{font-size:16px}.mov .mt span{font-size:15px}.mov .mt small{color:var(--mut)}
+.qsel{display:flex;gap:8px;align-items:stretch;margin:4px 0 6px}
+.qsel button{width:64px;border:none;border-radius:12px;background:#161616;color:#f6c418;font-size:30px;font-weight:800;cursor:pointer}
+.qsel input{flex:1;min-width:0;text-align:center;font-size:30px;font-weight:800;border:2px solid #c9cdd3;border-radius:12px;height:64px}
+.st.bl{background:#fdecea;color:#b3141b}
+</style>
+</head>
+<body>
+<div id="shell">
+  <div class="top" style="display:none"><button id="tEst" data-act="estoque">📦 Estoque</button><button id="tNovo" data-act="novoProd">➕ Novo produto</button><button id="tMovs" data-act="movs">📜 Movimentos</button></div>
+  <div id="mbar"></div>
+  <main class="wrap" id="app"></main>
+</div>
+<div id="modal"><div class="box" id="mbox"></div></div>
+<div id="toast"></div>
+<div id="attbar" style="display:none;position:fixed;left:0;right:0;top:0;z-index:70;background:#f6c418;color:#161616;font-weight:800;text-align:center;padding:10px 14px;font-size:15.5px;box-shadow:0 2px 8px rgba(0,0,0,.2)">🔄 Tem uma versão nova do sistema. Ela entra sozinha assim que você salvar. <button data-act="atualizarJa" style="margin-left:8px;border:none;background:#161616;color:#f6c418;border-radius:8px;padding:6px 10px;font-weight:800;cursor:pointer">Atualizar agora</button></div>
+<button id="instalar"><span>💻 Instalar no computador</span><span class="fx" id="instalarX" title="Agora não">✕</span></button>
+
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,collection,doc,getDoc,setDoc,updateDoc,deleteDoc,onSnapshot,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+/* ====== Controle de Estoque — sistema separado das Fichas, mas usa os mesmos dados da oficina ======
+   Produtos: os_oficinas/{oficina}/estoque_produtos   Movimentos: os_oficinas/{oficina}/estoque_movs
+   A quantidade de cada produto é a soma dos movimentos (entradas +, saídas −). Quando a Ordem de Serviço
+   é finalizada no sistema das Fichas, ele grava a saída das peças com código aqui. */
+const firebaseConfig={apiKey:'AIzaSyBZyZ4Dqs0BI5VSsm3HB2TNGpk7Z7330CE',authDomain:'escritorio-c3acb.firebaseapp.com',projectId:'escritorio-c3acb',storageBucket:'escritorio-c3acb.firebasestorage.app',messagingSenderId:'752996396852',appId:'1:752996396852:web:13569631f01d301d5a3f61'};
+const WA_SUPORTE='5514988324456';
+const LINK_FICHAS='../mrtruck/';
+const app=initializeApp(firebaseConfig),auth=getAuth(app);
+let fs;try{fs=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});}catch(e){fs=initializeFirestore(app,{});}
+
+/* ====== utilidades ====== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const hoje=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);};
+const agora=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,19);};
+const dt=s=>s?new Date(s).toLocaleDateString('pt-BR'):'';
+const hr=s=>s?new Date(s).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+const nomeKey=n=>String(n||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ');
+const nomeCurto=n=>String(n||'').replace(/\s*[-–]?\s*\b(LTDA|EIRELI|ME|EPP|S\/?A)\b\.?/gi,'').trim();
+const codKey=c=>String(c||'').trim().toUpperCase().replace(/\s+/g,'');
+const money=v=>{v=String(v??'').trim();if(!v)return 0;v=v.replace(/[^\d,.-]/g,'');if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');const n=parseFloat(v);return isNaN(n)?0:n;};
+const brl=n=>(+n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const qn=v=>{const n=parseFloat(String(v??'').replace(',','.'));return isNaN(n)?0:n;};
+const qtxt=n=>(Math.round((+n||0)*100)/100).toLocaleString('pt-BR');
+const tsMs=t=>t&&t.toMillis?t.toMillis():(t?+new Date(t):0);
+const liberada=o=>!!o&&(o.status==='ativo'||(o.status==='teste'&&tsMs(o.fimTeste)>Date.now()));
+const estoqueLiberado=o=>!!o&&o.estoque!=='bloqueado';
+const negado=e=>/permission-denied/.test((e&&e.code)||'');
+const erroTxt=e=>{const c=(e&&e.code)||'';
+  if(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c))return 'E-mail ou senha errados.';
+  if(/invalid-email/.test(c))return 'Esse e-mail não está certo.';
+  if(/too-many-requests/.test(c))return 'Muitas tentativas. Espere uns minutos e tente de novo.';
+  if(/network/.test(c))return 'Sem internet. Confira a conexão.';
+  if(negado(e))return 'Sem permissão. Fale com a Keller IA.';
+  return 'Não deu certo ('+(c||(e&&e.message)||'erro')+').';};
+const caixaSvg=`<svg viewBox="0 0 64 64" fill="none" stroke="#161616" stroke-width="3.2" stroke-linejoin="round"><path d="M8 20 32 8l24 12v26L32 58 8 46z" fill="#f6c418"/><path d="M8 20l24 12 24-12M32 32v26"/><path d="M20 14l24 12" stroke-width="2.4"/></svg>`;
+
+/* ====== estado ====== */
+let USER=null,MODO=null,OF=null,OFDOC=null,OFICINAS=[];
+let db={produtos:[],movs:[]};
+let unsubs=[],unsubMaster=null;
+let tela={v:'carregando'};
+let PROD=null; // produto em edição
+let soRepor=false;
+const prodById=id=>db.produtos.find(p=>p.id===id);
+const prodByCod=c=>db.produtos.find(p=>codKey(p.codigo)===codKey(c));
+const qtdDe=id=>db.movs.reduce((t,m)=>m.prodId===id?t+(+m.q||0):t,0);
+const precisaRepor=p=>{const q=qtdDe(p.id);return q<=0||(p.minimo>0&&q<=p.minimo);};
+const movsDe=id=>db.movs.filter(m=>m.prodId===id).sort((a,b)=>String(b.data).localeCompare(String(a.data)));
+
+const falhou=e=>{console.error(e);toast('⚠️ '+erroTxt(e));};
+const refProd=id=>doc(fs,'os_oficinas',OF,'estoque_produtos',id);
+const refMov=id=>doc(fs,'os_oficinas',OF,'estoque_movs',id);
+function gravaProd(p){const {id,...d}=p;setDoc(refProd(id),{...d,atualizado:serverTimestamp()}).catch(falhou);}
+function gravaMov(m){const {id,...d}=m;db.movs.push(m);setDoc(refMov(id),{...d,criado:serverTimestamp()}).catch(falhou);}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2800);}
+function modal(h){$('#mbox').innerHTML=h;$('#modal').classList.add('show');}
+function closeModal(){$('#modal').classList.remove('show');}
+function limpar(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];db={produtos:[],movs:[]};OF=null;OFDOC=null;}
+
+/* ====== entrada no sistema ====== */
+onAuthStateChanged(auth,async u=>{
+  limpar();if(unsubMaster){unsubMaster();unsubMaster=null;}
+  USER=u;MODO=null;
+  if(!u){tela={v:'login'};render();return;}
+  tela={v:'carregando'};render();
+  try{const p=await getDoc(doc(fs,'os_usuarios',u.uid));if(p.exists()){MODO='dono';abrirOficina(p.data().oficinaId);return;}}
+  catch(e){if(!negado(e)){tela={v:'erro',msg:erroTxt(e)};render();return;}}
+  abrirPainelMaster(true);
+});
+function abrirPainelMaster(testando){
+  limpar();if(unsubMaster)unsubMaster();
+  if(!testando){tela={v:'master'};render();}
+  unsubMaster=onSnapshot(collection(fs,'os_oficinas'),s=>{
+    MODO='master';OFICINAS=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+    if(tela.v==='master'||tela.v==='carregando'){tela={v:'master'};render();}
+  },e=>{MODO=null;tela=negado(e)?{v:'semCadastro'}:{v:'erro',msg:erroTxt(e)};render();});
+}
+const podeUsar=()=>MODO==='master'||(liberada(OFDOC)&&estoqueLiberado(OFDOC));
+function abrirOficina(id){
+  limpar();OF=id;tela={v:'carregando'};render();
+  const ok={};const pronto=k=>{ok[k]=1;if(ok.o&&ok.p&&ok.m&&tela.v==='carregando'){tela=podeUsar()?{v:'estoque'}:{v:'bloqueado'};render();}};
+  const erro=e=>{tela={v:'erro',msg:erroTxt(e)};render();};
+  const reRender=()=>{if(['estoque','produto','movs'].includes(tela.v)&&!$('#modal').classList.contains('show')){
+    const a=document.activeElement;if(a&&a.id&&['busca','pCod','pNome','pMin','pPreco','pLocal','pQtd'].includes(a.id)){if(tela.v==='estoque')atualizaLista();return;}
+    const y=scrollY;render();scrollTo(0,y);}};
+  unsubs.push(onSnapshot(doc(fs,'os_oficinas',id),s=>{
+    OFDOC=s.exists()?s.data():null;
+    if(!OFDOC){tela={v:'semCadastro'};render();return;}
+    if(tela.v!=='carregando'){if(!podeUsar()){tela={v:'bloqueado'};render();}else if(tela.v==='bloqueado'){tela={v:'estoque'};render();}else pintaTopo();}
+    pronto('o');
+  },erro));
+  unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'estoque_produtos'),s=>{db.produtos=s.docs.map(d=>({id:d.id,...d.data()}));reRender();pronto('p');},erro));
+  unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'estoque_movs'),s=>{db.movs=s.docs.map(d=>({id:d.id,...d.data()}));reRender();pronto('m');},erro));
+}
+
+/* ====== telas de acesso ====== */
+function vCarregando(){return `<div class="center"><div class="spin"></div><p>Abrindo…</p></div>`;}
+function vLogin(){
+  return `<div class="sheet lgbox">
+    <div class="lglogo">${caixaSvg}</div>
+    <h1 class="lgt">Controle de Estoque</h1>
+    <p class="lgs">Entre com o mesmo e-mail e senha das Fichas de Serviço</p>
+    <form id="fLogin" autocomplete="on">
+      <label class="lbl2">E-mail</label><input class="in2" id="lEmail" type="email" autocomplete="username" inputmode="email" autocapitalize="none">
+      <label class="lbl2">Senha</label><input class="in2" id="lSenha" type="password" autocomplete="current-password">
+      <div id="lErro"></div>
+      <button class="B" id="lBtn">ENTRAR</button>
+    </form>
+    <button class="lnk" data-act="esqueci">Esqueci minha senha</button>
+    ${jaInstalado()?'':`<button class="B white" data-act="instalarApp" style="margin-top:6px">${ehCelular?'📱 Instalar no celular':'💻 Instalar no computador'}</button>`}
+  </div>
+  <p class="rodape">Sistema da <b>Keller IA</b> · <a href="https://wa.me/${WA_SUPORTE}" target="_blank" rel="noopener">pedir acesso no WhatsApp</a></p>`;
+}
+function vSemCadastro(){return `<div class="sheet lgbox"><h1 class="lgt">Conta sem oficina</h1><p class="lgs">Este e-mail ainda não está ligado a nenhuma oficina. Fale com a Keller IA para liberar.</p>
+  <a class="B wa" href="https://wa.me/${WA_SUPORTE}" target="_blank" rel="noopener">📲 FALAR NO WHATSAPP</a><button class="lnk" data-act="sair">Sair</button></div>`;}
+function vBloqueado(){
+  const o=OFDOC||{},soEstoque=liberada(o)&&!estoqueLiberado(o);
+  return `<div class="sheet lgbox"><div style="font-size:60px;text-align:center">🔒</div><h1 class="lgt">${soEstoque?'Controle de Estoque não liberado':'Acesso pausado'}</h1>
+  <p class="lgs">${soEstoque?'Para usar o Controle de Estoque junto com as Fichas de Serviço, fale com a Keller IA.':'Para continuar usando, fale com a Keller IA. Seus dados estão guardados.'}</p>
+  <a class="B wa" href="https://wa.me/${WA_SUPORTE}?text=${encodeURIComponent('Olá! Quero liberar o Controle de Estoque da '+(o.nome||'oficina'))}" target="_blank" rel="noopener">📲 LIBERAR NO WHATSAPP</a>
+  <button class="lnk" data-act="sair">Sair</button></div>`;
+}
+function vErro(){return `<div class="sheet lgbox"><h1 class="lgt">Algo deu errado</h1><p class="lgs">${esc(tela.msg)}</p>
+  <button class="B" data-act="recarregar">TENTAR DE NOVO</button><button class="lnk" data-act="sair">Sair</button></div>`;}
+function vMaster(){
+  return `<div class="mtop"><div><b>Painel do administrador</b><span>Controle de Estoque · Keller IA</span></div><button class="lnk" style="width:auto;padding:8px" data-act="sair">Sair</button></div>
+  <p class="s" style="margin:8px 0 4px">As oficinas são cadastradas no painel das Fichas de Serviço. Aqui você libera ou bloqueia o estoque de cada uma.</p>
+  <div class="h2">Oficinas (${OFICINAS.length})</div>
+  ${OFICINAS.map(o=>`<div class="card" style="cursor:default">
+    <div class="fic"><b>${esc(nomeCurto(o.nome)||'(sem nome)')}</b><span class="st ${estoqueLiberado(o)?'ok':'bl'}">${estoqueLiberado(o)?'📦 Estoque liberado':'⛔ Estoque bloqueado'}</span></div>
+    <div class="s">${esc(o.email||'')}</div>
+    <div class="acts">
+      <button class="ab blue" data-act="verOficina" data-id="${o.id}">👁 Abrir estoque</button>
+      ${estoqueLiberado(o)?`<button class="ab red" data-act="estOficina" data-id="${o.id}" data-s="bloqueado">⛔ Bloquear estoque</button>`:`<button class="ab green" data-act="estOficina" data-id="${o.id}" data-s="ativo">✅ Liberar estoque</button>`}
+    </div></div>`).join('')||'<div class="empty">Nenhuma oficina ainda.</div>'}`;
+}
+
+/* ====== estoque ====== */
+function resumo(){
+  const n=db.produtos.length,r=db.produtos.filter(precisaRepor).length;
+  return `<div class="resumo"><div><b>${n}</b><span>produto${n===1?'':'s'}</span></div><div class="${r?'alerta':''}" data-act="soRepor"><b>${r}</b><span>${r===1?'precisa':'precisam'} repor${soRepor?' · mostrando':''}</span></div></div>`;
+}
+function vEstoque(){
+  return `${resumo()}
+  <input class="busca" id="busca" placeholder="🔍 Procurar por código ou nome" autocomplete="off" value="">
+  ${soRepor?`<button class="lnk" data-act="soRepor" style="padding:4px 0 10px">Mostrar todos os produtos</button>`:''}
+  <div id="lista">${listaProdutos('')}</div>
+  <button class="B" data-act="novoProd">➕ CADASTRAR PRODUTO</button>
+  ${jaInstalado()?'':`<button class="B white" data-act="instalarApp" style="margin-top:18px">${ehCelular?'📱 Instalar no celular':'💻 Instalar no computador'}</button>`}
+  <a class="B white" href="${LINK_FICHAS}" style="margin-top:12px">📝 Abrir as Fichas de Serviço</a>
+  ${MODO==='master'?'':'<button class="gear" data-act="sair">🚪 Sair desta conta</button>'}`;
+}
+function listaProdutos(q){
+  if(!db.produtos.length)return `<div class="empty">Nenhum produto ainda.<br>Toque em <b>➕ CADASTRAR PRODUTO</b>.<br><br><small>Exemplo: código <b>15</b> — Bomba d'água</small></div>`;
+  const qk=nomeKey(q),qc=codKey(q);
+  let l=db.produtos.filter(p=>!q||codKey(p.codigo).includes(qc)||nomeKey(p.nome).includes(qk));
+  if(soRepor)l=l.filter(precisaRepor);
+  l.sort((a,b)=>String(a.codigo).localeCompare(String(b.codigo),undefined,{numeric:true}));
+  return l.map(p=>{const qt=qtdDe(p.id),rep=precisaRepor(p);return `<div class="prod ${rep?'rep':''}" data-act="abrirProd" data-id="${p.id}">
+    <span class="pc">${esc(p.codigo)}</span>
+    <div class="pn"><b>${esc(p.nome)}</b><span class="s">${p.local?'📍 '+esc(p.local)+' · ':''}${p.preco?'R$ '+brl(p.preco):''}${rep?' <b class="avs">⚠️ repor</b>':''}</span></div>
+    <div class="pq"><b>${qtxt(qt)}</b><small>${esc(p.unidade||'un')}</small></div>
+    <div class="pbt"><button class="mais" data-act="movModal" data-id="${p.id}" data-t="entrada" title="Entrou">＋</button><button class="menos" data-act="movModal" data-id="${p.id}" data-t="saida" title="Saiu">−</button></div>
+  </div>`;}).join('')||'<div class="empty">Nada encontrado.</div>';
+}
+function atualizaLista(){const b=$('#busca');if(b&&$('#lista'))$('#lista').innerHTML=listaProdutos(b.value);}
+
+function vProduto(){
+  const p=PROD.id?prodById(PROD.id):null,qt=p?qtdDe(p.id):0,ms=p?movsDe(p.id):[];
+  return `<button class="back" data-act="voltar">‹ Voltar</button>
+  ${p?`<div class="qbig ${precisaRepor(p)?'rep':''}"><span>Em estoque agora</span><b>${qtxt(qt)} <small>${esc(p.unidade||'un')}</small></b>${precisaRepor(p)?'<em>⚠️ Precisa repor</em>':''}</div>
+  <div class="dup"><button class="B" data-act="movModal" data-id="${p.id}" data-t="entrada" style="margin:0">＋ ENTROU</button><button class="B red" data-act="movModal" data-id="${p.id}" data-t="saida" style="margin:0">− SAIU</button></div>`:''}
+  <div class="sheet" style="margin-top:14px">
+    <div style="font-size:22px;font-weight:800">${p?'Dados do produto':'Cadastrar produto'}</div>
+    <div class="f"><label>Código:</label><input id="pCod" value="${esc(PROD.codigo)}" autocomplete="off" autocapitalize="characters" placeholder="Ex.: 15"></div>
+    <div class="f"><label>Nome:</label><input id="pNome" value="${esc(PROD.nome)}" autocomplete="off" placeholder="Ex.: Bomba d'água"></div>
+    ${p?'':`<div class="f"><label>Quantidade que tem hoje:</label><input id="pQtd" value="${esc(PROD.qtd)}" inputmode="decimal" autocomplete="off" placeholder="0"></div>`}
+    <div class="f"><label>Avisar quando ficar com:</label><input id="pMin" value="${esc(PROD.minimo)}" inputmode="decimal" autocomplete="off" placeholder="Ex.: 2 (estoque mínimo)"></div>
+    <div class="f"><label>Preço de venda (R$):</label><input id="pPreco" value="${esc(PROD.preco)}" inputmode="decimal" autocomplete="off" placeholder="Opcional — vai sozinho para a ficha"></div>
+    <div class="f"><label>Onde fica:</label><input id="pLocal" value="${esc(PROD.local)}" autocomplete="off" placeholder="Opcional — ex.: Prateleira 3"></div>
+  </div>
+  <div id="erro"></div>
+  <button class="B" data-act="salvarProd">💾 ${p?'SALVAR ALTERAÇÕES':'SALVAR PRODUTO'}</button>
+  ${p?`<button class="B white" data-act="movModal" data-id="${p.id}" data-t="ajuste">🔢 CONTEI E A QUANTIDADE É OUTRA</button>
+  <div class="h2">O que entrou e saiu (${ms.length})</div>${ms.map(movHTML).join('')||'<div class="empty">Nenhum movimento ainda.</div>'}
+  <button class="lnk" style="color:var(--red)" data-act="apagarProd">Apagar este produto</button>`:''}`;
+}
+function movTxt(m){
+  if(m.tipo==='os')return `📝 Ordem de serviço Nº ${esc(m.numOS||'')}${m.placa?' · '+esc(m.placa):''}${m.cliente?' · '+esc(m.cliente):''}`;
+  if(m.tipo==='estorno')return `↩️ Voltou para o estoque: OS Nº ${esc(m.numOS||'')} ${esc(m.obs||'reaberta')}`;
+  if(m.tipo==='inicial')return '📦 Quantidade inicial';
+  if(m.tipo==='ajuste')return '🔢 Acerto depois de contar'+(m.obs?' · '+esc(m.obs):'');
+  if(m.tipo==='entrada')return '＋ Entrou'+(m.obs?' · '+esc(m.obs):'');
+  return '− Saiu'+(m.obs?' · '+esc(m.obs):'');
+}
+function movHTML(m,comNome){
+  const q=+m.q||0;
+  return `<div class="mov ${q<0?'neg':'pos'}"><div class="mq">${q>0?'+':''}${qtxt(q)}</div><div class="mt">${comNome?`<b>${esc(m.codigo)} · ${esc(m.nome)}</b>`:''}<span>${movTxt(m)}</span><small>${dt(m.data)} ${hr(m.data)}</small></div></div>`;
+}
+function vMovs(){
+  const l=db.movs.slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))).slice(0,300);
+  const doOS=db.movs.filter(m=>m.tipo==='os').length;
+  return `<div class="h2" style="margin-top:4px">📜 Tudo que entrou e saiu</div>
+  <p class="s" style="margin:0 0 10px">${doOS?`${doOS} saída${doOS>1?'s':''} vieram sozinhas das ordens de serviço finalizadas.`:'As saídas das ordens de serviço aparecem aqui sozinhas quando a OS é finalizada.'}</p>
+  ${l.map(m=>movHTML(m,true)).join('')||'<div class="empty">Nenhum movimento ainda.</div>'}`;
+}
+function movModal(id,t){
+  const p=prodById(id),qt=qtdDe(id);
+  const tit=t==='entrada'?'＋ Entrou no estoque':t==='saida'?'− Saiu do estoque':'🔢 Quantidade contada';
+  modal(`<h3>${tit}</h3><p style="font-size:18px;margin:4px 0 10px"><b>${esc(p.codigo)}</b> · ${esc(p.nome)}<br><span class="s">Tem agora: <b>${qtxt(qt)}</b> ${esc(p.unidade||'un')}</span></p>
+    <label class="lbl2">${t==='ajuste'?'Quantos tem de verdade na prateleira?':'Quantidade'}</label>
+    <div class="qsel"><button type="button" data-act="qMenos">−</button><input id="mQ" inputmode="decimal" value="${t==='ajuste'?qtxt(qt):'1'}" autocomplete="off"><button type="button" data-act="qMais">+</button></div>
+    <label class="lbl2">${t==='entrada'?'De onde veio (opcional)':'Observação (opcional)'}</label><input class="in2" id="mObs" placeholder="${t==='entrada'?'Ex.: Nota 1234 · Fornecedor':t==='saida'?'Ex.: Venda no balcão':'Ex.: Contagem do mês'}" autocomplete="off">
+    <div id="mErro"></div>
+    <button class="B ${t==='saida'?'red':''}" data-act="movOk" data-id="${id}" data-t="${t}">${t==='entrada'?'✅ CONFIRMAR ENTRADA':t==='saida'?'✅ CONFIRMAR SAÍDA':'✅ ACERTAR QUANTIDADE'}</button>
+    <button class="lnk" data-act="fechar">Cancelar</button>`);
+  setTimeout(()=>{const i=$('#mQ');if(i){i.focus();i.select();}},80);
+}
+function lerProd(){if(!$('#pCod'))return;PROD.codigo=$('#pCod').value;PROD.nome=$('#pNome').value;PROD.minimo=$('#pMin').value;PROD.preco=$('#pPreco').value;PROD.local=$('#pLocal').value;if($('#pQtd'))PROD.qtd=$('#pQtd').value;}
+function prodForm(p){return p?{id:p.id,codigo:p.codigo||'',nome:p.nome||'',minimo:p.minimo?qtxt(p.minimo):'',preco:p.preco?brl(p.preco):'',local:p.local||''}:{id:null,codigo:'',nome:'',qtd:'',minimo:'',preco:'',local:''};}
+function salvarProd(){
+  lerProd();const er=m=>{$('#erro').innerHTML=`<div class="err">${m}</div>`;$('#erro').scrollIntoView({behavior:'smooth',block:'center'});};
+  const codigo=String(PROD.codigo).trim(),nome=String(PROD.nome).trim();
+  if(!codigo)return er('Digite o <b>código</b> do produto. Ex.: 15');
+  if(/\s/.test(codigo))return er('O código não pode ter espaço. Ex.: 15 ou BA-15');
+  if(!nome)return er('Digite o <b>nome</b> do produto. Ex.: Bomba d\'água');
+  const outro=prodByCod(codigo);if(outro&&outro.id!==PROD.id)return er(`O código <b>${esc(codigo)}</b> já é do produto <b>${esc(outro.nome)}</b>.`);
+  const dados={codigo,nome,minimo:qn(PROD.minimo),preco:money(PROD.preco),local:String(PROD.local).trim(),unidade:'un'};
+  let p;
+  if(PROD.id){p=prodById(PROD.id);Object.assign(p,dados);gravaProd(p);}
+  else{p={id:uid('p'),...dados};db.produtos.push(p);gravaProd(p);
+    const q0=qn(PROD.qtd);if(q0)gravaMov({id:uid('m'),prodId:p.id,codigo,nome,q:q0,tipo:'inicial',obs:'',data:agora()});}
+  PROD=prodForm(p);tela={v:'produto'};render();toast('✅ Produto salvo');
+}
+
+/* ====== topo e desenho ====== */
+const TELAS=['estoque','produto','movs'];
+function pintaTopo(){
+  const na=TELAS.includes(tela.v);$('.top').style.display=na?'':'none';
+  const mb=$('#mbar');
+  if(na&&MODO==='master'){mb.innerHTML=`<span>👁 Vendo: <b>${esc(nomeCurto((OFDOC||{}).nome))}</b></span><button data-act="voltarPainel">‹ Painel</button>`;mb.style.display='flex';}else mb.style.display='none';
+  $('#tEst').classList.toggle('on',tela.v==='estoque'||(tela.v==='produto'&&PROD&&PROD.id));
+  $('#tNovo').classList.toggle('on',tela.v==='produto'&&PROD&&!PROD.id);
+  $('#tMovs').classList.toggle('on',tela.v==='movs');
+}
+function render(){
+  const V={carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,estoque:vEstoque,produto:vProduto,movs:vMovs};
+  $('#app').innerHTML=(V[tela.v]||vCarregando)();pintaTopo();window.scrollTo(0,0);
+}
+
+/* ====== cliques ====== */
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act,d=el.dataset;
+  if(a==='movModal'||a==='qMais'||a==='qMenos')e.stopPropagation();
+  const A={
+    sair:()=>{closeModal();signOut(auth);},
+    recarregar:()=>location.reload(),
+    esqueci:async()=>{const em=($('#lEmail').value||'').trim();const out=$('#lErro');
+      if(!em){out.innerHTML='<div class="err">Digite seu e-mail acima e toque de novo em "Esqueci minha senha".</div>';return;}
+      try{await sendPasswordResetEmail(auth,em);out.innerHTML='<div class="okm">Pronto! Mandamos um e-mail para criar uma senha nova.</div>';}catch(er){out.innerHTML=`<div class="err">${erroTxt(er)}</div>`;}},
+    verOficina:()=>abrirOficina(d.id),
+    voltarPainel:()=>abrirPainelMaster(false),
+    estOficina:()=>updateDoc(doc(fs,'os_oficinas',d.id),{estoque:d.s}).then(()=>toast(d.s==='ativo'?'✅ Estoque liberado':'⛔ Estoque bloqueado')).catch(falhou),
+    estoque:()=>{tela={v:'estoque'};render();},
+    movs:()=>{tela={v:'movs'};render();},
+    novoProd:()=>{PROD=prodForm(null);tela={v:'produto'};render();setTimeout(()=>$('#pCod').focus(),80);},
+    abrirProd:()=>{PROD=prodForm(prodById(d.id));tela={v:'produto'};render();},
+    voltar:()=>{tela={v:'estoque'};render();},
+    salvarProd:()=>salvarProd(),
+    soRepor:()=>{soRepor=!soRepor;render();},
+    movModal:()=>movModal(d.id,d.t),
+    qMais:()=>{const i=$('#mQ');i.value=qtxt(qn(i.value)+1);},
+    qMenos:()=>{const i=$('#mQ');i.value=qtxt(Math.max(0,qn(i.value)-1));},
+    movOk:()=>{const p=prodById(d.id),t=d.t,v=qn($('#mQ').value),obs=$('#mObs').value.trim();
+      if(t!=='ajuste'&&!(v>0)){$('#mErro').innerHTML='<div class="err">Digite a quantidade.</div>';return;}
+      let q=t==='entrada'?v:t==='saida'?-v:v-qtdDe(p.id);
+      if(t==='ajuste'&&!q){closeModal();toast('A quantidade já estava certa');return;}
+      gravaMov({id:uid('m'),prodId:p.id,codigo:p.codigo,nome:p.nome,q,tipo:t,obs,data:agora()});
+      closeModal();const y=scrollY;render();scrollTo(0,y);
+      toast(t==='entrada'?`✅ Entrou ${qtxt(v)} · ${p.nome}`:t==='saida'?`✅ Saiu ${qtxt(v)} · ${p.nome}`:`✅ Quantidade acertada: ${qtxt(v)}`);},
+    apagarProd:()=>modal(`<h3>Apagar este produto?</h3><p style="color:var(--mut);margin-bottom:6px">O produto sai da lista. O histórico do que entrou e saiu continua guardado.</p><button class="B red" data-act="apagarProdOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
+    apagarProdOk:()=>{const id=PROD.id;db.produtos=db.produtos.filter(p=>p.id!==id);deleteDoc(refProd(id)).catch(falhou);closeModal();tela={v:'estoque'};render();toast('Produto apagado');},
+    fechar:()=>closeModal(),
+  };
+  if(A[a])A[a]();
+});
+document.addEventListener('input',e=>{if(e.target.id==='busca')atualizaLista();});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='mQ'){e.preventDefault();const b=document.querySelector('[data-act=movOk]');if(b)b.click();}});
+document.addEventListener('submit',async e=>{
+  e.preventDefault();const f=e.target;
+  if(f.id==='fLogin'){
+    const em=$('#lEmail').value.trim().toLowerCase(),se=$('#lSenha').value,b=$('#lBtn');$('#lErro').innerHTML='';
+    b.disabled=true;b.textContent='Entrando…';
+    try{await signInWithEmailAndPassword(auth,em,se);}
+    catch(er){$('#lErro').innerHTML=`<div class="err">${erroTxt(er)}</div>`;b.disabled=false;b.textContent='ENTRAR';}
+  }
+});
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+/* ====== instalar como aplicativo (computador / Android) ====== */
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+let pedidoInstalar=null;
+const ehCelular=/Android|iPhone|iPad/i.test(navigator.userAgent);
+const ehIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const ehEdge=/Edg\//.test(navigator.userAgent),ehChrome=/Chrome\//.test(navigator.userAgent)&&!ehEdge&&!/OPR\//.test(navigator.userAgent);
+const jaInstalado=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const KEY_NAO='mrtruckEstoque_naoInstalar_ate';
+const escondido=()=>{try{return +localStorage.getItem(KEY_NAO)>Date.now();}catch(_){return false;}};
+const pedeInstalar=new URLSearchParams(location.search).has('instalar');
+function mostraBotaoInstalar(){
+  if(jaInstalado()||(escondido()&&!pedeInstalar))return;
+  const b=$('#instalar');b.querySelector('span').textContent=ehCelular?'📱 Instalar no celular':'💻 Instalar no computador';b.classList.add('show');
+}
+function comoInstalar(){
+  const link=location.origin+location.pathname;
+  let passos;
+  if(ehIOS)passos=`<li>Abra este link no <b>Safari</b>.</li><li>Toque no botão <b>Compartilhar</b> (quadrado com a setinha para cima).</li><li>Toque em <b>"Adicionar à Tela de Início"</b> e depois em <b>Adicionar</b>.</li>`;
+  else if(ehCelular)passos=`<li>Abra este link no <b>Google Chrome</b>.</li><li>Toque nos <b>três pontinhos ⋮</b> no canto de cima.</li><li>Toque em <b>"Instalar app"</b> ou <b>"Adicionar à tela inicial"</b>.</li>`;
+  else if(ehEdge)passos=`<li>Clique nos <b>três pontinhos ⋯</b> no canto de cima.</li><li>Vá em <b>Aplicativos</b> → <b>"Instalar este site como aplicativo"</b>.</li><li>Clique em <b>Instalar</b>.</li>`;
+  else if(ehChrome)passos=`<li>Na barra de endereço lá em cima, no canto direito, clique no ícone de <b>monitor com uma setinha</b>.</li><li>Ou clique nos <b>três pontinhos ⋮</b> → <b>"Transmitir, salvar e compartilhar"</b> → <b>"Instalar página como app"</b>.</li><li>Clique em <b>Instalar</b>.</li>`;
+  else passos=`<li>Este navegador não instala aplicativos.</li><li>Abra o link abaixo no <b>Google Chrome</b> ou no <b>Microsoft Edge</b> e clique em <b>"Instalar no computador"</b>.</li>`;
+  modal(`<h3>💻 Instalar o sistema</h3>
+    ${pedidoInstalar?`<button class="B" data-act="instalarAgora" style="min-height:76px;font-size:22px">✅ INSTALAR AGORA</button><p style="color:var(--mut);margin:10px 0 4px;font-size:15px">Se não funcionar, faça assim:</p>`:''}
+    <ol style="padding-left:22px;font-size:17px;line-height:1.6;margin:8px 0 12px">${passos}</ol>
+    <p style="font-size:14.5px;color:var(--mut)">Se lá em cima aparecer <b>"Abrir no app"</b>, ele já está instalado: é só clicar ali. Depois de instalado, aparece o ícone <b>Estoque</b> na área de trabalho.</p>
+    <div class="ex" style="user-select:all;word-break:break-all;margin-top:10px">${esc(link)}</div>
+    <button class="lnk" data-act="fechar">Fechar</button>`);
+}
+async function instalarAgora(){
+  if(!pedidoInstalar){comoInstalar();return;}
+  pedidoInstalar.prompt();const r=await pedidoInstalar.userChoice;pedidoInstalar=null;$('#instalar').classList.remove('show');closeModal();
+  if(r.outcome==='accepted')toast('✅ Instalado! Procure o ícone Estoque na área de trabalho');
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();pedidoInstalar=e;mostraBotaoInstalar();if(pedeInstalar&&!$('#modal').classList.contains('show'))comoInstalar();});
+$('#instalar').addEventListener('click',e=>{
+  if(e.target.id==='instalarX'){$('#instalar').classList.remove('show');try{localStorage.setItem(KEY_NAO,String(Date.now()+3*864e5));}catch(_){}return;}
+  instalarAgora();});
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;
+  if(el.dataset.act==='instalarApp'){e.stopPropagation();pedidoInstalar?instalarAgora():comoInstalar();}
+  if(el.dataset.act==='instalarAgora'){e.stopPropagation();instalarAgora();}},true);
+window.addEventListener('appinstalled',()=>{$('#instalar').classList.remove('show');closeModal();toast('✅ Instalado!');});
+// link de instalação (…/mrtruck-estoque/?instalar): se o navegador não oferecer o botão em 3 s, mostra o passo a passo
+if(pedeInstalar&&!jaInstalado())setTimeout(()=>{if(!pedidoInstalar&&!$('#modal').classList.contains('show'))comoInstalar();},3000);
+// mesmo sem o aviso automático do navegador, o botão aparece (abre o passo a passo)
+setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar();},4000);
+/* ====== atualização automática ======
+   Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
+   e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
+const APP_VERSAO='e1';
+let attPendente=false;
+function temDigitacao(){
+  if($('#modal').classList.contains('show'))return true;
+  if(tela.v!=='produto')return false;
+  return [...document.querySelectorAll('#app input')].some(i=>String(i.value||'').trim()!=='');
+}
+let versaoNova='';
+function recarregar(){
+  // abre o endereço com ?v=versão nova: assim vem a página nova do servidor, sem pegar a guardada
+  const k='mrtruckEstoque_tentou_'+versaoNova;let n=0;try{n=+sessionStorage.getItem(k)||0;if(n>=2)return;sessionStorage.setItem(k,String(n+1));sessionStorage.setItem('mrtruckEstoque_atualizado','1');}catch(_){}
+  const go=()=>location.replace(location.pathname+'?v='+encodeURIComponent(versaoNova||Date.now()));
+  if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}).finally(()=>setTimeout(go,300));else go();
+}
+function talvezAtualizar(){if(!attPendente)return;if(temDigitacao()){$('#attbar').style.display='block';return;}recarregar();}
+async function checaVersao(){
+  if(APP_VERSAO.startsWith('__'))return;
+  try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();
+    if(j.v&&j.v!==APP_VERSAO){versaoNova=j.v;attPendente=true;talvezAtualizar();}}catch(_){}
+}
+setInterval(checaVersao,3*60*1000);
+setInterval(talvezAtualizar,20*1000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checaVersao();});
+window.addEventListener('focus',checaVersao);
+setTimeout(checaVersao,8000);
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act=atualizarJa]');if(el){e.stopPropagation();recarregar();}},true);
+if(new URLSearchParams(location.search).has('v'))history.replaceState(null,'',location.pathname);
+try{if(sessionStorage.getItem('mrtruckEstoque_atualizado')){sessionStorage.removeItem('mrtruckEstoque_atualizado');setTimeout(()=>toast('✅ Sistema atualizado'),1500);}}catch(_){}
+render();
+</script>
+</body>
+</html>

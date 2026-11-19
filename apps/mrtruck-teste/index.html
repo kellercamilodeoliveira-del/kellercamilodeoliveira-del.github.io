@@ -169,6 +169,11 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .ln .lv{width:104px;border:none;border-left:1px solid #d5d9df;background:#fffbea;font-size:15.5px;text-align:right;color:var(--ink);outline:none;padding:4px 6px 0;font-family:inherit}
 .ln .ld:focus,.ln .lv:focus{background:#eef3ff}
 .ln .lv::placeholder{color:#c9c2a5}
+.ln{position:relative}.ln.ligada .ld{padding-right:118px;font-weight:700}
+.pcod{position:absolute;right:110px;top:3px;height:24px;border:none;border-radius:7px;background:#161616;color:#f6c418;font-size:12.5px;font-weight:800;padding:0 7px;cursor:pointer;white-space:nowrap}
+.dica{font-size:13.5px;color:#5a4300;background:#fff7d6;border:1px dashed #e0c25a;border-radius:8px;padding:6px 9px;margin:4px 0 2px}
+.baixa{background:#eef8f1;border:1.5px solid #9fd7b5;border-radius:12px;padding:10px 12px;margin:8px 0;font-size:16px}
+.baixa li{margin:4px 0 0 18px}.baixa .neg{color:var(--red);font-weight:800}
 .grip{display:flex;justify-content:flex-end;margin-top:2px}
 .grip span{width:52px;height:24px;display:grid;place-items:center;color:#7d8590;cursor:ns-resize;touch-action:none;user-select:none;font-size:15px;letter-spacing:-2px;border-radius:6px;background:#f2f2ef}
 .grip span:active{background:#e6e2d4}
@@ -280,6 +285,7 @@ const int=s=>parseInt(String(s||'').replace(/\D/g,''))||0;
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const hoje=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);};
+const agora=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,19);};
 const dt=s=>s?new Date(s).toLocaleDateString('pt-BR'):'';
 const hr=s=>s?new Date(s).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
 const linhas=t=>String(t||'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -304,7 +310,7 @@ const erroTxt=e=>{const c=(e&&e.code)||'';
 /* ====== estado ====== */
 let USER=null,MODO=null;      // MODO: 'master' (administrador) | 'dono' (oficina)
 let OF=null,OFDOC=null,OFICINAS=[];
-let db={config:{},clientes:[],fichas:[],orcamentos:[],lembretes:[]};
+let db={config:{},clientes:[],fichas:[],orcamentos:[],lembretes:[],produtos:[],emovs:[]};
 let unsubs=[],unsubMaster=null;
 let tela={v:'carregando'};
 let edit=null,F=null,CAD=null,GUARDA={};
@@ -315,6 +321,14 @@ const cliById=id=>db.clientes.find(c=>c.id===id);
 const cliByNome=n=>db.clientes.find(c=>nomeKey(c.nome)===nomeKey(n));
 const fichaById=id=>db.fichas.find(f=>f.id===id);
 const orcById=id=>db.orcamentos.find(o=>o.id===id);
+// ligação com o Controle de Estoque (outro sistema, mesmos dados da oficina)
+const LINK_ESTOQUE='../mrtruck-estoque/';
+const codKey=c=>String(c||'').trim().toUpperCase().replace(/\s+/g,'');
+const estoqueAtivo=()=>db.config.estoque!=='bloqueado'&&db.produtos.length>0;
+const prodByCod=c=>db.produtos.find(p=>codKey(p.codigo)===codKey(c));
+const qtdEst=id=>db.emovs.reduce((t,m)=>m.prodId===id?t+(+m.q||0):t,0);
+const qtxt=n=>(Math.round((+n||0)*100)/100).toLocaleString('pt-BR');
+const qn=v=>{const n=parseFloat(String(v??'').replace(',','.'));return isNaN(n)?0:n;};
 const lembDe=p=>db.lembretes.filter(l=>l.placa===p).sort((a,b)=>String(b.data).localeCompare(String(a.data)));
 // número da OS: só vai para frente, nunca repete (guarda o último em os_oficinas.ultimaOS)
 const numInt=n=>{const x=parseInt(String(n??'').replace(/\D/g,''),10);return isNaN(x)?0:x;};
@@ -325,7 +339,8 @@ const NL=12;
 const money=v=>{v=String(v??'').trim();if(!v)return 0;v=v.replace(/[^\d,.-]/g,'');if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');const n=parseFloat(v);return isNaN(n)?0:n;};
 const brl=n=>(+n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const novasLinhas=n=>Array.from({length:n},()=>({d:'',v:''}));
-const itensDe=(f,k)=>{const it=f[k+'Itens'];if(Array.isArray(it)&&it.length)return it.map(x=>({d:x.d||'',v:x.v||''}));return linhas(f[k]).map(d=>({d,v:''}));};
+const itensDe=(f,k)=>{const it=f[k+'Itens'];if(Array.isArray(it)&&it.length)return it.map(x=>({d:x.d||'',v:x.v||'',...(x.cod?{cod:x.cod,prodId:x.prodId||null,q:x.q||1}:{})}));return linhas(f[k]).map(d=>({d,v:''}));};
+const descPeca=x=>(x.cod&&(x.q||1)!==1?qtxt(x.q)+'× ':'')+(x.d||'');
 const somaItens=it=>it.reduce((t,x)=>t+money(x.v),0);
 const totalFicha=f=>somaItens(itensDe(f,'servico'))+somaItens(itensDe(f,'pecas'));
 const statusDe=f=>f.status==='finalizada'?'finalizada':'aberta';
@@ -370,7 +385,7 @@ function formDe(f,tipo){ // monta o formulário a partir de uma ficha ou orçame
 function gravaConfig(){const d={};CAMPOS_CFG.forEach(k=>d[k]=db.config[k]??null);updateDoc(doc(fs,'os_oficinas',OF),d).catch(falhou);}
 
 /* ====== entrar / sair ====== */
-function limpar(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];db={config:{},clientes:[],fichas:[],orcamentos:[],lembretes:[]};OF=null;OFDOC=null;}
+function limpar(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];db={config:{},clientes:[],fichas:[],orcamentos:[],lembretes:[],produtos:[],emovs:[]};OF=null;OFDOC=null;}
 onAuthStateChanged(auth,async u=>{
   limpar();if(unsubMaster){unsubMaster();unsubMaster=null;}
   USER=u;MODO=null;
@@ -420,6 +435,8 @@ function abrirOficina(id){
     if(tela.v==='lembCam'&&!['lItem','lKm','lData'].includes((document.activeElement||{}).id)){const y=scrollY;render();scrollTo(0,y);}
     else if(tela.v==='lemb'&&(document.activeElement||{}).id!=='buscaLemb'){const y=scrollY;render();scrollTo(0,y);}
   },()=>{}));
+  unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'estoque_produtos'),s=>{db.produtos=s.docs.map(d=>({id:d.id,...d.data()}));const ed=$('#estDica');if(ed){const tinha=!!$('#lProd');if(tinha)$('#lProd').innerHTML=prodOpts();else ed.innerHTML=estDicaHTML();if(estoqueAtivo())document.querySelectorAll('#L_pecas .ld').forEach(i=>i.setAttribute('list','lProd'));}},()=>{}));
+  unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'estoque_movs'),s=>{db.emovs=s.docs.map(d=>({id:d.id,...d.data()}));},()=>{}));
   unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'orcamentos'),s=>{
     db.orcamentos=s.docs.map(d=>({id:d.id,tipo:'orc',...d.data()}));
     if(tela.v==='salvas'&&(document.activeElement||{}).id!=='busca'){const y=scrollY;render();scrollTo(0,y);}
@@ -489,6 +506,7 @@ function vMaster(){
       <button class="ab" data-act="stOficina" data-id="${o.id}" data-s="teste">⏳ Teste ${DIAS_TESTE} dias</button>
       ${o.status!=='bloqueado'?`<button class="ab red" data-act="stOficina" data-id="${o.id}" data-s="bloqueado">⛔ Bloquear</button>`:''}
       <button class="ab" data-act="senhaOficina" data-email="${esc(o.email||'')}">🔑 Trocar senha</button>
+      ${o.estoque==='bloqueado'?`<button class="ab" data-act="estOficina" data-id="${o.id}" data-s="ativo">📦 Liberar estoque</button>`:`<button class="ab" data-act="estOficina" data-id="${o.id}" data-s="bloqueado">📦 Estoque liberado · bloquear</button>`}
     </div></div>`).join('')||'<div class="empty">Nenhuma oficina ainda. Toque em <b>➕ CADASTRAR OFICINA</b>.</div>'}`;
 }
 function modalNovaOficina(){
@@ -517,7 +535,7 @@ async function cadastrarOficina(f){
     const cr=await createUserWithEmailAndPassword(a2,email,senha);const donoUid=cr.user.uid;await signOut(a2);
     const id=(nomeKey(nomeCurto(g('nome'))).replace(/[^a-z0-9]+/g,'-').slice(0,20)||'oficina')+'-'+Math.random().toString(36).slice(2,6);
     const bt=writeBatch(fs);
-    const dados={email,donoUid,status:g('status'),fimTeste:Timestamp.fromDate(new Date(Date.now()+DIAS_TESTE*864e5)),criadoEm:serverTimestamp(),logo:null};
+    const dados={email,donoUid,status:g('status'),fimTeste:Timestamp.fromDate(new Date(Date.now()+DIAS_TESTE*864e5)),criadoEm:serverTimestamp(),logo:null,estoque:'bloqueado'};
     ['nome','slogan','end1','end2','end3','cnpj','ie','fone','cidade'].forEach(k=>dados[k]=g(k));
     bt.set(doc(fs,'os_oficinas',id),dados);
     bt.set(doc(fs,'os_usuarios',donoUid),{email,oficinaId:id,papel:'dono'});
@@ -552,6 +570,7 @@ function vNova(){
     <div class="grip"><span data-grip="servico" title="Arraste para cima ou para baixo para tirar ou pôr linhas">⇕ ═</span></div>
     <div class="tot" id="T_servico">${totTxt('servico')}</div>
     <div class="sech"><span>Descrição Peças</span><small>Valor R$</small></div>
+    <div id="estDica">${estDicaHTML()}</div>
     <div id="L_pecas">${linhasHTML('pecas')}</div>
     <div class="grip"><span data-grip="pecas" title="Arraste para cima ou para baixo para tirar ou pôr linhas">⇕ ═</span></div>
     <div class="tot" id="T_pecas">${totTxt('pecas')}</div>
@@ -589,7 +608,9 @@ function lerForm(){
   document.querySelectorAll('#veis input[data-k]').forEach(el=>{F.veiculos[+el.dataset.i][el.dataset.k]=el.value;});
   const s=padData();if(s)F.assinatura=s;
 }
-function linhasHTML(k){return F.itens[k].map((x,i)=>`<div class="ln"><input class="ld" data-l="${k}" data-i="${i}" value="${esc(x.d)}" autocomplete="off" enterkeyhint="next"><input class="lv" data-l="${k}" data-i="${i}" data-v="1" value="${esc(x.v)}" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>`).join('');}
+function estDicaHTML(){return estoqueAtivo()?`<datalist id="lProd">${prodOpts()}</datalist><div class="dica">📦 Digite o <b>código da peça</b> do estoque (ex.: 15) e aperte Enter — o nome entra sozinho e, ao finalizar a OS, sai do estoque. Para 2 peças: <b>2x15</b>.</div>`:'';}
+function prodOpts(){return db.produtos.map(p=>`<option value="${esc(p.codigo)} — ${esc(p.nome)}">`).join('');}
+function linhasHTML(k){const pe=k==='pecas'&&estoqueAtivo();return F.itens[k].map((x,i)=>`<div class="ln${x.cod?' ligada':''}"><input class="ld" data-l="${k}" data-i="${i}" value="${esc(x.d)}" autocomplete="off" enterkeyhint="next"${pe?' list="lProd"':''}>${x.cod?`<button type="button" class="pcod" data-act="qtdPeca" data-i="${i}" title="Peça do estoque — toque para mudar a quantidade">📦 ${esc(x.cod)} · ${qtxt(x.q||1)}un</button>`:''}<input class="lv" data-l="${k}" data-i="${i}" data-v="1" value="${esc(x.v)}" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>`).join('');}
 function totTxt(k){const t=somaItens(F.itens[k]);return t?`Total ${k==='servico'?'serviço':'peças'}: R$ ${brl(t)}`:'';}
 function totGeralTxt(){const t=somaItens(F.itens.servico)+somaItens(F.itens.pecas);return t?`${F.tipo==='orc'?'TOTAL DO ORÇAMENTO':'TOTAL DA ORDEM'}: R$ ${brl(t)}`:'';}
 function lerItens(){document.querySelectorAll('input[data-l]').forEach(el=>{const it=F.itens[el.dataset.l][+el.dataset.i];if(it)it[el.dataset.v?'v':'d']=el.value;});}
@@ -598,6 +619,47 @@ const larg=(t,font)=>{_cv.font=font;return _cv.measureText(t).width;};
 // a linha "cabe" se couber na tela E na folha impressa (coluna da descrição ~575px em 13,5px)
 function cabe(el,t){const cs=getComputedStyle(el),disp=el.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-3;
   return larg(t,`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`)<=disp&&larg(t,'13.5px Arial, Helvetica, sans-serif')<=572;}
+function ligaPeca(el,exato,focar){ // código do estoque digitado na linha de peças → liga a peça
+  if(!estoqueAtivo())return false;
+  const i=+el.dataset.i,v=el.value;let q=1,cod=null,m;
+  if(!exato&&!/\s—\s/.test(v))return false; // enquanto digita, só liga quando escolhe da lista
+  if((m=v.match(/^\s*(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\S+?)\s*(?:—.*)?$/i))&&prodByCod(m[2])){q=qn(m[1])||1;cod=m[2];}
+  else if((m=v.match(/^\s*(\S+)\s+—\s/))&&prodByCod(m[1]))cod=m[1];
+  else if(exato&&prodByCod(v.trim()))cod=v.trim();
+  if(!cod)return false;
+  const p=prodByCod(cod);lerItens();const it=F.itens.pecas[i];
+  const antes=money(it.v),auto=it.cod&&p.preco&&Math.abs(antes-p.preco*(it.q||1))<0.005;
+  Object.assign(it,{d:p.nome,cod:p.codigo,prodId:p.id,q});
+  if(p.preco&&(!antes||auto))it.v=brl(p.preco*q);
+  const ativo=document.activeElement,ad=ativo&&ativo.dataset?{l:ativo.dataset.l,i:ativo.dataset.i,v:ativo.dataset.v}:null;
+  if(focar&&i+1>=F.itens.pecas.length)F.itens.pecas.push({d:'',v:''});
+  $('#L_pecas').innerHTML=linhasHTML('pecas');pintaTotais();
+  if(focar){const nx=document.querySelector(`#L_pecas .ld[data-i="${i+1}"]`);if(nx)nx.focus();}
+  else if(ad&&ad.l){const el2=document.querySelector(`#L_${ad.l} .${ad.v?'lv':'ld'}[data-i="${ad.i}"]`);if(el2)el2.focus();}
+  toast(`📦 ${qtxt(q)} × ${p.nome} (cód ${p.codigo}) · tem ${qtxt(qtdEst(p.id))} no estoque`);
+  return true;
+}
+function pecasEstoque(f){return itensDe(f,'pecas').filter(x=>x.cod).map(x=>({x,p:db.produtos.find(y=>y.id===x.prodId)||prodByCod(x.cod)}));}
+function gravaEMov(m){db.emovs.push(m);const {id,...d}=m;setDoc(doc(fs,'os_oficinas',OF,'estoque_movs',id),{...d,criado:serverTimestamp()}).catch(falhou);}
+function darBaixa(f){ // finalizou a OS: as peças com código saem do estoque
+  if(db.config.estoque==='bloqueado'||(f.baixa&&f.baixa.feita))return 0;
+  const pl=((f.veiculos||[])[0]||{}).placa||'',its=[];
+  pecasEstoque(f).forEach(({x,p})=>{if(!p)return;const q=x.q||1;
+    gravaEMov({id:uid('m'),prodId:p.id,codigo:p.codigo,nome:p.nome,q:-q,tipo:'os',fichaId:f.id,numOS:String(f.num),placa:pl,cliente:f.cliente,obs:'',data:agora()});
+    its.push({prodId:p.id,codigo:p.codigo,nome:p.nome,q});});
+  if(its.length)f.baixa={feita:true,itens:its,data:hoje()};
+  return its.length;
+}
+function estornar(f,motivo){ // reabriu/apagou a OS: as peças voltam para o estoque
+  if(!f.baixa||!f.baixa.feita)return 0;
+  f.baixa.itens.forEach(it=>gravaEMov({id:uid('m'),prodId:it.prodId,codigo:it.codigo,nome:it.nome,q:+it.q,tipo:'estorno',fichaId:f.id,numOS:String(f.num),obs:motivo,data:agora()}));
+  const n=f.baixa.itens.length;f.baixa=null;return n;
+}
+function baixaHTML(f){
+  if(db.config.estoque==='bloqueado')return'';const l=pecasEstoque(f);if(!l.length)return'';
+  return `<div class="baixa">📦 <b>Vai sair do estoque:</b><ul>${l.map(({x,p})=>{if(!p)return `<li class="neg">Código ${esc(x.cod)} não existe mais no estoque — não sai nada</li>`;const fica=qtdEst(p.id)-(x.q||1);
+    return `<li>${qtxt(x.q||1)} × ${esc(p.nome)} (cód ${esc(p.codigo)}) — fica ${qtxt(fica)}${fica<0?' <span class="neg">⚠️ estoque negativo</span>':''}</li>`;}).join('')}</ul></div>`;
+}
 function quebraLinha(el){
   const v=el.value;if(cabe(el,v)||el.selectionStart!==v.length)return;
   const k=el.dataset.l,i=+el.dataset.i;
@@ -628,6 +690,7 @@ function vSalvas(){
   <input class="busca" id="busca" placeholder="🔍 Procurar cliente ou placa" autocomplete="off">
   <div id="lista">${listaClientes('')}</div>
   ${jaInstalado()?'':`<button class="B white" data-act="instalarApp" style="margin-top:18px">${ehCelular?'📱 Instalar no celular':'💻 Instalar no computador'}</button>`}
+  ${db.config.estoque!=='bloqueado'?`<a class="B white" href="${LINK_ESTOQUE}" style="margin-top:12px">📦 Abrir o Controle de Estoque</a>`:''}
   <button class="gear" data-act="config">⚙︎ Dados da oficina, cópia e sair</button>`;
 }
 function listaClientes(q){
@@ -801,7 +864,7 @@ function curriculoPrintHTML(p){
 /* ====== folha A4 ====== */
 function paperHTML(f){
   const C=db.config,d=new Date(f.data),vsF=f.veiculos||[],orc=f.tipo==='orc';
-  const L=(k,n)=>{const a=itensDe(f,k);while(a.length<n)a.push({d:'',v:''});return a.map(x=>`<div class="pl"><span class="pd">${esc(x.d)||'&nbsp;'}</span><span class="pv">${money(x.v)?'R$ '+brl(money(x.v)):''}</span></div>`).join('');};
+  const L=(k,n)=>{const a=itensDe(f,k);while(a.length<n)a.push({d:'',v:''});return a.map(x=>`<div class="pl"><span class="pd">${esc(k==='pecas'?descPeca(x):x.d)||'&nbsp;'}</span><span class="pv">${money(x.v)?'R$ '+brl(money(x.v)):''}</span></div>`).join('');};
   const tS=somaItens(itensDe(f,'servico')),tP=somaItens(itensDe(f,'pecas'));
   const logo=logoSrc(C)?`<img src="${logoSrc(C)}" alt="">`:`<div class="defmark">${truckSvg}<div class="t"><span>${esc(nomeCurto(C.nome)||'OFICINA')}</span></div>${C.slogan?`<small>${esc(C.slogan)}</small>`:''}</div>`;
   const jn=k=>vsF.map(v=>k==='km'?kmTxt(v.km):(v[k]||'')).filter(Boolean).join(' / ');
@@ -834,7 +897,7 @@ function waLink(f){
   const c=cliById(f.cid)||{},vs=f.veiculos||[];
   const orc=f.tipo==='orc';
   let t=`*${db.config.nome}*\n${orc?'*ORÇAMENTO*':`Pré Ordem de Serviço Nº ${pad6(f.num)}`}\nCliente: ${f.cliente}\nEntrada: ${dt(f.data)} ${hr(f.data)}\nMotorista: ${f.motorista||'-'}\n\n*Veículo${vs.length>1?'s':''}:*\n`+vs.map(v=>`• ${v.placa} ${v.modelo||''}`).join('\n');
-  const it=k=>itensDe(f,k).filter(x=>x.d||x.v).map(x=>'• '+x.d+(money(x.v)?' — R$ '+brl(money(x.v)):'')).join('\n');
+  const it=k=>itensDe(f,k).filter(x=>x.d||x.v).map(x=>'• '+(k==='pecas'?descPeca(x):x.d)+(money(x.v)?' — R$ '+brl(money(x.v)):'')).join('\n');
   if(f.servico||somaItens(itensDe(f,'servico')))t+=`\n\n*Serviço:*\n`+it('servico');
   if(f.pecas||somaItens(itensDe(f,'pecas')))t+=`\n\n*Peças:*\n`+it('pecas');
   if(totalFicha(f))t+=`\n\n*Total ${orc?'do orçamento':'da ordem'}: R$ ${brl(totalFicha(f))}*`;
@@ -910,10 +973,10 @@ function salvar(){
     if(ex){if(v.modelo)ex.modelo=v.modelo;if(v.chassi)ex.chassi=v.chassi;if(v.km>(ex.km||0))ex.km=v.km;}
     else c.veiculos.push({...v});});
   gravaCli(c);
-  const limpa=a=>{a=a.map(x=>({d:String(x.d||'').trim(),v:String(x.v||'').trim()}));let n=a.length;while(n&&!a[n-1].d&&!a[n-1].v)n--;return a.slice(0,n);};
+  const limpa=a=>{a=a.map(x=>({d:String(x.d||'').trim(),v:String(x.v||'').trim(),...(x.cod?{cod:x.cod,prodId:x.prodId||null,q:x.q||1}:{})}));let n=a.length;while(n&&!a[n-1].d&&!a[n-1].v)n--;return a.slice(0,n);};
   const iS=limpa(F.itens.servico),iP=limpa(F.itens.pecas);
   const dados={num,cid:c.id,cliente:c.nome,motorista:F.motorista.trim(),veiculos:vs,
-    servico:iS.map(x=>x.d).filter(Boolean).join('\n'),pecas:iP.map(x=>x.d).filter(Boolean).join('\n'),
+    servico:iS.map(x=>x.d).filter(Boolean).join('\n'),pecas:iP.map(descPeca).filter(Boolean).join('\n'),
     servicoItens:iS,pecasItens:iP,linhasServico:F.itens.servico.length,linhasPecas:F.itens.pecas.length,total:somaItens(iS)+somaItens(iP),
     assinatura:F.assinatura||null};
   if(orc){
@@ -925,7 +988,8 @@ function salvar(){
     return;
   }
   let f;
-  if(edit){f=fichaById(edit);Object.assign(f,dados);}
+  if(edit){f=fichaById(edit);const ass=x=>JSON.stringify(pecasEstoque(x).map(({x:y})=>[y.cod,y.q]));const antes=ass(f);Object.assign(f,dados);
+    if(statusDe(f)==='finalizada'&&f.baixa&&f.baixa.feita&&ass(f)!==antes){estornar(f,'corrigida');darBaixa(f);toast('📦 Estoque acertado com a correção');}}
   else{f={id:uid('f'),data:F.data,status:'aberta',fechamento:null,...dados};if(F.deOrc)f.deOrc=F.deOrc;db.fichas.push(f);}
   gravaFicha(f);
   const u=numInt(db.config.ultimaOS);
@@ -983,10 +1047,14 @@ document.addEventListener('click',e=>{
     ver:()=>{tela={v:'ver',id:d.id,volta:['cliente','curriculo','salvas'].includes(tela.v)?tela:null};render();},
     curriculo:()=>{if(['nova','orc'].includes(tela.v))lerForm();if(tela.v==='cliente')lerCad();tela={v:'curriculo',placa:d.p,volta:tela};render();},
     voltar:()=>{const vt=tela.volta;if(vt){tela=vt;render();return;}if(tela.v==='verOrc'){tela={v:'salvas'};render();return;}if(tela.v==='lembCam'){tela={v:'lemb'};render();return;}const f=fichaById(tela.id),c=f&&cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:c.id};}else tela={v:'salvas'};render();},
-    finalizar:()=>{const f=fichaById(tela.id),pl=((f.veiculos||[])[0]||{}).placa||'';modal(`<h3>Finalizar a OS Nº ${esc(pad6(f.num))}?</h3><p style="color:var(--mut);margin-bottom:6px;font-size:16px">${f.pecas?'':'⚠️ As peças ainda estão em branco. '}Depois de finalizar, ela entra no currículo do caminhão <b>${esc(pl)}</b>.</p><button class="B" data-act="finalizarOk">✅ SIM, FINALIZAR</button>${f.pecas?'':`<button class="B white" data-act="editar" data-id="${f.id}">✏️ PREENCHER AS PEÇAS ANTES</button>`}<button class="lnk" data-act="fechar">Voltar</button>`);},
-    finalizarOk:()=>{const f=fichaById(tela.id);f.status='finalizada';f.fechamento=hoje();gravaFicha(f);closeModal();tela.salvo=false;render();toast('✅ OS finalizada — já está no currículo do caminhão');},
-    reabrirC:()=>{const f=fichaById(d.id);f.status='aberta';f.fechamento=null;gravaFicha(f);const y=scrollY;render();scrollTo(0,y);toast('🔓 Ordem reaberta');},
-    reabrir:()=>{const f=fichaById(tela.id);f.status='aberta';f.fechamento=null;gravaFicha(f);render();toast('Ordem de serviço reaberta');},
+    finalizar:()=>{const f=fichaById(tela.id),pl=((f.veiculos||[])[0]||{}).placa||'';modal(`<h3>Finalizar a OS Nº ${esc(pad6(f.num))}?</h3><p style="color:var(--mut);margin-bottom:6px;font-size:16px">${f.pecas?'':'⚠️ As peças ainda estão em branco. '}Depois de finalizar, ela entra no currículo do caminhão <b>${esc(pl)}</b>.</p>${baixaHTML(f)}<button class="B" data-act="finalizarOk">✅ SIM, FINALIZAR</button>${f.pecas?'':`<button class="B white" data-act="editar" data-id="${f.id}">✏️ PREENCHER AS PEÇAS ANTES</button>`}<button class="lnk" data-act="fechar">Voltar</button>`);},
+    finalizarOk:()=>{const f=fichaById(tela.id);f.status='finalizada';f.fechamento=hoje();const nb=darBaixa(f);gravaFicha(f);closeModal();tela.salvo=false;render();toast(nb?`✅ OS finalizada · 📦 ${nb} peça${nb>1?'s':''} saíram do estoque`:'✅ OS finalizada — já está no currículo do caminhão');},
+    reabrirC:()=>{const f=fichaById(d.id);f.status='aberta';f.fechamento=null;const nb=estornar(f,'reaberta');gravaFicha(f);const y=scrollY;render();scrollTo(0,y);toast(nb?'🔓 Ordem reaberta · 📦 peças voltaram para o estoque':'🔓 Ordem reaberta');},
+    reabrir:()=>{const f=fichaById(tela.id);f.status='aberta';f.fechamento=null;const nb=estornar(f,'reaberta');gravaFicha(f);render();toast(nb?'🔓 Ordem reaberta · 📦 peças voltaram para o estoque':'Ordem de serviço reaberta');},
+    qtdPeca:()=>{lerItens();const i=+d.i,it=F.itens.pecas[i];modal(`<h3>📦 Quantas peças?</h3><p style="font-size:17px;margin:4px 0 10px"><b>${esc(it.d)}</b> · cód ${esc(it.cod)}</p><input class="in2" id="qPeca" inputmode="decimal" value="${qtxt(it.q||1)}" style="font-size:30px;text-align:center;font-weight:800" autocomplete="off"><button class="B" data-act="qtdPecaOk" data-i="${i}">✅ OK</button><button class="B white" data-act="desligaPeca" data-i="${i}">Esta peça não é do estoque</button><button class="lnk" data-act="fechar">Cancelar</button>`);setTimeout(()=>{const q=$('#qPeca');if(q){q.focus();q.select();}},60);},
+    qtdPecaOk:()=>{const it=F.itens.pecas[+d.i],p=db.produtos.find(x=>x.id===it.prodId)||prodByCod(it.cod),nq=qn($('#qPeca').value)||1,auto=p&&p.preco&&Math.abs(money(it.v)-p.preco*(it.q||1))<0.005;it.q=nq;if(auto)it.v=brl(p.preco*nq);closeModal();$('#L_pecas').innerHTML=linhasHTML('pecas');pintaTotais();},
+    desligaPeca:()=>{const it=F.itens.pecas[+d.i];delete it.cod;delete it.prodId;delete it.q;closeModal();$('#L_pecas').innerHTML=linhasHTML('pecas');toast('Tirado do estoque — fica só o texto');},
+    estOficina:()=>updateDoc(doc(fs,'os_oficinas',d.id),{estoque:d.s}).then(()=>toast(d.s==='ativo'?'✅ Estoque liberado':'⛔ Estoque bloqueado')).catch(falhou),
     imprimirCurr:()=>imprimirA4(curriculoPrintHTML(d.p)),
     addVei:()=>{lerForm();F.veiculos.push({placa:'',modelo:'',chassi:'',km:''});redesenhaVeis();const ins=document.querySelectorAll('#veis input.pl');ins[ins.length-1].focus();},
     tiraVei:()=>{lerForm();F.veiculos.splice(+d.i,1);redesenhaVeis();},
@@ -1002,7 +1070,7 @@ document.addEventListener('click',e=>{
     editar:()=>{closeModal();const f=fichaById(d.id);edit=f.id;F=formDe(f,'os');tela={v:'nova'};render();},
     imprimir:()=>imprimirA4(paperHTML(fichaById(tela.id))),
     apagar:()=>modal(`<h3>Apagar esta ficha?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
-    apagarOk:()=>{const f=fichaById(tela.id);db.fichas=db.fichas.filter(x=>x.id!==f.id);apagaFicha(f.id);closeModal();const c=cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:f.cid};}else tela={v:'salvas'};render();toast('Ficha apagada');},
+    apagarOk:()=>{const f=fichaById(tela.id);estornar(f,'apagada');db.fichas=db.fichas.filter(x=>x.id!==f.id);apagaFicha(f.id);closeModal();const c=cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:f.cid};}else tela={v:'salvas'};render();toast('Ficha apagada');},
     fechar:()=>closeModal(),
     config:()=>{const C=db.config;modal(`<h3>Dados da oficina</h3><p style="color:var(--mut)">Saem no cabeçalho da folha impressa.</p><form id="fCfg" autocomplete="off">
       <label>Logo (foto da logo)</label><input type="file" accept="image/*" id="logoIn" style="padding-top:12px">
@@ -1022,12 +1090,13 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{
   const t=e.target;
   if(e.key==='Backspace'&&t.dataset&&t.dataset.l&&!t.dataset.v&&t.value===''&&+t.dataset.i>0){e.preventDefault();const pv=document.querySelector(`#L_${t.dataset.l} .ld[data-i="${+t.dataset.i-1}"]`);if(pv){pv.focus();const n=pv.value.length;pv.setSelectionRange(n,n);}return;}
+  if(e.key==='Enter'&&t.dataset&&t.dataset.l==='pecas'&&!t.dataset.v&&ligaPeca(t,true,true)){e.preventDefault();return;}
   if(e.key!=='Enter'||!t.dataset||!t.dataset.l)return;e.preventDefault();
   const k=t.dataset.l,i=+t.dataset.i,camp=t.dataset.v?'lv':'ld';lerItens();
   if(i+1>=F.itens[k].length){F.itens[k].push({d:'',v:''});$('#L_'+k).innerHTML=linhasHTML(k);}
   const nx=document.querySelector(`#L_${k} .${camp}[data-i="${i+1}"]`);if(nx)nx.focus();
 });
-document.addEventListener('focusout',e=>{const t=e.target;if(t.dataset&&t.dataset.v&&t.value.trim()){const n=money(t.value);t.value=n?brl(n):'';}});
+document.addEventListener('focusout',e=>{const t=e.target;if(t.dataset&&t.dataset.l==='pecas'&&!t.dataset.v&&t.value.trim()&&!(F.itens.pecas[+t.dataset.i]||{}).cod)setTimeout(()=>{if(t.isConnected)ligaPeca(t,true,false);},0);if(t.dataset&&t.dataset.v&&t.value.trim()){const n=money(t.value);t.value=n?brl(n):'';}});
 let arr=null;
 document.addEventListener('pointerdown',e=>{const g=e.target.closest('[data-grip]');if(!g)return;lerItens();arr={k:g.dataset.grip,y:e.clientY,n:F.itens[g.dataset.grip].length};try{g.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();});
 document.addEventListener('pointermove',e=>{if(!arr)return;const k=arr.k,a=F.itens[k];lerItens();
@@ -1038,7 +1107,10 @@ document.addEventListener('pointercancel',()=>{arr=null;});
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset&&t.dataset.v){lerItens();pintaTotais();return;}
-  if(t.dataset&&t.dataset.l){quebraLinha(t);return;}
+  if(t.dataset&&t.dataset.l){
+    if(t.dataset.l==='pecas'){if(ligaPeca(t,false,true))return;
+      const it=F.itens.pecas[+t.dataset.i];if(it&&it.cod&&t.value!==it.d){delete it.cod;delete it.prodId;delete it.q;const ln=t.parentElement;ln.classList.remove('ligada');const b=ln.querySelector('.pcod');if(b)b.remove();}}
+    quebraLinha(t);return;}
   if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
   if(t.id==='busca'){$('#lista').innerHTML=listaClientes(t.value);return;}
   if(t.id==='buscaLemb'){$('#listaLemb').innerHTML=listaLemb(t.value);return;}
@@ -1116,7 +1188,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v16';
+const APP_VERSAO='v17';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;

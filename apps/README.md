@@ -65,3 +65,10 @@ Regras para o agente Mecânico:
   - Regras: `apps/mrtruck-teste/firestore.rules` — PUBLICADAS no Firebase em 16/11/2026, logo depois do bloco do Ponto.
   - Depois das regras publicadas e testado: copiar `mrtruck-teste/index.html` para `mrtruck/` (título sem TESTE, `PREFIXO='mrtruck-'` no sw.js, subir VERSAO). Na primeira entrada da oficina, as fichas guardadas no aparelho sobem sozinhas para a nuvem.
 - ATUALIZAÇÃO AUTOMÁTICA (desde 18/11/2026): cada publicação do MR Truck precisa mudar `APP_VERSAO` no index.html E o `version.json` da mesma pasta (mesmo valor do VERSAO do sw.js). O app aberto confere a cada 3 min / ao voltar para a janela e se recarrega sozinho; se houver ficha sendo digitada, espera salvar. Sem mudar o version.json, ninguém recebe a versão nova até fechar e abrir.
+
+## Controle de Estoque (apps/mrtruck-estoque)
+- Sistema separado (link e ícone próprios), mesmo login e mesmos dados da oficina no Firebase.
+- Produtos: `os_oficinas/{oficina}/estoque_produtos`; movimentos: `os_oficinas/{oficina}/estoque_movs` (quantidade = soma dos movimentos).
+- Nas Fichas, a peça com código (ex.: digitar `15` ou `2x15` + Enter) dá baixa no estoque quando a OS é finalizada; reabrir/apagar a OS devolve as peças.
+- Liberar/bloquear por oficina: campo `estoque` ('ativo' | 'bloqueado') no painel do administrador. Oficinas novas nascem com o estoque bloqueado; a MR Truck (sem o campo) está liberada.
+- Publicar: aumentar `e<N>` em `APP_VERSAO` (index.html), `VERSAO` (sw.js) e `version.json`.
