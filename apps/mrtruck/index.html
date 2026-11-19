@@ -19,7 +19,16 @@ button,input,textarea{font:inherit;color:inherit}
 .top{position:sticky;top:0;z-index:10;background:#161616;border-bottom:3px solid #f6c418;display:flex;gap:6px;padding:8px;justify-content:center}
 .top button{flex:1;max-width:260px;height:50px;border:none;border-radius:12px;background:#3c424a;color:#cfd5dc;font-size:17px;font-weight:800;cursor:pointer}
 .top button.on{background:#f6c418;color:#161616}
-@media(max-width:440px){.top{gap:4px;padding:6px}.top button{font-size:14.5px;height:48px;padding:0 4px}}
+@media(max-width:600px){.top{gap:4px;padding:6px}.top button{font-size:13.5px;height:52px;padding:0 3px;line-height:1.15}}
+.lembbox{margin-top:12px;background:#eef6ff;border:1.5px solid #9cc3ef;border-radius:10px;padding:10px 12px}
+.lembbox label{display:block;font-weight:800;font-size:15px;color:#0d3b78}.lembbox label small{font-weight:600;color:#4b6b93}
+.lembbox input{width:100%;margin-top:6px;border:none;border-bottom:2px solid #0d3b78;background:#fff;font-size:17px;padding:8px 6px;color:#0c2a80}
+.lcam{display:flex;gap:12px;align-items:center}.lcam .placa{font-size:18px}
+.lit{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;border-left:6px solid #2d6fd2;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;gap:12px;align-items:flex-start}
+.lit .lt{font-size:20px;font-weight:800;color:#161616}.lit .ls{font-size:15px;color:#555;margin-top:4px}.lit .lkm{font-size:22px;font-weight:800;color:#0d3b78;white-space:nowrap;margin-left:auto;text-align:right}
+.lit .lkm small{display:block;font-size:12px;color:#6b7f99;font-weight:700}.lit .x{border:none;background:none;color:#b3141b;font-size:22px;cursor:pointer;padding:0 0 0 6px}
+.lform{background:#fff;border-radius:14px;padding:14px 16px;margin-top:14px;border:2px dashed #9cc3ef}
+.lform .f input{font-size:17px}
 .wrap{max-width:640px;margin:0 auto;padding:14px 10px 40px}
 @media(min-width:700px){.wrap{max-width:860px}}
 
@@ -237,7 +246,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
 </head>
 <body>
 <div id="shell">
-  <div class="top" style="display:none"><button id="tNova" data-act="nova">📝 Nova ficha</button><button id="tOrc" data-act="orc">💰 Orçamento</button><button id="tSalvas" data-act="salvas">👥 Clientes</button></div>
+  <div class="top" style="display:none"><button id="tNova" data-act="nova">📝 Nova ficha</button><button id="tOrc" data-act="orc">💰 Orçamento</button><button id="tLemb" data-act="lemb">📌 Lembretes</button><button id="tSalvas" data-act="salvas">👥 Clientes</button></div>
   <div id="mbar"></div>
   <main class="wrap" id="app"></main>
 </div>
@@ -295,7 +304,7 @@ const erroTxt=e=>{const c=(e&&e.code)||'';
 /* ====== estado ====== */
 let USER=null,MODO=null;      // MODO: 'master' (administrador) | 'dono' (oficina)
 let OF=null,OFDOC=null,OFICINAS=[];
-let db={config:{},clientes:[],fichas:[],orcamentos:[]};
+let db={config:{},clientes:[],fichas:[],orcamentos:[],lembretes:[]};
 let unsubs=[],unsubMaster=null;
 let tela={v:'carregando'};
 let edit=null,F=null,CAD=null,GUARDA={};
@@ -306,6 +315,7 @@ const cliById=id=>db.clientes.find(c=>c.id===id);
 const cliByNome=n=>db.clientes.find(c=>nomeKey(c.nome)===nomeKey(n));
 const fichaById=id=>db.fichas.find(f=>f.id===id);
 const orcById=id=>db.orcamentos.find(o=>o.id===id);
+const lembDe=p=>db.lembretes.filter(l=>l.placa===p).sort((a,b)=>String(b.data).localeCompare(String(a.data)));
 // número da OS: só vai para frente, nunca repete (guarda o último em os_oficinas.ultimaOS)
 const numInt=n=>{const x=parseInt(String(n??'').replace(/\D/g,''),10);return isNaN(x)?0:x;};
 function ultimaOS(){let n=numInt(db.config.ultimaOS),w=String(db.config.ultimaOSTxt||'').length;
@@ -327,7 +337,7 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');cl
 function modal(h){$('#mbox').innerHTML=h;$('#modal').classList.add('show');}
 function closeModal(){$('#modal').classList.remove('show');}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
-function novoForm(tipo){F={tipo:tipo||'os',num:'',cliente:'',motorista:'',data:hoje(),veiculos:[{placa:'',modelo:'',chassi:'',km:''}],itens:{servico:novasLinhas(NL),pecas:novasLinhas(NL)},assinatura:null};edit=null;}
+function novoForm(tipo){F={tipo:tipo||'os',num:'',lembrete:'',cliente:'',motorista:'',data:hoje(),veiculos:[{placa:'',modelo:'',chassi:'',km:''}],itens:{servico:novasLinhas(NL),pecas:novasLinhas(NL)},assinatura:null};edit=null;}
 novoForm('os');
 
 /* ====== gravação na nuvem (sem internet, guarda e sobe quando voltar) ====== */
@@ -340,6 +350,9 @@ function apagaFicha(id){deleteDoc(refFicha(id)).catch(falhou);}
 const refOrc=id=>doc(fs,'os_oficinas',OF,'orcamentos',id);
 function gravaOrc(o){const {id,...d}=o;setDoc(refOrc(id),{...d,atualizado:serverTimestamp()}).catch(falhou);}
 function apagaOrc(id){deleteDoc(refOrc(id)).catch(falhou);}
+const refLemb=id=>doc(fs,'os_oficinas',OF,'lembretes',id);
+function gravaLemb(l){const {id,...d}=l;setDoc(refLemb(id),{...d,atualizado:serverTimestamp()}).catch(falhou);}
+function apagaLemb(id){deleteDoc(refLemb(id)).catch(falhou);}
 function trocaForm(tipo){ // guarda o que estava sendo digitado em cada aba (ficha / orçamento)
   if(['nova','orc'].includes(tela.v))lerForm();
   if(F)GUARDA[F.tipo]={F,edit};
@@ -351,12 +364,13 @@ function formDe(f,tipo){ // monta o formulário a partir de uma ficha ou orçame
     veiculos:(f.veiculos||[]).slice(0,1).map(v=>({...v,km:v.km||''})),
     itens:{servico:ext(itensDe(f,'servico'),f.linhasServico||NL),pecas:ext(itensDe(f,'pecas'),f.linhasPecas||NL)},assinatura:f.assinatura||null};
   if(!x.veiculos.length)x.veiculos=[{placa:'',modelo:'',chassi:'',km:''}];
+  x.lembrete=tipo==='os'&&f.id?((db.lembretes.find(l=>l.fichaId===f.id)||{}).item||''):'';
   return x;
 }
 function gravaConfig(){const d={};CAMPOS_CFG.forEach(k=>d[k]=db.config[k]??null);updateDoc(doc(fs,'os_oficinas',OF),d).catch(falhou);}
 
 /* ====== entrar / sair ====== */
-function limpar(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];db={config:{},clientes:[],fichas:[],orcamentos:[]};OF=null;OFDOC=null;}
+function limpar(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];db={config:{},clientes:[],fichas:[],orcamentos:[],lembretes:[]};OF=null;OFDOC=null;}
 onAuthStateChanged(auth,async u=>{
   limpar();if(unsubMaster){unsubMaster();unsubMaster=null;}
   USER=u;MODO=null;
@@ -401,6 +415,11 @@ function abrirOficina(id){
     db.fichas=s.docs.map(d=>({id:d.id,...d.data()}));
     if(tela.v==='salvas'){if((document.activeElement||{}).id==='busca')atualizaLista();else{const y=scrollY;render();scrollTo(0,y);}}else if(tela.v==='curriculo'){const y=scrollY;render();scrollTo(0,y);}pronto('f');
   },erro));
+  unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'lembretes'),s=>{
+    db.lembretes=s.docs.map(d=>({id:d.id,...d.data()}));
+    if(tela.v==='lembCam'&&!['lItem','lKm','lData'].includes((document.activeElement||{}).id)){const y=scrollY;render();scrollTo(0,y);}
+    else if(tela.v==='lemb'&&(document.activeElement||{}).id!=='buscaLemb'){const y=scrollY;render();scrollTo(0,y);}
+  },()=>{}));
   unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'orcamentos'),s=>{
     db.orcamentos=s.docs.map(d=>({id:d.id,tipo:'orc',...d.data()}));
     if(tela.v==='salvas'&&(document.activeElement||{}).id!=='busca'){const y=scrollY;render();scrollTo(0,y);}
@@ -527,6 +546,7 @@ function vNova(){
     <div class="pr"><div class="fx g3"><label>Nome do Motorista:</label><input id="iMotorista" value="${esc(F.motorista)}" autocomplete="off" autocapitalize="words"></div></div>
     <div class="veis" id="veis">${veisHTML()}</div>
     <div id="conhecidos">${conhecidosHTML()}</div>
+    ${orc?'':`<div class="lembbox"><label>📌 Lembrete do caminhão <small>(opcional — só o que for importante guardar)</small></label><input id="iLemb" value="${esc(F.lembrete||'')}" placeholder="Ex.: Motor feito · Embreagem trocada" autocomplete="off"><small style="display:block;color:#4b6b93;margin-top:4px;font-size:12.5px">Fica guardado com o km e a data desta ficha, na aba 📌 Lembretes.</small></div>`}
     <div class="sech"><span>Descrição do Serviço</span><small>Valor R$</small></div>
     <div id="L_servico">${linhasHTML('servico')}</div>
     <div class="grip"><span data-grip="servico" title="Arraste para cima ou para baixo para tirar ou pôr linhas">⇕ ═</span></div>
@@ -553,9 +573,9 @@ function veisHTML(){
   </div>`).join('');
 }
 function histHint(p){
-  if(p.length!==7)return'';const l=fichasDoCaminhao(p).filter(f=>f.id!==edit);if(!l.length)return'';
+  if(p.length!==7)return'';const l=fichasDoCaminhao(p).filter(f=>f.id!==edit),nl=lembDe(p).length;if(!l.length&&!nl)return'';
   const u=l[0];
-  return `<div class="hist">🕘 Este caminhão já passou aqui <b>${l.length} vez${l.length>1?'es':''}</b>. Última entrada: <b>${dt(u.data)}</b> — ${esc(linhas(u.servico)[0]||'')}<br><button type="button" data-act="curriculo" data-p="${p}">📋 Ver currículo do caminhão</button></div>`;
+  return `<div class="hist">${u?`🕘 Este caminhão já passou aqui <b>${l.length} vez${l.length>1?'es':''}</b>. Última entrada: <b>${dt(u.data)}</b> — ${esc(linhas(u.servico)[0]||'')}<br>`:''}${u?`<button type="button" data-act="curriculo" data-p="${p}">📋 Ver currículo do caminhão</button> `:''}${nl?`<button type="button" data-act="lembCam" data-p="${p}">📌 Lembretes (${nl})</button>`:''}</div>`;
 }
 function conhecidosHTML(){
   const c=cliByNome(F.cliente);if(!c||!(c.veiculos||[]).length)return'';
@@ -565,7 +585,7 @@ function conhecidosHTML(){
 }
 function lerForm(){
   if(!$('#iCliente'))return;
-  if($('#iNum'))F.num=$('#iNum').value;F.cliente=$('#iCliente').value;F.motorista=$('#iMotorista').value;lerItens();
+  if($('#iNum'))F.num=$('#iNum').value;if($('#iLemb'))F.lembrete=$('#iLemb').value;F.cliente=$('#iCliente').value;F.motorista=$('#iMotorista').value;lerItens();
   document.querySelectorAll('#veis input[data-k]').forEach(el=>{F.veiculos[+el.dataset.i][el.dataset.k]=el.value;});
   const s=padData();if(s)F.assinatura=s;
 }
@@ -709,6 +729,42 @@ function cardOrc(o){const vf=o.virouOS&&fichaById(o.virouOS);return `<div class=
     <div class="placas">${(o.veiculos||[]).map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')} <b style="font-size:16px;margin-left:4px">${esc(o.cliente)}</b></div>
     <div class="s" style="color:#222;margin-top:6px">${esc(linhas(o.servico)[0]||'')}${totalFicha(o)?` · <b>R$ ${brl(totalFicha(o))}</b>`:''}${vf?` · ✅ virou OS Nº ${esc(pad6(vf.num))}`:''}</div></div>`;}
 
+/* ====== lembretes do caminhão (motor, embreagem… com km e data) ====== */
+function caminhoesTodos(){
+  const m=new Map();
+  db.clientes.forEach(c=>(c.veiculos||[]).forEach(v=>{if(v.placa)m.set(v.placa,{placa:v.placa,modelo:v.modelo||'',chassi:v.chassi||'',cliente:c.nome});}));
+  db.lembretes.forEach(l=>{if(l.placa&&!m.has(l.placa))m.set(l.placa,{placa:l.placa,modelo:l.modelo||'',chassi:l.chassi||'',cliente:(cliById(l.cid)||{}).nome||''});});
+  return [...m.values()];
+}
+function listaLemb(q){
+  const qp=normPlaca(q),qn=nomeKey(q);let l=caminhoesTodos().map(x=>({...x,n:lembDe(x.placa).length}));
+  if(qp)l=l.filter(x=>x.placa.includes(qp)||normPlaca(x.chassi).includes(qp)||(qn&&nomeKey(x.cliente).includes(qn)));else l=l.filter(x=>x.n);
+  l.sort((a,b)=>b.n-a.n||a.placa.localeCompare(b.placa));
+  if(!l.length)return `<div class="empty">${qp?'Nenhum caminhão com essa placa ou chassi.':'Nenhum lembrete ainda.<br>Digite a placa ou o chassi acima para achar o caminhão.'}</div>`;
+  return l.map(x=>`<div class="card" data-act="lembCam" data-p="${esc(x.placa)}"><div class="lcam"><span class="placa">${esc(x.placa)}</span><div><b>${esc(x.modelo||'Caminhão')}</b><div class="s">${x.chassi?'Chassi '+esc(x.chassi)+' · ':''}${esc(x.cliente)}</div></div><b style="margin-left:auto;color:#0d3b78;font-size:18px;white-space:nowrap">📌 ${x.n}</b></div></div>`).join('');
+}
+function vLemb(){
+  return `<div class="h2" style="margin-top:4px">📌 Lembretes dos caminhões</div>
+  <p class="s" style="margin:0 0 10px">O que foi feito de importante em cada caminhão (motor, embreagem…), com o km e a data.</p>
+  <input class="busca" id="buscaLemb" placeholder="🔍 Digite a placa ou o chassi" autocomplete="off" autocapitalize="characters">
+  <div id="listaLemb">${listaLemb('')}</div>`;
+}
+function vLembCam(){
+  const p=tela.placa,{c,v}=caminhaoInfo(p),l=lembDe(p),u=l[0]||{};
+  const modelo=v.modelo||u.modelo||'Caminhão',chassi=v.chassi||u.chassi||'';
+  return `<button class="back" data-act="voltar">‹ Voltar</button>
+  <div class="sheet"><div class="ctit">📌 Lembretes do caminhão</div>
+    <div class="cvh" style="margin-top:10px"><span class="placa">${esc(p)}</span><div><b>${esc(modelo)}</b><span class="s">${chassi?'Chassi '+esc(chassi):'Chassi não informado'}</span><span class="s">Cliente: ${esc(c.nome||(cliById(u.cid)||{}).nome||'—')}</span></div></div></div>
+  <div class="h2">O que já foi feito (${l.length})</div>
+  ${l.map(x=>`<div class="lit"><div><div class="lt">${esc(x.item)}</div><div class="ls">📅 ${dt(x.data)}${x.numOS?` · OS Nº ${esc(pad6(x.numOS))}`:''}</div></div><div class="lkm">${x.km?kmTxt(x.km):'—'}<small>km</small></div><button class="x" data-act="lembDel" data-id="${x.id}" title="Apagar este lembrete">✕</button></div>`).join('')||'<div class="empty">Nenhum lembrete ainda para este caminhão.</div>'}
+  <div class="lform"><div style="font-weight:800;font-size:17px">➕ Anotar um lembrete</div><p class="s" style="margin:4px 0 0">Serve também para coisas antigas, de anos atrás.</p>
+    <div class="f"><label>O que foi feito:</label><input id="lItem" placeholder="Ex.: Motor feito" autocomplete="off"></div>
+    <div class="f"><label>Km:</label><input id="lKm" inputmode="numeric" placeholder="Ex.: 120000" autocomplete="off"></div>
+    <div class="f"><label>Data:</label><input id="lData" type="date" value="${hoje().slice(0,10)}"></div>
+    <div id="erro"></div><button class="B" data-act="lembAdd">💾 GUARDAR LEMBRETE</button></div>
+  ${fichasDoCaminhao(p).length?`<button class="B white" data-act="curriculo" data-p="${esc(p)}">📋 Ver o currículo completo (todas as ordens)</button>`:''}`;
+}
+
 /* ====== currículo do caminhão ====== */
 function vCurriculo(){
   const p=tela.placa,{c,v}=caminhaoInfo(p),l=fichasDoCaminhao(p);
@@ -720,6 +776,7 @@ function vCurriculo(){
     <div class="cvs"><div><b>${l.length}</b><span>vezes na oficina</span></div><div><b>${ultKm?kmTxt(ultKm):'—'}</b><span>último km</span></div><div><b>${l.length?dt(l[l.length-1].data):'—'}</b><span>primeira vez</span></div></div>
   </div>
   ${l.length?`<button class="B blue" data-act="imprimirCurr" data-p="${esc(p)}">🖨️ IMPRIMIR CURRÍCULO</button>`:''}
+  <button class="B white" data-act="lembCam" data-p="${esc(p)}">📌 LEMBRETES DO CAMINHÃO (${lembDe(p).length})</button>
   <div class="h2">Tudo que foi feito neste caminhão (${l.length})${fin<l.length?` · ${l.length-fin} em aberto`:''}</div>
   ${l.length?`<div class="tl">${l.map(f=>{const ab=statusDe(f)==='aberta';return `<div class="tli ${ab?'ab':''}" data-act="ver" data-id="${f.id}">
     <div class="tlh"><b>📅 ${dt(f.data)}</b>${ab?'<span class="st te">⏳ Em aberto</span>':`<span class="st ok">✅ Finalizada ${dt(f.fechamento)}</span>`}</div>
@@ -798,20 +855,21 @@ function initPad(){
 function padData(){const c=$('#pad');if(!c||!padDirty)return null;const w=520,o=document.createElement('canvas');o.width=w;o.height=Math.round(w*c.height/c.width);o.getContext('2d').drawImage(c,0,0,o.width,o.height);return o.toDataURL('image/png');}
 
 /* ====== render ====== */
-const TELAS_OFICINA=['nova','orc','salvas','cliente','ver','verOrc','curriculo'];
+const TELAS_OFICINA=['nova','orc','lemb','lembCam','salvas','cliente','ver','verOrc','curriculo'];
 function pintaTopo(){
   const naOficina=TELAS_OFICINA.includes(tela.v);
   $('.top').style.display=naOficina?'':'none';
   const mb=$('#mbar');
   if(naOficina&&MODO==='master'){mb.innerHTML=`<span>👁 Vendo: <b>${esc(nomeCurto(db.config.nome))}</b></span><button data-act="voltarPainel">‹ Painel</button>`;mb.style.display='flex';}
   else mb.style.display='none';
-  const emOrc=['orc','verOrc'].includes(tela.v);
+  const emOrc=['orc','verOrc'].includes(tela.v),emLemb=['lemb','lembCam'].includes(tela.v);
   $('#tNova').classList.toggle('on',tela.v==='nova');
   $('#tOrc').classList.toggle('on',emOrc);
-  $('#tSalvas').classList.toggle('on',tela.v!=='nova'&&!emOrc);
+  $('#tLemb').classList.toggle('on',emLemb);
+  $('#tSalvas').classList.toggle('on',tela.v!=='nova'&&!emOrc&&!emLemb);
 }
 function render(){
-  const V={curriculo:vCurriculo,carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,nova:vNova,orc:vNova,salvas:vSalvas,cliente:vCliente,ver:vVer,verOrc:vVerOrc};
+  const V={curriculo:vCurriculo,carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,nova:vNova,orc:vNova,salvas:vSalvas,cliente:vCliente,ver:vVer,verOrc:vVerOrc,lemb:vLemb,lembCam:vLembCam};
   $('#app').innerHTML=(V[tela.v]||vCarregando)();
   pintaTopo();window.scrollTo(0,0);
   if(tela.v==='nova'||tela.v==='orc')initPad();
@@ -873,6 +931,11 @@ function salvar(){
   const u=numInt(db.config.ultimaOS);
   if(n>u){db.config.ultimaOS=n;db.config.ultimaOSTxt=num;updateDoc(doc(fs,'os_oficinas',OF),{ultimaOS:n,ultimaOSTxt:num}).catch(falhou);}
   if(F.deOrc){const o=orcById(F.deOrc);if(o){o.virouOS=f.id;o.numOS=num;gravaOrc(o);}}
+  { // lembrete do caminhão ligado a esta ficha
+    const lt=String(F.lembrete||'').trim(),ex=db.lembretes.find(l=>l.fichaId===f.id),v0=vs[0];
+    if(lt){const l=ex||{id:uid('l'),fichaId:f.id};Object.assign(l,{item:lt,placa:v0.placa,chassi:v0.chassi||'',modelo:v0.modelo||'',km:v0.km||0,data:f.data,numOS:num,cid:c.id});if(!ex)db.lembretes.push(l);gravaLemb(l);}
+    else if(ex){db.lembretes=db.lembretes.filter(x=>x!==ex);apagaLemb(ex.id);}
+  }
   novoForm('os');tela={v:'ver',id:f.id,salvo:true};render();
   if(attPendente)setTimeout(talvezAtualizar,2500);
 }
@@ -896,6 +959,15 @@ document.addEventListener('click',e=>{
     orc:()=>{if(tela.v!=='orc'){trocaForm('orc');tela={v:'orc'};render();}},
     orcNovo:()=>{novoForm('orc');tela={v:'orc'};render();},
     salvas:()=>{if(['nova','orc'].includes(tela.v))lerForm();tela={v:'salvas'};render();},
+    lemb:()=>{if(['nova','orc'].includes(tela.v))lerForm();tela={v:'lemb'};render();setTimeout(()=>{const b=$('#buscaLemb');if(b&&!ehCelular)b.focus();},80);},
+    lembCam:()=>{if(['nova','orc'].includes(tela.v))lerForm();if(tela.v==='cliente')lerCad();tela={v:'lembCam',placa:d.p,volta:tela.v==='lemb'?null:tela};render();},
+    lembAdd:()=>{const item=$('#lItem').value.trim(),km=int($('#lKm').value),dta=$('#lData').value;
+      if(!item){$('#erro').innerHTML='<div class="err">Escreva o que foi feito. Ex.: Motor feito.</div>';$('#lItem').focus();return;}
+      const p=tela.placa,{c,v}=caminhaoInfo(p);
+      const l={id:uid('l'),item,km,data:(dta||hoje().slice(0,10))+'T12:00',placa:p,chassi:v.chassi||'',modelo:v.modelo||'',cid:c.id||null,fichaId:null,numOS:''};
+      db.lembretes.push(l);gravaLemb(l);render();toast('📌 Lembrete guardado');},
+    lembDel:()=>{const l=db.lembretes.find(x=>x.id===d.id);modal(`<h3>Apagar este lembrete?</h3><p style="color:var(--mut);margin-bottom:6px"><b>${esc(l.item)}</b> — ${dt(l.data)}</p><button class="B" style="background:var(--red)" data-act="lembDelOk" data-id="${l.id}">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`);},
+    lembDelOk:()=>{db.lembretes=db.lembretes.filter(x=>x.id!==d.id);apagaLemb(d.id);closeModal();const y=scrollY;render();scrollTo(0,y);toast('Lembrete apagado');},
     verOrc:()=>{tela={v:'verOrc',id:d.id,volta:['cliente','salvas'].includes(tela.v)?tela:null};render();},
     imprimirOrc:()=>imprimirA4(paperHTML(orcById(tela.id))),
     editarOrc:()=>{const o=orcById(d.id);F=formDe(o,'orc');edit=o.id;tela={v:'orc'};render();},
@@ -910,7 +982,7 @@ document.addEventListener('click',e=>{
     cadSalvar:()=>cadSalvar(false),
     ver:()=>{tela={v:'ver',id:d.id,volta:['cliente','curriculo','salvas'].includes(tela.v)?tela:null};render();},
     curriculo:()=>{if(['nova','orc'].includes(tela.v))lerForm();if(tela.v==='cliente')lerCad();tela={v:'curriculo',placa:d.p,volta:tela};render();},
-    voltar:()=>{const vt=tela.volta;if(vt){tela=vt;render();return;}if(tela.v==='verOrc'){tela={v:'salvas'};render();return;}const f=fichaById(tela.id),c=f&&cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:c.id};}else tela={v:'salvas'};render();},
+    voltar:()=>{const vt=tela.volta;if(vt){tela=vt;render();return;}if(tela.v==='verOrc'){tela={v:'salvas'};render();return;}if(tela.v==='lembCam'){tela={v:'lemb'};render();return;}const f=fichaById(tela.id),c=f&&cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:c.id};}else tela={v:'salvas'};render();},
     finalizar:()=>{const f=fichaById(tela.id),pl=((f.veiculos||[])[0]||{}).placa||'';modal(`<h3>Finalizar a OS Nº ${esc(pad6(f.num))}?</h3><p style="color:var(--mut);margin-bottom:6px;font-size:16px">${f.pecas?'':'⚠️ As peças ainda estão em branco. '}Depois de finalizar, ela entra no currículo do caminhão <b>${esc(pl)}</b>.</p><button class="B" data-act="finalizarOk">✅ SIM, FINALIZAR</button>${f.pecas?'':`<button class="B white" data-act="editar" data-id="${f.id}">✏️ PREENCHER AS PEÇAS ANTES</button>`}<button class="lnk" data-act="fechar">Voltar</button>`);},
     finalizarOk:()=>{const f=fichaById(tela.id);f.status='finalizada';f.fechamento=hoje();gravaFicha(f);closeModal();tela.salvo=false;render();toast('✅ OS finalizada — já está no currículo do caminhão');},
     reabrirC:()=>{const f=fichaById(d.id);f.status='aberta';f.fechamento=null;gravaFicha(f);const y=scrollY;render();scrollTo(0,y);toast('🔓 Ordem reaberta');},
@@ -943,7 +1015,7 @@ document.addEventListener('click',e=>{
       ${MODO==='master'?'':'<button class="B white" data-act="sair">🚪 Sair desta conta</button>'}
       <button class="lnk" data-act="fechar">Fechar</button>`);},
     tiraLogo:()=>{db.config.logo=null;gravaConfig();closeModal();render();},
-    exportar:()=>{const u=URL.createObjectURL(new Blob([JSON.stringify({oficina:db.config.nome,clientes:db.clientes,fichas:db.fichas,orcamentos:db.orcamentos})],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download='fichas-'+hoje().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Cópia baixada');}
+    exportar:()=>{const u=URL.createObjectURL(new Blob([JSON.stringify({oficina:db.config.nome,clientes:db.clientes,fichas:db.fichas,orcamentos:db.orcamentos,lembretes:db.lembretes})],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download='fichas-'+hoje().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Cópia baixada');}
   };
   if(A[a])A[a]();
 });
@@ -969,6 +1041,7 @@ document.addEventListener('input',e=>{
   if(t.dataset&&t.dataset.l){quebraLinha(t);return;}
   if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
   if(t.id==='busca'){$('#lista').innerHTML=listaClientes(t.value);return;}
+  if(t.id==='buscaLemb'){$('#listaLemb').innerHTML=listaLemb(t.value);return;}
   if(t.dataset&&t.dataset.k==='placa'){
     const hb=t.closest('.vei').querySelector('.histbox');if(hb)hb.innerHTML=histHint(normPlaca(t.value));
     const p=normPlaca(t.value);if(p.length!==7)return;const dono=donoDaPlaca(p);if(!dono)return;
@@ -1043,7 +1116,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v16';
+const APP_VERSAO='v17';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
