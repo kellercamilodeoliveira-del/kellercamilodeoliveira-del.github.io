@@ -19,6 +19,7 @@ button,input,textarea{font:inherit;color:inherit}
 .top{position:sticky;top:0;z-index:10;background:#161616;border-bottom:3px solid #f6c418;display:flex;gap:6px;padding:8px;justify-content:center}
 .top button{flex:1;max-width:260px;height:50px;border:none;border-radius:12px;background:#3c424a;color:#cfd5dc;font-size:17px;font-weight:800;cursor:pointer}
 .top button.on{background:#f6c418;color:#161616}
+@media(max-width:440px){.top{gap:4px;padding:6px}.top button{font-size:14.5px;height:48px;padding:0 4px}}
 .wrap{max-width:640px;margin:0 auto;padding:14px 10px 40px}
 @media(min-width:700px){.wrap{max-width:860px}}
 
@@ -46,6 +47,9 @@ button,input,textarea{font:inherit;color:inherit}
 .hnum .nbox{display:flex;align-items:flex-end;gap:6px;font-weight:800;font-size:15px}
 .hnum input{width:120px;border:none;border-bottom:2.5px solid #161616;background:#fff7d6;font-family:"Courier New",monospace;font-size:21px;font-weight:700;color:#b3141b;text-align:center;height:38px;outline:none;border-radius:4px 4px 0 0}
 .hnum input:focus{background:#ffeea3}
+.hnum input::placeholder{color:#d9a9a9}
+.orct{font-size:20px;color:#161616;letter-spacing:.06em}
+.orcbar{background:#fff3c4;border:2px solid #f6c418;border-radius:12px;padding:10px 14px;font-weight:800;font-size:15px;margin:0 0 10px;color:#161616}
 .hnum small{display:block;font-size:10.5px;color:#8a6a00;font-weight:800;text-align:right;margin-top:3px}
 @media(min-width:600px){.hd{grid-template-columns:1.05fr 1.5fr .95fr}.hnum{grid-column:auto;flex-direction:column;justify-content:center;border-top:0;border-left:1.5px solid #3a3a3a;padding:0 0 0 12px;align-self:stretch;text-align:center}.hnum small{text-align:center}}
 .f{display:flex;align-items:flex-end;gap:8px;margin-top:14px}
@@ -233,7 +237,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
 </head>
 <body>
 <div id="shell">
-  <div class="top" style="display:none"><button id="tNova" data-act="nova">📝 Nova ficha</button><button id="tSalvas" data-act="salvas">👥 Clientes</button></div>
+  <div class="top" style="display:none"><button id="tNova" data-act="nova">📝 Nova ficha</button><button id="tOrc" data-act="orc">💰 Orçamento</button><button id="tSalvas" data-act="salvas">👥 Clientes</button></div>
   <div id="mbar"></div>
   <main class="wrap" id="app"></main>
 </div>
@@ -291,16 +295,22 @@ const erroTxt=e=>{const c=(e&&e.code)||'';
 /* ====== estado ====== */
 let USER=null,MODO=null;      // MODO: 'master' (administrador) | 'dono' (oficina)
 let OF=null,OFDOC=null,OFICINAS=[];
-let db={config:{},clientes:[],fichas:[]};
+let db={config:{},clientes:[],fichas:[],orcamentos:[]};
 let unsubs=[],unsubMaster=null;
 let tela={v:'carregando'};
-let edit=null,F=null,CAD=null;
+let edit=null,F=null,CAD=null,GUARDA={};
 const CONFIG_PADRAO={nome:'MR Truck Service LTDA - ME',slogan:'Mecatrônica Especializada em Caminhões Volvo',end1:'Rua Vitorio Maziero 00930',end2:'Jardim Bom Pastor II',end3:'São Manuel - SP - CEP 18.654-146',cnpj:'21.749.210/0001-57',ie:'649.042.714.110',fone:'(14) 3841 5980',cidade:'São Manuel'};
 const CAMPOS_CFG=['nome','slogan','end1','end2','end3','cnpj','ie','fone','cidade','logo'];
 
 const cliById=id=>db.clientes.find(c=>c.id===id);
 const cliByNome=n=>db.clientes.find(c=>nomeKey(c.nome)===nomeKey(n));
 const fichaById=id=>db.fichas.find(f=>f.id===id);
+const orcById=id=>db.orcamentos.find(o=>o.id===id);
+// número da OS: só vai para frente, nunca repete (guarda o último em os_oficinas.ultimaOS)
+const numInt=n=>{const x=parseInt(String(n??'').replace(/\D/g,''),10);return isNaN(x)?0:x;};
+function ultimaOS(){let n=numInt(db.config.ultimaOS),w=String(db.config.ultimaOSTxt||'').length;
+  db.fichas.forEach(f=>{const x=numInt(f.num);if(x>n){n=x;w=String(f.num).trim().length;}else if(x===n)w=Math.max(w,String(f.num).trim().length);});return{n,w};}
+const proxOS=()=>{const u=ultimaOS();return u.n?String(u.n+1).padStart(u.w,'0'):'';};
 const NL=12;
 const money=v=>{v=String(v??'').trim();if(!v)return 0;v=v.replace(/[^\d,.-]/g,'');if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');const n=parseFloat(v);return isNaN(n)?0:n;};
 const brl=n=>(+n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -317,8 +327,8 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');cl
 function modal(h){$('#mbox').innerHTML=h;$('#modal').classList.add('show');}
 function closeModal(){$('#modal').classList.remove('show');}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
-function novoForm(){F={num:'',cliente:'',motorista:'',data:hoje(),veiculos:[{placa:'',modelo:'',chassi:'',km:''}],itens:{servico:novasLinhas(NL),pecas:novasLinhas(NL)},assinatura:null};edit=null;}
-novoForm();
+function novoForm(tipo){F={tipo:tipo||'os',num:'',cliente:'',motorista:'',data:hoje(),veiculos:[{placa:'',modelo:'',chassi:'',km:''}],itens:{servico:novasLinhas(NL),pecas:novasLinhas(NL)},assinatura:null};edit=null;}
+novoForm('os');
 
 /* ====== gravação na nuvem (sem internet, guarda e sobe quando voltar) ====== */
 const falhou=e=>{console.error(e);toast('⚠️ '+erroTxt(e));};
@@ -327,10 +337,26 @@ const refFicha=id=>doc(fs,'os_oficinas',OF,'fichas',id);
 function gravaCli(c){const {id,...d}=c;setDoc(refCli(id),{...d,atualizado:serverTimestamp()}).catch(falhou);}
 function gravaFicha(f){const {id,...d}=f;setDoc(refFicha(id),{...d,atualizado:serverTimestamp()}).catch(falhou);}
 function apagaFicha(id){deleteDoc(refFicha(id)).catch(falhou);}
+const refOrc=id=>doc(fs,'os_oficinas',OF,'orcamentos',id);
+function gravaOrc(o){const {id,...d}=o;setDoc(refOrc(id),{...d,atualizado:serverTimestamp()}).catch(falhou);}
+function apagaOrc(id){deleteDoc(refOrc(id)).catch(falhou);}
+function trocaForm(tipo){ // guarda o que estava sendo digitado em cada aba (ficha / orçamento)
+  if(['nova','orc'].includes(tela.v))lerForm();
+  if(F)GUARDA[F.tipo]={F,edit};
+  const g=GUARDA[tipo];if(g&&g.F.tipo===tipo){F=g.F;edit=g.edit;}else novoForm(tipo);
+}
+function formDe(f,tipo){ // monta o formulário a partir de uma ficha ou orçamento salvo
+  const ext=(a,n)=>{while(a.length<n)a.push({d:'',v:''});return a;};
+  const x={tipo,num:tipo==='os'&&f.num?pad6(f.num):'',cliente:f.cliente,motorista:f.motorista||'',data:f.data,
+    veiculos:(f.veiculos||[]).slice(0,1).map(v=>({...v,km:v.km||''})),
+    itens:{servico:ext(itensDe(f,'servico'),f.linhasServico||NL),pecas:ext(itensDe(f,'pecas'),f.linhasPecas||NL)},assinatura:f.assinatura||null};
+  if(!x.veiculos.length)x.veiculos=[{placa:'',modelo:'',chassi:'',km:''}];
+  return x;
+}
 function gravaConfig(){const d={};CAMPOS_CFG.forEach(k=>d[k]=db.config[k]??null);updateDoc(doc(fs,'os_oficinas',OF),d).catch(falhou);}
 
 /* ====== entrar / sair ====== */
-function limpar(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];db={config:{},clientes:[],fichas:[]};OF=null;OFDOC=null;}
+function limpar(){unsubs.forEach(u=>{try{u();}catch(_){}});unsubs=[];db={config:{},clientes:[],fichas:[],orcamentos:[]};OF=null;OFDOC=null;}
 onAuthStateChanged(auth,async u=>{
   limpar();if(unsubMaster){unsubMaster();unsubMaster=null;}
   USER=u;MODO=null;
@@ -375,6 +401,10 @@ function abrirOficina(id){
     db.fichas=s.docs.map(d=>({id:d.id,...d.data()}));
     if(tela.v==='salvas'){if((document.activeElement||{}).id==='busca')atualizaLista();else{const y=scrollY;render();scrollTo(0,y);}}else if(tela.v==='curriculo'){const y=scrollY;render();scrollTo(0,y);}pronto('f');
   },erro));
+  unsubs.push(onSnapshot(collection(fs,'os_oficinas',id,'orcamentos'),s=>{
+    db.orcamentos=s.docs.map(d=>({id:d.id,tipo:'orc',...d.data()}));
+    if(tela.v==='salvas'&&(document.activeElement||{}).id!=='busca'){const y=scrollY;render();scrollTo(0,y);}
+  },()=>{}));
 }
 const liberadaOuMaster=()=>MODO==='master'||liberada(OFDOC);
 function atualizaLista(){const b=$('#busca');if(b&&$('#lista'))$('#lista').innerHTML=listaClientes(b.value);}
@@ -486,11 +516,12 @@ async function cadastrarOficina(f){
 const logoSrc=C=>C.logo||(/mr\s*truck/i.test(C.nome||'')?'logo-mrtruck.svg':'');
 function logoMini(){const C=db.config,src=logoSrc(C);return src?`<img src="${src}" alt="${esc(nomeCurto(C.nome))}">`:`<div class="alt">${truckSvg}<b>${esc(nomeCurto(C.nome)||'OFICINA')}</b></div>`;}
 function vNova(){
-  const C=db.config,d=new Date(F.data);
-  return `<div class="sheet">
+  const C=db.config,d=new Date(F.data),orc=F.tipo==='orc',prox=proxOS();
+  const numBox=orc?'':`<div><div class="nbox">Nº <input id="iNum" value="${esc(F.num)}" inputmode="numeric" autocomplete="off"${!edit&&prox?` placeholder="${prox}"`:''}></div><small>${!edit&&prox?`↑ próxima: ${prox}`:'↑ digite o Nº'}</small></div>`;
+  return `${orc?`<div class="orcbar">💰 ${edit?'Corrigindo orçamento':'Orçamento'} — não usa número de ordem de serviço</div>`:''}${!orc&&F.deOrc?`<div class="orcbar">📝 Virando ordem de serviço a partir do orçamento — digite o Nº</div>`:''}<div class="sheet">
     <div class="hd"><div class="hlogo">${logoMini()}</div>
       <div class="hinfo"><b>${esc(C.nome)}</b>${C.end1?`<span>${esc(C.end1)}</span>`:''}${C.end2?`<span>${esc(C.end2)}</span>`:''}${C.end3?`<span>${esc(C.end3)}</span>`:''}${C.cnpj?`<span>CNPJ ${esc(C.cnpj)}</span>`:''}${C.ie?`<span>IE: ${esc(C.ie)}</span>`:''}</div>
-      <div class="hnum">${C.fone?`<div class="fone">Fone: ${esc(C.fone)}</div>`:''}<div class="pre">Pré Ordem de Serviço</div><div><div class="nbox">Nº <input id="iNum" value="${esc(F.num)}" inputmode="numeric" autocomplete="off"></div><small>↑ digite o Nº</small></div></div></div>
+      <div class="hnum">${C.fone?`<div class="fone">Fone: ${esc(C.fone)}</div>`:''}<div class="pre">${orc?'<b class="orct">ORÇAMENTO</b>':'Pré Ordem de Serviço'}</div>${numBox}</div></div>
     <div class="pr"><div class="fx g3"><label>Cliente:</label><input id="iCliente" list="lClientes" value="${esc(F.cliente)}" autocomplete="off" autocapitalize="words"></div><div class="fx wdt"><label>Data entrada:</label><input value="${dt(F.data)} ${hr(F.data)}" readonly style="color:#444"></div></div>
     <datalist id="lClientes">${db.clientes.map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>
     <div class="pr"><div class="fx g3"><label>Nome do Motorista:</label><input id="iMotorista" value="${esc(F.motorista)}" autocomplete="off" autocapitalize="words"></div></div>
@@ -509,7 +540,7 @@ function vNova(){
     <div class="assl"><div class="lnass"></div><span>Assinatura do Motorista</span></div>
   </div>
   <div id="erro"></div>
-  <button class="B" data-act="salvar">💾 SALVAR FICHA</button>
+  <button class="B" data-act="salvar">💾 ${orc?'SALVAR ORÇAMENTO':'SALVAR FICHA'}</button>
   ${edit?`<button class="lnk" data-act="cancelarEd">Cancelar alteração</button>`:`<button class="lnk" data-act="limparForm">Limpar tudo e começar outra</button>`}`;
 }
 function veisHTML(){
@@ -534,13 +565,13 @@ function conhecidosHTML(){
 }
 function lerForm(){
   if(!$('#iCliente'))return;
-  F.num=$('#iNum').value;F.cliente=$('#iCliente').value;F.motorista=$('#iMotorista').value;lerItens();
+  if($('#iNum'))F.num=$('#iNum').value;F.cliente=$('#iCliente').value;F.motorista=$('#iMotorista').value;lerItens();
   document.querySelectorAll('#veis input[data-k]').forEach(el=>{F.veiculos[+el.dataset.i][el.dataset.k]=el.value;});
   const s=padData();if(s)F.assinatura=s;
 }
 function linhasHTML(k){return F.itens[k].map((x,i)=>`<div class="ln"><input class="ld" data-l="${k}" data-i="${i}" value="${esc(x.d)}" autocomplete="off" enterkeyhint="next"><input class="lv" data-l="${k}" data-i="${i}" data-v="1" value="${esc(x.v)}" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>`).join('');}
 function totTxt(k){const t=somaItens(F.itens[k]);return t?`Total ${k==='servico'?'serviço':'peças'}: R$ ${brl(t)}`:'';}
-function totGeralTxt(){const t=somaItens(F.itens.servico)+somaItens(F.itens.pecas);return t?`TOTAL DA ORDEM: R$ ${brl(t)}`:'';}
+function totGeralTxt(){const t=somaItens(F.itens.servico)+somaItens(F.itens.pecas);return t?`${F.tipo==='orc'?'TOTAL DO ORÇAMENTO':'TOTAL DA ORDEM'}: R$ ${brl(t)}`:'';}
 function lerItens(){document.querySelectorAll('input[data-l]').forEach(el=>{const it=F.itens[el.dataset.l][+el.dataset.i];if(it)it[el.dataset.v?'v':'d']=el.value;});}
 const _cv=document.createElement('canvas').getContext('2d');
 const larg=(t,font)=>{_cv.font=font;return _cv.measureText(t).width;};
@@ -566,7 +597,9 @@ function redesenhaVeis(){$('#veis').innerHTML=veisHTML();$('#conhecidos').innerH
 /* ====== tela: clientes ====== */
 function vSalvas(){
   const ab=db.fichas.filter(f=>statusDe(f)==='aberta').sort((a,b)=>String(a.data).localeCompare(String(b.data)));
-  return `${ab.length?`<div class="h2" style="margin-top:4px">⏳ Ordens de serviço em aberto (${ab.length})</div>
+  const orcs=db.orcamentos.filter(o=>!o.virouOS).sort((a,b)=>String(b.data).localeCompare(String(a.data)));
+  return `${orcs.length?`<div class="h2" style="margin-top:4px">💰 Orçamentos esperando resposta (${orcs.length})</div>${orcs.slice(0,15).map(cardOrc).join('')}${ab.length?'':'<div class="h2">Clientes</div>'}`:''}
+  ${ab.length?`<div class="h2" style="margin-top:4px">⏳ Ordens de serviço em aberto (${ab.length})</div>
   ${ab.map(f=>`<div class="card abert" data-act="ver" data-id="${f.id}"><div class="fic"><span class="n">Nº ${esc(pad6(f.num))}</span><span class="s" style="margin:0">entrou ${dt(f.data)}</span></div>
     <div class="placas">${(f.veiculos||[]).map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')} <b style="font-size:16px;margin-left:4px">${esc(f.cliente)}</b></div>
     <div class="s" style="color:#222;margin-top:6px">${esc(linhas(f.servico)[0]||'')}</div></div>`).join('')}
@@ -601,10 +634,12 @@ function vCliente(){
   <div id="erro"></div>
   <button class="B" data-act="cadSalvar">💾 SALVAR CADASTRO</button>
   ${c?`<button class="B blue" data-act="fichaPara" data-id="${c.id}">📝 Fazer ficha para este cliente</button>
+  <button class="B white" data-act="fichaPara" data-orc="1" data-id="${c.id}">💰 Fazer orçamento para este cliente</button>
   <div class="h2">Fichas deste cliente (${lf.length})</div>
   ${lf.map(f=>`<div class="card" data-act="ver" data-id="${f.id}"><div class="fic"><span class="n">Nº ${esc(pad6(f.num))}</span><span class="s" style="margin:0">${dt(f.data)}</span></div>
     <div class="placas">${(f.veiculos||[]).map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')}</div>
-    <div class="s" style="color:#222;margin-top:8px">${esc(linhas(f.servico)[0]||'')}</div></div>`).join('')||'<div class="empty">Nenhuma ficha ainda.</div>'}`:''}`;
+    <div class="s" style="color:#222;margin-top:8px">${esc(linhas(f.servico)[0]||'')}</div></div>`).join('')||'<div class="empty">Nenhuma ficha ainda.</div>'}
+  ${(()=>{const lo=db.orcamentos.filter(o=>o.cid===c.id).sort((a,b)=>String(b.data).localeCompare(String(a.data)));return lo.length?`<div class="h2">Orçamentos deste cliente (${lo.length})</div>${lo.map(cardOrc).join('')}`:'';})()}`:''}`;
 }
 function cadVeisHTML(){
   return CAD.veiculos.map((v,i)=>`<div class="vei">
@@ -656,6 +691,24 @@ function vVer(){
   <button class="lnk" style="color:var(--red)" data-act="apagar">Apagar esta ficha</button>`;
 }
 
+function vVerOrc(){
+  const o=orcById(tela.id);if(!o)return '<div class="empty">Orçamento não encontrado.</div>';const c=cliById(o.cid)||{};
+  const vf=o.virouOS&&fichaById(o.virouOS);
+  return `<button class="back" data-act="voltar">‹ Voltar</button>
+  ${tela.salvo?`<div class="ok">✅ Orçamento salvo!</div>`:''}
+  ${vf?`<div class="okbar" style="margin-top:0">✅ Virou a ordem de serviço Nº ${esc(pad6(vf.num))}</div><button class="B white" data-act="ver" data-id="${vf.id}">📄 ABRIR A ORDEM Nº ${esc(pad6(vf.num))}</button>`
+     :`<button class="B" data-act="virarOS" style="margin-top:0;min-height:80px;font-size:21px">📝 CLIENTE APROVOU: VIRAR ORDEM DE SERVIÇO</button>`}
+  <button class="B blue" data-act="imprimirOrc">🖨️ IMPRIMIR ORÇAMENTO</button>
+  ${c.tel?`<a class="B wa" href="${waLink(o)}" target="_blank" rel="noopener">📲 MANDAR NO WHATSAPP</a>`:''}
+  <button class="B white" data-act="editarOrc" data-id="${o.id}">✏️ COMPLETAR / CORRIGIR</button>
+  <div class="paperBox" id="pbox" style="margin-top:14px"><div class="paperScale" id="pscale">${paperHTML(o)}</div></div>
+  <button class="B" data-act="orcNovo">💰 FAZER OUTRO ORÇAMENTO</button>
+  <button class="lnk" style="color:var(--red)" data-act="apagarOrc">Apagar este orçamento</button>`;
+}
+function cardOrc(o){const vf=o.virouOS&&fichaById(o.virouOS);return `<div class="card" data-act="verOrc" data-id="${o.id}"><div class="fic"><span class="n" style="color:#8a6a00">💰 Orçamento</span><span class="s" style="margin:0">${dt(o.data)}</span></div>
+    <div class="placas">${(o.veiculos||[]).map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')} <b style="font-size:16px;margin-left:4px">${esc(o.cliente)}</b></div>
+    <div class="s" style="color:#222;margin-top:6px">${esc(linhas(o.servico)[0]||'')}${totalFicha(o)?` · <b>R$ ${brl(totalFicha(o))}</b>`:''}${vf?` · ✅ virou OS Nº ${esc(pad6(vf.num))}`:''}</div></div>`;}
+
 /* ====== currículo do caminhão ====== */
 function vCurriculo(){
   const p=tela.placa,{c,v}=caminhaoInfo(p),l=fichasDoCaminhao(p);
@@ -690,7 +743,7 @@ function curriculoPrintHTML(p){
 
 /* ====== folha A4 ====== */
 function paperHTML(f){
-  const C=db.config,d=new Date(f.data),vsF=f.veiculos||[];
+  const C=db.config,d=new Date(f.data),vsF=f.veiculos||[],orc=f.tipo==='orc';
   const L=(k,n)=>{const a=itensDe(f,k);while(a.length<n)a.push({d:'',v:''});return a.map(x=>`<div class="pl"><span class="pd">${esc(x.d)||'&nbsp;'}</span><span class="pv">${money(x.v)?'R$ '+brl(money(x.v)):''}</span></div>`).join('');};
   const tS=somaItens(itensDe(f,'servico')),tP=somaItens(itensDe(f,'pecas'));
   const logo=logoSrc(C)?`<img src="${logoSrc(C)}" alt="">`:`<div class="defmark">${truckSvg}<div class="t"><span>${esc(nomeCurto(C.nome)||'OFICINA')}</span></div>${C.slogan?`<small>${esc(C.slogan)}</small>`:''}</div>`;
@@ -699,12 +752,12 @@ function paperHTML(f){
   const extra=Math.max(0,vsF.length-1);
   return `<div class="paper"><div class="ph"><div class="plogo">${logo}</div>
     <div class="pinfo"><b>${esc(C.nome)}</b><span>${esc(C.end1)}</span><span>${esc(C.end2)}</span><span>${esc(C.end3)}</span>${C.cnpj?`<span>CNPJ ${esc(C.cnpj)}</span>`:''}${C.ie?`<span>IE: ${esc(C.ie)}</span>`:''}</div>
-    <div class="pnum"><span style="font-weight:700;font-size:14px">${C.fone?'Fone: '+esc(C.fone):''}</span><span>Pré Ordem de Serviço</span><div class="nn">Nº <b>${esc(pad6(f.num))}</b></div></div></div>
+    <div class="pnum"><span style="font-weight:700;font-size:14px">${C.fone?'Fone: '+esc(C.fone):''}</span>${orc?'<span style="font-size:19px;font-weight:800;letter-spacing:.06em">ORÇAMENTO</span>':`<span>Pré Ordem de Serviço</span><div class="nn">Nº <b>${esc(pad6(f.num))}</b></div>`}</div></div>
     <div class="prow"><label>Cliente:</label><span class="v grow">${esc(f.cliente)}</span><label>Data entrada:</label><span class="v w1">${dt(f.data)} ${hr(f.data)}</span></div>
     <div class="prow"><label>Nome do Motorista:</label><span class="v grow">${esc(f.motorista)}</span></div>
     ${vs}
     <div class="psec"><span>Descrição do Serviço</span><small>Valor</small></div>${L('servico',f.linhasServico||NL)}${tS?`<div class="ptot">Total serviço: R$ ${brl(tS)}</div>`:''}
-    <div class="psec"><span>Descrição Peças</span><small>Valor</small></div>${L('pecas',f.linhasPecas||NL)}${tP?`<div class="ptot">Total peças: R$ ${brl(tP)}</div>`:''}${tS+tP?`<div class="ptot g">TOTAL DA ORDEM: R$ ${brl(tS+tP)}</div>`:''}
+    <div class="psec"><span>Descrição Peças</span><small>Valor</small></div>${L('pecas',f.linhasPecas||NL)}${tP?`<div class="ptot">Total peças: R$ ${brl(tP)}</div>`:''}${tS+tP?`<div class="ptot g">${orc?'TOTAL DO ORÇAMENTO':'TOTAL DA ORDEM'}: R$ ${brl(tS+tP)}</div>`:''}
     <div class="pfoot"><div class="pdate">${esc(C.cidade)} <u>${d.getDate()}</u> de <u style="min-width:110px">${MESES[d.getMonth()]}</u> de <u>${d.getFullYear()}</u></div>
       <div class="psig">${f.assinatura?`<img src="${f.assinatura}" alt="">`:''}<div class="sl"></div><span>Assinatura do Motorista</span></div></div></div>`;
 }
@@ -722,11 +775,12 @@ window.addEventListener('resize',fitPaper);
 function waNum(t){let d=soNum(t);if(d&&!d.startsWith('55'))d='55'+d;return d;}
 function waLink(f){
   const c=cliById(f.cid)||{},vs=f.veiculos||[];
-  let t=`*${db.config.nome}*\nPré Ordem de Serviço Nº ${pad6(f.num)}\nCliente: ${f.cliente}\nEntrada: ${dt(f.data)} ${hr(f.data)}\nMotorista: ${f.motorista||'-'}\n\n*Veículo${vs.length>1?'s':''}:*\n`+vs.map(v=>`• ${v.placa} ${v.modelo||''}`).join('\n');
+  const orc=f.tipo==='orc';
+  let t=`*${db.config.nome}*\n${orc?'*ORÇAMENTO*':`Pré Ordem de Serviço Nº ${pad6(f.num)}`}\nCliente: ${f.cliente}\nEntrada: ${dt(f.data)} ${hr(f.data)}\nMotorista: ${f.motorista||'-'}\n\n*Veículo${vs.length>1?'s':''}:*\n`+vs.map(v=>`• ${v.placa} ${v.modelo||''}`).join('\n');
   const it=k=>itensDe(f,k).filter(x=>x.d||x.v).map(x=>'• '+x.d+(money(x.v)?' — R$ '+brl(money(x.v)):'')).join('\n');
   if(f.servico||somaItens(itensDe(f,'servico')))t+=`\n\n*Serviço:*\n`+it('servico');
   if(f.pecas||somaItens(itensDe(f,'pecas')))t+=`\n\n*Peças:*\n`+it('pecas');
-  if(totalFicha(f))t+=`\n\n*Total da ordem: R$ ${brl(totalFicha(f))}*`;
+  if(totalFicha(f))t+=`\n\n*Total ${orc?'do orçamento':'da ordem'}: R$ ${brl(totalFicha(f))}*`;
   return `https://wa.me/${waNum(c.tel)}?text=${encodeURIComponent(t)}`;
 }
 
@@ -744,32 +798,44 @@ function initPad(){
 function padData(){const c=$('#pad');if(!c||!padDirty)return null;const w=520,o=document.createElement('canvas');o.width=w;o.height=Math.round(w*c.height/c.width);o.getContext('2d').drawImage(c,0,0,o.width,o.height);return o.toDataURL('image/png');}
 
 /* ====== render ====== */
-const TELAS_OFICINA=['nova','salvas','cliente','ver','curriculo'];
+const TELAS_OFICINA=['nova','orc','salvas','cliente','ver','verOrc','curriculo'];
 function pintaTopo(){
   const naOficina=TELAS_OFICINA.includes(tela.v);
   $('.top').style.display=naOficina?'':'none';
   const mb=$('#mbar');
   if(naOficina&&MODO==='master'){mb.innerHTML=`<span>👁 Vendo: <b>${esc(nomeCurto(db.config.nome))}</b></span><button data-act="voltarPainel">‹ Painel</button>`;mb.style.display='flex';}
   else mb.style.display='none';
+  const emOrc=['orc','verOrc'].includes(tela.v);
   $('#tNova').classList.toggle('on',tela.v==='nova');
-  $('#tSalvas').classList.toggle('on',tela.v!=='nova');
+  $('#tOrc').classList.toggle('on',emOrc);
+  $('#tSalvas').classList.toggle('on',tela.v!=='nova'&&!emOrc);
 }
 function render(){
-  const V={curriculo:vCurriculo,carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,nova:vNova,salvas:vSalvas,cliente:vCliente,ver:vVer};
+  const V={curriculo:vCurriculo,carregando:vCarregando,login:vLogin,semCadastro:vSemCadastro,bloqueado:vBloqueado,erro:vErro,master:vMaster,nova:vNova,orc:vNova,salvas:vSalvas,cliente:vCliente,ver:vVer,verOrc:vVerOrc};
   $('#app').innerHTML=(V[tela.v]||vCarregando)();
   pintaTopo();window.scrollTo(0,0);
-  if(tela.v==='nova')initPad();
-  if(tela.v==='ver')requestAnimationFrame(fitPaper);
+  if(tela.v==='nova'||tela.v==='orc')initPad();
+  if(tela.v==='ver'||tela.v==='verOrc')requestAnimationFrame(fitPaper);
 }
 
 /* ====== salvar ficha ====== */
 function salvar(){
   lerForm();
   const er=m=>{$('#erro').innerHTML=`<div class="err">${m}</div>`;$('#erro').scrollIntoView({behavior:'smooth',block:'center'});};
-  const num=String(F.num||'').trim();
-  if(!num){er('Digite o <b>número da ordem de serviço</b> (Nº), lá em cima, no canto direito da folha.');setTimeout(()=>$('#iNum').focus(),400);return;}
-  const rep=db.fichas.find(x=>String(pad6(x.num)).trim()===num&&x.id!==edit);
-  if(rep)return er(`Já existe uma ficha com o Nº <b>${esc(num)}</b> (cliente ${esc(rep.cliente)}). Confira o número.`);
+  const orc=F.tipo==='orc';
+  const num=orc?'':String(F.num||'').trim(),n=numInt(num);
+  if(!orc){
+    const foco=()=>setTimeout(()=>{const i=$('#iNum');if(i){i.focus();i.select();}},400);
+    if(!num){er('Digite o <b>número da ordem de serviço</b> (Nº), lá em cima, no canto direito da folha.');foco();return;}
+    if(!n||/[^\d\s.\-\/]/.test(num)){er('O número da ordem de serviço deve ter só números.');foco();return;}
+    const antes=edit?numInt((fichaById(edit)||{}).num):0;
+    if(!edit||n!==antes){
+      const u=ultimaOS(),prox=proxOS();
+      const rep=db.fichas.find(x=>numInt(x.num)===n&&x.id!==edit);
+      if(rep||(u.n&&n<=u.n&&!edit)){er(`A ordem Nº <b>${esc(num)}</b> já foi aberta${rep?` (cliente ${esc(rep.cliente)})`:''}. Número usado não se repete.${prox?` A próxima é a Nº <b>${prox}</b>.`:''}`);foco();return;}
+      if(u.n&&n>u.n+1){er(`Não dá para pular número. A próxima ordem de serviço é a Nº <b>${prox}</b>.`);foco();return;}
+    }
+  }
   const nome=F.cliente.trim();
   if(!nome)return er('Escreva o nome do cliente.');
   const vs=F.veiculos.map(v=>({placa:normPlaca(v.placa),modelo:String(v.modelo||'').trim(),chassi:String(v.chassi||'').trim().toUpperCase(),km:int(v.km)})).filter(v=>v.placa||v.modelo||v.chassi);
@@ -792,11 +858,22 @@ function salvar(){
     servico:iS.map(x=>x.d).filter(Boolean).join('\n'),pecas:iP.map(x=>x.d).filter(Boolean).join('\n'),
     servicoItens:iS,pecasItens:iP,linhasServico:F.itens.servico.length,linhasPecas:F.itens.pecas.length,total:somaItens(iS)+somaItens(iP),
     assinatura:F.assinatura||null};
+  if(orc){
+    delete dados.num;let o;
+    if(edit){o=orcById(edit);Object.assign(o,dados);}
+    else{o={id:uid('o'),tipo:'orc',data:F.data,...dados};db.orcamentos.push(o);}
+    gravaOrc(o);novoForm('orc');tela={v:'verOrc',id:o.id,salvo:true};render();
+    if(attPendente)setTimeout(talvezAtualizar,2500);
+    return;
+  }
   let f;
   if(edit){f=fichaById(edit);Object.assign(f,dados);}
-  else{f={id:uid('f'),data:F.data,status:'aberta',fechamento:null,...dados};db.fichas.push(f);}
+  else{f={id:uid('f'),data:F.data,status:'aberta',fechamento:null,...dados};if(F.deOrc)f.deOrc=F.deOrc;db.fichas.push(f);}
   gravaFicha(f);
-  novoForm();tela={v:'ver',id:f.id,salvo:true};render();
+  const u=numInt(db.config.ultimaOS);
+  if(n>u){db.config.ultimaOS=n;db.config.ultimaOSTxt=num;updateDoc(doc(fs,'os_oficinas',OF),{ultimaOS:n,ultimaOSTxt:num}).catch(falhou);}
+  if(F.deOrc){const o=orcById(F.deOrc);if(o){o.virouOS=f.id;o.numOS=num;gravaOrc(o);}}
+  novoForm('os');tela={v:'ver',id:f.id,salvo:true};render();
   if(attPendente)setTimeout(talvezAtualizar,2500);
 }
 
@@ -815,8 +892,16 @@ document.addEventListener('click',e=>{
     stOficina:()=>{const s=d.s,up={status:s};if(s==='teste')up.fimTeste=Timestamp.fromDate(new Date(Date.now()+DIAS_TESTE*864e5));
       updateDoc(doc(fs,'os_oficinas',d.id),up).then(()=>toast(s==='ativo'?'✅ Liberado':s==='bloqueado'?'⛔ Bloqueado':'⏳ Teste de '+DIAS_TESTE+' dias')).catch(falhou);},
     senhaOficina:()=>{if(!d.email)return;sendPasswordResetEmail(auth,d.email).then(()=>toast('Mandamos o e-mail de trocar senha para a oficina')).catch(falhou);},
-    nova:()=>{if(tela.v!=='nova'){tela={v:'nova'};render();}},
-    salvas:()=>{if(tela.v==='nova')lerForm();tela={v:'salvas'};render();},
+    nova:()=>{if(tela.v!=='nova'){trocaForm('os');tela={v:'nova'};render();}},
+    orc:()=>{if(tela.v!=='orc'){trocaForm('orc');tela={v:'orc'};render();}},
+    orcNovo:()=>{novoForm('orc');tela={v:'orc'};render();},
+    salvas:()=>{if(['nova','orc'].includes(tela.v))lerForm();tela={v:'salvas'};render();},
+    verOrc:()=>{tela={v:'verOrc',id:d.id,volta:['cliente','salvas'].includes(tela.v)?tela:null};render();},
+    imprimirOrc:()=>imprimirA4(paperHTML(orcById(tela.id))),
+    editarOrc:()=>{const o=orcById(d.id);F=formDe(o,'orc');edit=o.id;tela={v:'orc'};render();},
+    virarOS:()=>{const o=orcById(tela.id);F=formDe(o,'os');F.data=hoje();F.deOrc=o.id;edit=null;tela={v:'nova'};render();toast('Digite o número da ordem de serviço');setTimeout(()=>{const i=$('#iNum');if(i)i.focus();},300);},
+    apagarOrc:()=>modal(`<h3>Apagar este orçamento?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOrcOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
+    apagarOrcOk:()=>{const o=orcById(tela.id);db.orcamentos=db.orcamentos.filter(x=>x.id!==o.id);apagaOrc(o.id);closeModal();tela={v:'salvas'};render();toast('Orçamento apagado');},
     cliente:()=>{CAD=cadDoCliente(cliById(d.id));tela={v:'cliente',id:d.id};render();},
     voltaCli:()=>{const c=cliById(d.id);if(!c){tela={v:'salvas'};render();return;}CAD=cadDoCliente(c);tela={v:'cliente',id:d.id};render();},
     novoCli:()=>{CAD=cadDoCliente(null);tela={v:'cliente',id:null};render();setTimeout(()=>$('#cNome').focus(),80);},
@@ -824,8 +909,8 @@ document.addEventListener('click',e=>{
     cadTiraVei:()=>{lerCad();CAD.veiculos.splice(+d.i,1);$('#cVeis').innerHTML=cadVeisHTML();$('#cQt').textContent=`🚚 Caminhões deste cliente (${CAD.veiculos.length})`;},
     cadSalvar:()=>cadSalvar(false),
     ver:()=>{tela={v:'ver',id:d.id,volta:['cliente','curriculo','salvas'].includes(tela.v)?tela:null};render();},
-    curriculo:()=>{if(tela.v==='nova')lerForm();if(tela.v==='cliente')lerCad();tela={v:'curriculo',placa:d.p,volta:tela};render();},
-    voltar:()=>{const vt=tela.volta;if(vt){tela=vt;render();return;}const f=fichaById(tela.id),c=f&&cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:c.id};}else tela={v:'salvas'};render();},
+    curriculo:()=>{if(['nova','orc'].includes(tela.v))lerForm();if(tela.v==='cliente')lerCad();tela={v:'curriculo',placa:d.p,volta:tela};render();},
+    voltar:()=>{const vt=tela.volta;if(vt){tela=vt;render();return;}if(tela.v==='verOrc'){tela={v:'salvas'};render();return;}const f=fichaById(tela.id),c=f&&cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:c.id};}else tela={v:'salvas'};render();},
     finalizar:()=>{const f=fichaById(tela.id),pl=((f.veiculos||[])[0]||{}).placa||'';modal(`<h3>Finalizar a OS Nº ${esc(pad6(f.num))}?</h3><p style="color:var(--mut);margin-bottom:6px;font-size:16px">${f.pecas?'':'⚠️ As peças ainda estão em branco. '}Depois de finalizar, ela entra no currículo do caminhão <b>${esc(pl)}</b>.</p><button class="B" data-act="finalizarOk">✅ SIM, FINALIZAR</button>${f.pecas?'':`<button class="B white" data-act="editar" data-id="${f.id}">✏️ PREENCHER AS PEÇAS ANTES</button>`}<button class="lnk" data-act="fechar">Voltar</button>`);},
     finalizarOk:()=>{const f=fichaById(tela.id);f.status='finalizada';f.fechamento=hoje();gravaFicha(f);closeModal();tela.salvo=false;render();toast('✅ OS finalizada — já está no currículo do caminhão');},
     reabrirC:()=>{const f=fichaById(d.id);f.status='aberta';f.fechamento=null;gravaFicha(f);const y=scrollY;render();scrollTo(0,y);toast('🔓 Ordem reaberta');},
@@ -839,10 +924,10 @@ document.addEventListener('click',e=>{
     limparAss:()=>{const c=$('#pad');c.getContext('2d').clearRect(0,0,c.width,c.height);padDirty=false;$('#padHint').style.display='';},
     refazerAss:()=>{lerForm();F.assinatura=null;const y=window.scrollY;render();window.scrollTo(0,y);},
     salvar:()=>salvar(),
-    limparForm:()=>{novoForm();render();},
-    cancelarEd:()=>{const id=edit;novoForm();tela={v:'ver',id};render();},
-    fichaPara:()=>{if(tela.v==='cliente'&&!cadSalvar(true))return;const c=cliById(d.id)||cliById(CAD.id);novoForm();F.cliente=c.nome;if((c.veiculos||[]).length===1)F.veiculos=[{placa:c.veiculos[0].placa,modelo:c.veiculos[0].modelo||'',chassi:c.veiculos[0].chassi||'',km:''}];tela={v:'nova'};render();},
-    editar:()=>{closeModal();const f=fichaById(d.id);edit=f.id;F={num:pad6(f.num),cliente:f.cliente,motorista:f.motorista||'',data:f.data,veiculos:(f.veiculos||[]).slice(0,1).map(v=>({...v,km:v.km||''})),itens:{servico:(a=>{while(a.length<(f.linhasServico||NL))a.push({d:'',v:''});return a;})(itensDe(f,'servico')),pecas:(a=>{while(a.length<(f.linhasPecas||NL))a.push({d:'',v:''});return a;})(itensDe(f,'pecas'))},assinatura:f.assinatura||null};if(!F.veiculos.length)F.veiculos=[{placa:'',modelo:'',chassi:'',km:''}];tela={v:'nova'};render();},
+    limparForm:()=>{novoForm(F.tipo);render();},
+    cancelarEd:()=>{const id=edit,t=F.tipo;novoForm(t);tela=t==='orc'?{v:'verOrc',id}:{v:'ver',id};render();},
+    fichaPara:()=>{if(tela.v==='cliente'&&!cadSalvar(true))return;const c=cliById(d.id)||cliById(CAD.id);novoForm(d.orc?'orc':'os');F.cliente=c.nome;if((c.veiculos||[]).length===1)F.veiculos=[{placa:c.veiculos[0].placa,modelo:c.veiculos[0].modelo||'',chassi:c.veiculos[0].chassi||'',km:''}];tela={v:d.orc?'orc':'nova'};render();},
+    editar:()=>{closeModal();const f=fichaById(d.id);edit=f.id;F=formDe(f,'os');tela={v:'nova'};render();},
     imprimir:()=>imprimirA4(paperHTML(fichaById(tela.id))),
     apagar:()=>modal(`<h3>Apagar esta ficha?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
     apagarOk:()=>{const f=fichaById(tela.id);db.fichas=db.fichas.filter(x=>x.id!==f.id);apagaFicha(f.id);closeModal();const c=cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:f.cid};}else tela={v:'salvas'};render();toast('Ficha apagada');},
@@ -858,7 +943,7 @@ document.addEventListener('click',e=>{
       ${MODO==='master'?'':'<button class="B white" data-act="sair">🚪 Sair desta conta</button>'}
       <button class="lnk" data-act="fechar">Fechar</button>`);},
     tiraLogo:()=>{db.config.logo=null;gravaConfig();closeModal();render();},
-    exportar:()=>{const u=URL.createObjectURL(new Blob([JSON.stringify({oficina:db.config.nome,clientes:db.clientes,fichas:db.fichas})],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download='fichas-'+hoje().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Cópia baixada');}
+    exportar:()=>{const u=URL.createObjectURL(new Blob([JSON.stringify({oficina:db.config.nome,clientes:db.clientes,fichas:db.fichas,orcamentos:db.orcamentos})],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download='fichas-'+hoje().slice(0,10)+'.json';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);toast('Cópia baixada');}
   };
   if(A[a])A[a]();
 });
@@ -958,11 +1043,11 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v15';
+const APP_VERSAO='v16';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
-  if(!['nova','cliente'].includes(tela.v))return false;
+  if(!['nova','orc','cliente'].includes(tela.v))return false;
   return [...document.querySelectorAll('#app input:not([readonly]),#app textarea')].some(i=>i.type!=='file'&&String(i.value||'').trim()!=='');
 }
 let versaoNova='';
