@@ -274,6 +274,11 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .demora{margin-top:22px;max-width:420px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:stretch}.demora .B{margin-top:0}.demora .dica2{font-size:15px;color:#555;line-height:1.4}.demora a.dica2{color:#0a7a3e;font-weight:700}
 .faixa{display:block;background:#c0392b;color:#fff;border-radius:14px;padding:12px 14px;margin:2px 0 12px;cursor:pointer;box-shadow:0 2px 6px rgba(192,57,43,.35)}.faixa b{display:block;font-size:19px}.faixa span{display:block;font-size:15px;margin-top:4px;opacity:.95}.faixa em{display:block;font-style:normal;font-weight:800;margin-top:6px;text-decoration:underline}
 .top button.temal{background:#c0392b;color:#fff}
+.lgmarca{background:#fff;border:2px solid #eee;border-radius:18px;padding:10px 18px;margin:0 auto 12px;max-width:300px;display:flex;justify-content:center}.lgmarca img{width:100%;max-width:240px;height:auto;display:block}
+.lgsub{display:flex;align-items:center;justify-content:center;gap:10px;font-size:24px;font-weight:800;margin:4px 0 2px}.lgsub svg{width:34px;height:34px}
+.marcaOf{display:flex;align-items:center;gap:16px;background:#fff;border-left:6px solid #f6c418;border-radius:14px;padding:8px 16px;margin:0 0 12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.marcaOf img{height:58px;width:auto;display:block}.marcaOf .mcx svg{width:48px;height:48px}
+.marcaOf .mt2{display:flex;flex-direction:column;margin-left:auto;text-align:right}.marcaOf .mt2 b{color:#161616;font-size:19px}.marcaOf .mt2 span{color:#777;font-size:14px;font-weight:700}
 </style>
 </head>
 <body>
@@ -404,8 +409,8 @@ function avisoAbrir(){if(_avisou||tela.v!=='estoque')return;const l=db.produtos.
 function vCarregando(){return `<div class="center"><div class="spin"></div><p>Abrindo…</p></div>`;}
 function vLogin(){
   return `<div class="sheet lgbox">
-    <div class="lglogo">${caixaSvg}</div>
-    <h1 class="lgt">Controle de Estoque</h1>
+    <div class="lgmarca"><img src="logo-mrtruck.svg" alt="MR Truck Service"></div><div class="lgsub">${caixaSvg}<span>Controle de Estoque</span></div>
+    <h1 class="lgt" style="display:none">Controle de Estoque</h1>
     <p class="lgs">Entre com o mesmo e-mail e senha das Fichas de Serviço</p>
     <form id="fLogin" autocomplete="on">
       <label class="lbl2">E-mail</label><input class="in2" id="lEmail" type="email" autocomplete="username" inputmode="email" autocapitalize="none">
@@ -447,11 +452,15 @@ function resumo(){
   const n=db.produtos.length,r=db.produtos.filter(precisaRepor).length;
   return `<div class="resumo"><div><b>${n}</b><span>peça${n===1?'':'s'} cadastrada${n===1?'':'s'}</span></div><div class="${r?'alerta':''}" data-act="soRepor"><b>${r}</b><span>no mínimo${soRepor?' · mostrando':''}</span></div></div>`;
 }
+const logoOf=()=>{const o=OFDOC||{};return o.logo||(/mr\s*truck/i.test(o.nome||'')||MODO!=='master'&&!o.nome?'logo-mrtruck.svg':'');};
+function marcaTopo(){const o=OFDOC||{},src=logoOf();
+  return `<div class="marcaOf">${src?`<img src="${src}" alt="${esc(nomeCurto(o.nome)||'Oficina')}">`:`<div class="mcx">${caixaSvg}</div>`}
+  <div class="mt2"><b>Controle de Estoque</b><span>${esc(nomeCurto(o.nome)||'')}</span></div></div>`;}
 function faixaAlerta(){const l=db.produtos.filter(precisaRepor);if(!l.length)return '';
   return `<div class="faixa" data-act="alertas"><b>⚠️ ${l.length===1?'1 peça chegou':l.length+' peças chegaram'} no estoque mínimo</b>
   <span>${l.slice(0,4).map(p=>`${esc(p.codigo)} · ${esc(p.nome)} (${qtxt(qtdDe(p.id))})`).join('<br>')}${l.length>4?'<br>…':''}</span><em>Ver o que precisa comprar ›</em></div>`;}
 function vEstoque(){
-  return `${faixaAlerta()}${resumo()}
+  return `${marcaTopo()}${faixaAlerta()}${resumo()}
   <input class="busca" id="busca" placeholder="🔍 Procurar por código ou nome" autocomplete="off" value="">
   ${soRepor?`<button class="lnk" data-act="soRepor" style="padding:4px 0 10px">Mostrar todos os produtos</button>`:''}
   <div id="lista">${listaProdutos('')}</div>
@@ -511,7 +520,7 @@ function movHTML(m,comNome){
 }
 function vAlertas(){
   const l=db.produtos.filter(precisaRepor).sort((a,b)=>String(a.codigo).localeCompare(String(b.codigo),undefined,{numeric:true}));
-  return `<div class="h2" style="margin-top:4px">⚠️ Peças no estoque mínimo</div>
+  return `${marcaTopo()}<div class="h2" style="margin-top:4px">⚠️ Peças no estoque mínimo</div>
   <p class="s" style="margin:0 0 10px">Quando uma peça chega no mínimo que você cadastrou, ela aparece aqui. Comprou? Toque em <b>＋</b> quando chegar.</p>
   ${l.map(p=>{const q=qtdDe(p.id),c=p.maximo>q?p.maximo-q:0;return `<div class="prod rep" data-act="abrirProd" data-id="${p.id}">
     <span class="pc">${esc(p.codigo)}</span>
@@ -684,7 +693,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='e4';
+const APP_VERSAO='e5';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
