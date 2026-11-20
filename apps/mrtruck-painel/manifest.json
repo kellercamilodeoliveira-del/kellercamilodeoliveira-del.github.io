@@ -1,0 +1,1 @@
+{"name":"MR Truck — Painel da Oficina","short_name":"Painel MR Truck","start_url":"./","scope":"./","display":"standalone","background_color":"#161616","theme_color":"#161616","icons":[{"src":"../mrtruck/icone-192.png","sizes":"192x192","type":"image/png"},{"src":"../mrtruck/icone-512.png","sizes":"512x512","type":"image/png"}]}

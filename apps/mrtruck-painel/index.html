@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#161616">
+<title>MR Truck — Painel</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="../mrtruck/icone-192.png">
+<link rel="apple-touch-icon" href="../mrtruck/icone-180.png">
+<style>
+:root{--fundo:#161616;--barra:#1f1f1f;--linha:#333;--amarelo:#f6c418;--txt:#f4f2ec;--apoio:#a9a6a0;--ok:#22b36b;--erro:#e5534b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--fundo);color:var(--txt);font-family:Arial,Helvetica,sans-serif;font-size:15px}
+body{display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+.topo{flex:none;height:56px;display:flex;align-items:center;gap:12px;padding:0 14px;background:#111;border-bottom:3px solid var(--amarelo)}
+.marca{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.marca img{height:34px;width:auto}
+.marca b{font-size:17px}.marca small{display:block;font-size:12px;color:var(--apoio);font-weight:400}
+.status{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#262626;font-weight:700;font-size:13px;white-space:nowrap}
+.status.off{background:rgba(229,83,75,.18);color:#ffb3ae}
+.ponto{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(34,179,107,.2)}
+.status.off .ponto{background:var(--erro);box-shadow:0 0 0 3px rgba(229,83,75,.25);animation:pisca 1.2s infinite}
+@keyframes pisca{50%{opacity:.35}}
+.relogio{margin-left:auto;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.relogio b{font-size:22px;letter-spacing:.5px}.relogio small{display:block;font-size:12px;color:var(--apoio)}
+.acoes{display:flex;gap:6px}
+.btn{height:38px;padding:0 13px;border-radius:10px;background:#2a2a2a;border:1px solid var(--linha);display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px;white-space:nowrap}
+.btn:hover{border-color:#666}
+.btn.amarelo{background:var(--amarelo);border-color:var(--amarelo);color:#161616}
+
+.area{flex:1;min-height:0;display:flex;padding:8px;gap:0}
+.area.vertical{flex-direction:column}
+.tela{display:flex;flex-direction:column;min-width:0;min-height:0;border-radius:12px;overflow:hidden;background:#222;border:1px solid var(--linha);transition:flex-basis .25s}
+.cab{flex:none;height:40px;display:flex;align-items:center;gap:8px;padding:0 6px 0 12px;background:var(--barra);border-bottom:1px solid var(--linha)}
+.cab .ico{font-size:18px}
+.cab .nome{font-weight:800;font-size:14px;white-space:nowrap}
+.cab .vivo{font-size:12px;color:var(--ok);font-weight:700;white-space:nowrap}
+.cab .vivo::before{content:"● "}
+.cab .mini{margin-left:auto;display:flex;gap:2px}
+.mb{height:30px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:700;color:var(--apoio);white-space:nowrap}
+.mb:hover{background:#333;color:var(--txt)}
+.corpo{position:relative;flex:1;min-height:0;background:#e7e3dc}
+.corpo iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#e7e3dc}
+.carregando{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#666;font-weight:700;pointer-events:none;transition:opacity .3s}
+.carregando.some{opacity:0}
+
+.divisor{flex:none;width:10px;cursor:col-resize;display:flex;align-items:center;justify-content:center}
+.area.vertical .divisor{width:auto;height:10px;cursor:row-resize}
+.divisor::after{content:"";width:4px;height:44px;border-radius:4px;background:#444}
+.area.vertical .divisor::after{width:44px;height:4px}
+.divisor:hover::after,.divisor.arrastando::after{background:var(--amarelo)}
+body.arrastando iframe{pointer-events:none}
+body.arrastando{user-select:none}
+
+.tela.grande .cab{border-bottom-color:var(--amarelo)}
+@media (max-width:900px){.marca small,.relogio small,.btn .t{display:none}}
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="marca"><img src="../mrtruck/logo-mrtruck.svg" alt="MR Truck"><div><b>Painel da Oficina</b><small>Fichas e Estoque ao vivo</small></div></div>
+  <div class="status" id="status"><span class="ponto"></span><span id="statusTxt">Ao vivo</span></div>
+  <div class="relogio"><b id="hora">--:--</b><small id="data"></small></div>
+  <div class="acoes">
+    <button class="btn" id="bTrocar" title="Trocar os lados">⇆ <span class="t">Trocar lados</span></button>
+    <button class="btn" id="bLayout" title="Lado a lado ou um em cima do outro">▥ <span class="t" id="layoutTxt">Um em cima</span></button>
+    <button class="btn" id="bMeio" title="Voltar as duas telas do mesmo tamanho">◫ <span class="t">Meio a meio</span></button>
+    <button class="btn amarelo" id="bCheia" title="Tela cheia">⛶ <span class="t">Tela cheia</span></button>
+    <button class="btn" id="bInstalar" style="display:none">💻 <span class="t">Instalar</span></button>
+  </div>
+</header>
+
+<main class="area" id="area">
+  <section class="tela" id="tA"></section>
+  <div class="divisor" id="divisor" title="Arraste para aumentar uma das telas"></div>
+  <section class="tela" id="tB"></section>
+</main>
+
+<script>
+/* Painel da MR Truck: as duas telas abertas juntas. Os dois sistemas já se atualizam sozinhos
+   (o que é salvo num aparelho aparece aqui na hora). Entrou numa tela, a outra entra junto (mesmo login). */
+const SIS={
+  fichas:{ico:'📝',nome:'Fichas de Serviço',url:'../mrtruck/'},
+  estoque:{ico:'📦',nome:'Controle de Estoque',url:'../mrtruck-estoque/'}
+};
+const guarda={get(k,d){try{const v=localStorage.getItem('painelMR_'+k);return v===null?d:JSON.parse(v);}catch(_){return d;}},
+              set(k,v){try{localStorage.setItem('painelMR_'+k,JSON.stringify(v));}catch(_){}}};
+let ordem=guarda.get('ordem',['fichas','estoque']);
+let vertical=guarda.get('vertical',false);
+let parte=guarda.get('parte',55); // % da primeira tela
+const area=document.getElementById('area'),tA=document.getElementById('tA'),tB=document.getElementById('tB'),div=document.getElementById('divisor');
+
+function montaTela(el,id){
+  const s=SIS[id];el.dataset.id=id;
+  el.innerHTML=`<div class="cab"><span class="ico">${s.ico}</span><span class="nome">${s.nome}</span><span class="vivo">ao vivo</span>
+    <div class="mini"><button class="mb" data-a="recarregar">↻ Recarregar</button><button class="mb" data-a="ampliar">⤢ Ampliar</button><button class="mb" data-a="aba" title="Abrir em outra aba">↗</button></div></div>
+    <div class="corpo"><div class="carregando">Abrindo ${s.nome}…</div><iframe src="${s.url}" title="${s.nome}" allow="clipboard-write; fullscreen"></iframe></div>`;
+  const fr=el.querySelector('iframe'),ld=el.querySelector('.carregando');
+  fr.addEventListener('load',()=>ld.classList.add('some'));
+}
+function aplicaTamanho(){
+  area.classList.toggle('vertical',vertical);
+  document.getElementById('layoutTxt').textContent=vertical?'Lado a lado':'Um em cima';
+  tA.style.flex=`0 0 calc(${parte}% - 5px)`;tB.style.flex=`1 1 0`;
+  tA.classList.toggle('grande',parte>=70);tB.classList.toggle('grande',parte<=30);
+  tA.querySelector('[data-a=ampliar]').textContent=parte>=70?'⤡ Diminuir':'⤢ Ampliar';
+  tB.querySelector('[data-a=ampliar]').textContent=parte<=30?'⤡ Diminuir':'⤢ Ampliar';
+}
+function monta(){montaTela(tA,ordem[0]);montaTela(tB,ordem[1]);aplicaTamanho();}
+monta();
+
+/* botões das telas */
+area.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const tela=b.closest('.tela'),id=tela.dataset.id,a=b.dataset.a;
+  if(a==='recarregar'){const fr=tela.querySelector('iframe');tela.querySelector('.carregando').classList.remove('some');fr.src=SIS[id].url+'?t='+Date.now();}
+  if(a==='aba')window.open(SIS[id].url,'_blank');
+  if(a==='ampliar'){const ehA=tela===tA;
+    if(ehA)parte=parte>=70?50:78;else parte=parte<=30?50:22;
+    guarda.set('parte',parte);aplicaTamanho();}
+});
+/* topo */
+document.getElementById('bTrocar').onclick=()=>{ordem=[ordem[1],ordem[0]];parte=100-parte;guarda.set('ordem',ordem);guarda.set('parte',parte);monta();};
+document.getElementById('bLayout').onclick=()=>{vertical=!vertical;guarda.set('vertical',vertical);aplicaTamanho();};
+document.getElementById('bMeio').onclick=()=>{parte=50;guarda.set('parte',parte);aplicaTamanho();};
+document.getElementById('bCheia').onclick=()=>{
+  if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen?.().catch(()=>{});};
+document.addEventListener('fullscreenchange',()=>{document.querySelector('#bCheia .t').textContent=document.fullscreenElement?'Sair da tela cheia':'Tela cheia';});
+
+/* arrastar o divisor */
+let arrastando=false;
+div.addEventListener('pointerdown',e=>{arrastando=true;div.setPointerCapture(e.pointerId);div.classList.add('arrastando');document.body.classList.add('arrastando');});
+div.addEventListener('pointermove',e=>{if(!arrastando)return;const r=area.getBoundingClientRect();
+  let p=vertical?(e.clientY-r.top)/r.height*100:(e.clientX-r.left)/r.width*100;parte=Math.round(Math.min(85,Math.max(15,p)));aplicaTamanho();});
+const solta=()=>{if(!arrastando)return;arrastando=false;div.classList.remove('arrastando');document.body.classList.remove('arrastando');guarda.set('parte',parte);};
+div.addEventListener('pointerup',solta);div.addEventListener('pointercancel',solta);
+div.addEventListener('dblclick',()=>{parte=50;guarda.set('parte',parte);aplicaTamanho();});
+
+/* relógio e internet */
+const hora=document.getElementById('hora'),data=document.getElementById('data');
+function relogio(){const d=new Date();hora.textContent=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const t=d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});data.textContent=t.charAt(0).toUpperCase()+t.slice(1);}
+relogio();setInterval(relogio,1000*15);
+function net(){const on=navigator.onLine,st=document.getElementById('status');st.classList.toggle('off',!on);
+  document.getElementById('statusTxt').textContent=on?'Ao vivo':'Sem internet — o que fizer agora é enviado quando voltar';
+  document.querySelectorAll('.vivo').forEach(v=>{v.style.visibility=on?'':'hidden';});}
+addEventListener('online',()=>{net();});addEventListener('offline',net);net();
+
+/* instalar o painel no computador (abre numa janela própria, sem barra do navegador) */
+let pedido=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();pedido=e;document.getElementById('bInstalar').style.display='';});
+document.getElementById('bInstalar').onclick=async()=>{if(!pedido)return;pedido.prompt();await pedido.userChoice;pedido=null;document.getElementById('bInstalar').style.display='none';};
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

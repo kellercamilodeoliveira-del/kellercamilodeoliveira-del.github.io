@@ -72,3 +72,6 @@ Regras para o agente Mecânico:
 - Nas Fichas, a peça com código (ex.: digitar `15` ou `2x15` + Enter) dá baixa no estoque quando a OS é finalizada; reabrir/apagar a OS devolve as peças.
 - Liberar/bloquear por oficina: campo `estoque` ('ativo' | 'bloqueado') no painel do administrador. Oficinas novas nascem com o estoque bloqueado; a MR Truck (sem o campo) está liberada.
 - Publicar: aumentar `e<N>` em `APP_VERSAO` (index.html), `VERSAO` (sw.js) e `version.json`.
+
+## Painel da Oficina (apps/mrtruck-painel)
+Abre as Fichas (../mrtruck/) e o Controle de Estoque (../mrtruck-estoque/) lado a lado no computador, ao vivo. Mesmo login nas duas telas. Divisor arrastável, ampliar, trocar lados, um em cima do outro, tela cheia; dá para instalar como app no Chrome.
