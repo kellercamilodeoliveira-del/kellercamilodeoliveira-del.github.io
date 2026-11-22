@@ -75,3 +75,16 @@ Regras para o agente Mecânico:
 
 ## Painel da Oficina (apps/mrtruck-painel)
 Abre as Fichas (../mrtruck/) e o Controle de Estoque (../mrtruck-estoque/) lado a lado no computador, ao vivo. Mesmo login nas duas telas. Divisor arrastável, ampliar, trocar lados, um em cima do outro, tela cheia; dá para instalar como app no Chrome.
+
+## MR Truck Service — pedidos de mudança pelo WhatsApp (modo "Keller aprova")
+- Cliente: MR Truck Service (São Manuel-SP), contato Fernando, WhatsApp (14) 99766-5980. Cadastrado no motor com `modo: "keller"`.
+- Neste cliente **quem aprova é o Keller**, não o cliente. O motor não fala nada com o Fernando. NUNCA use `mensagemCliente` nos pedidos dele (o motor recusa); use `mensagemKeller`.
+- Pastas:
+  - Fichas: teste `apps/mrtruck-teste/` → oficial `apps/mrtruck/`
+  - Estoque: teste `apps/mrtruck-estoque-teste/` → oficial `apps/mrtruck-estoque/`
+  - Painel (só moldura, abre os dois oficiais lado a lado): `apps/mrtruck-painel/`
+- Links de teste: https://kellercamilodeoliveira-del.github.io/apps/mrtruck-teste/ e https://kellercamilodeoliveira-del.github.io/apps/mrtruck-estoque-teste/
+- Fazer a mudança SÓ nas pastas de teste (as duas falam com o mesmo Firebase do oficial — não mudar coleções nem formato dos dados; a baixa no estoque é lida pelos dois apps).
+- Testes automáticos (obrigatório antes de mandar pro Keller): `bash tests/mrtruck/rodar.sh` na raiz do repositório. Tem que terminar com "TUDO OK". Se a mudança quebrar um teste porque mudou de propósito um texto/botão que o teste procura, ajuste o teste junto.
+- Publicar (só com o pedido "aprovado"): `bash scripts/publica-mrtruck.sh fichas|estoque|tudo`, conferir `git diff --stat`, rodar os testes com `FICHAS=mrtruck ESTOQUE=mrtruck-estoque bash tests/mrtruck/rodar.sh`, commit e push. Os aparelhos se atualizam sozinhos.
+- Regras de negócio já decididas: número da OS digitado à mão, nunca repete nem pula; Orçamento = OS sem número; Lembretes por caminhão (placa/chassi); Estoque só tem cadastro de peça, mínimo/máximo, entrada ("chegou peça") e alerta — a saída é só pela OS finalizada (nada de baixa manual). Público: pessoas com pouca prática de celular/computador — botões grandes e texto simples.
