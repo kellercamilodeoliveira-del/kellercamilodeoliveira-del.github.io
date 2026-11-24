@@ -248,6 +248,10 @@ textarea.ruled:focus{background-color:#f5f8ff}
   .paper.imp{page-break-after:avoid;break-after:avoid}
 }
 .demora{margin-top:22px;max-width:420px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:stretch}.demora .B{margin-top:0}.demora .dica2{font-size:15px;color:#555;line-height:1.4}.demora a.dica2{color:#0a7a3e;font-weight:700}
+.sug{margin-top:10px;background:#eef5ff;border:1.5px solid #b9d3f5;border-radius:10px;padding:10px 12px}.sug p{font-size:14.5px;font-weight:700;color:#0d3b78;margin-bottom:8px}
+.sugi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1.5px solid #cfe0f7;border-radius:10px;padding:9px 10px;margin-top:6px;cursor:pointer;font:inherit;color:#161616}
+.sugi:hover{border-color:#0d3b78}.sugi .st{display:flex;flex-direction:column;min-width:0}.sugi .st b{font-size:16px}.sugi .st small{font-size:13.5px;color:#555}
+.conhecidos .chist{color:#5a4300;font-weight:400;font-size:15px}.conhecidos .chist button{margin-left:6px;background:#161616;color:#f6c418;border:none;border-radius:10px;padding:7px 12px;font-weight:800;font-size:14px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -595,19 +599,49 @@ function veisHTML(){
     <div class="fx wch"><label>Chassi:</label><input data-k="chassi" data-i="${i}" value="${esc(v.chassi)}" autocomplete="off"></div>
     <div class="fx wkm"><label>Km:</label><input data-k="km" data-i="${i}" value="${esc(v.km)}" inputmode="numeric" autocomplete="off"></div>
     <div class="fx wpl"><label>Placa Veículo:</label><input class="pl" data-k="placa" data-i="${i}" value="${esc(v.placa)}" maxlength="8" autocomplete="off" autocapitalize="characters"></div></div>
+    <div class="sugbox"></div>
     <div class="histbox">${histHint(normPlaca(v.placa))}</div>
   </div>`).join('');
 }
 function histHint(p){
   if(p.length!==7)return'';const l=fichasDoCaminhao(p).filter(f=>f.id!==edit),nl=lembDe(p).length;if(!l.length&&!nl)return'';
   const u=l[0];
-  return `<div class="hist">${u?`🕘 Este caminhão já passou aqui <b>${l.length} vez${l.length>1?'es':''}</b>. Última entrada: <b>${dt(u.data)}</b> — ${esc(linhas(u.servico)[0]||'')}<br>`:''}${u?`<button type="button" data-act="curriculo" data-p="${p}">📋 Ver currículo do caminhão</button> `:''}${nl?`<button type="button" data-act="lembCam" data-p="${p}">📌 Lembretes (${nl})</button>`:''}</div>`;
+  const uv=u?(u.veiculos||[]).find(x=>x.placa===p)||{}:{};
+  return `<div class="hist">${u?`🕘 Este caminhão já passou aqui <b>${l.length} vez${l.length>1?'es':''}</b>. Última entrada: <b>${dt(u.data)}</b> — ${esc(linhas(u.servico)[0]||'')}${uv.km?` · último km <b>${esc(uv.km)}</b>`:''}${u.motorista?` · motorista ${esc(u.motorista)}`:''}<br>`:''}${u?`<button type="button" data-act="curriculo" data-p="${p}">📋 Ver currículo do caminhão</button> `:''}${nl?`<button type="button" data-act="lembCam" data-p="${p}">📌 Lembretes (${nl})</button>`:''}</div>`;
 }
 function conhecidosHTML(){
-  const c=cliByNome(F.cliente);if(!c||!(c.veiculos||[]).length)return'';
+  const c=cliByNome(F.cliente);if(!c)return'';
+  const fs=db.fichas.filter(x=>x.cid===c.id&&x.id!==edit).sort((a,b)=>String(b.data).localeCompare(String(a.data))),u=fs[0];
+  if(!(c.veiculos||[]).length&&!u)return'';
   const usadas=F.veiculos.map(v=>normPlaca(v.placa));
-  return `<div class="conhecidos"><p>Caminhões deste cliente — toque no que chegou:</p><div class="chips">
-    ${c.veiculos.map(v=>`<button class="cp ${usadas.includes(v.placa)?'usado':''}" data-act="usaVei" data-p="${v.placa}">${esc(v.placa)}<small>${esc(v.modelo||'')}</small></button>`).join('')}</div></div>`;
+  return `<div class="conhecidos">${u?`<p class="chist">🕘 Cliente já cadastrado: <b>${fs.length} ficha${fs.length>1?'s':''}</b>. Última: <b>${dt(u.data)}</b> — ${esc(linhas(u.servico)[0]||'')} <button type="button" data-act="cliente" data-id="${c.id}">📋 Ver histórico do cliente</button></p>`:''}
+    ${(c.veiculos||[]).length?`<p>Caminhões deste cliente — toque no que chegou:</p><div class="chips">
+    ${c.veiculos.map(v=>`<button class="cp ${usadas.includes(v.placa)?'usado':''}" data-act="usaVei" data-p="${v.placa}">${esc(v.placa)}<small>${esc(v.modelo||'')}</small></button>`).join('')}</div>`:''}</div>`;
+}
+/* Busca de caminhão já cadastrado por placa, chassi ou modelo (clientes, lembretes e fichas antigas) */
+function todosCaminhoes(){
+  const m=new Map();caminhoesTodos().forEach(x=>m.set(x.placa,x));
+  db.fichas.forEach(f=>(f.veiculos||[]).forEach(v=>{const p=normPlaca(v.placa);if(p&&!m.has(p))m.set(p,{placa:p,modelo:v.modelo||'',chassi:v.chassi||'',cliente:f.cliente||''});else if(p){const x=m.get(p);if(!x.modelo&&v.modelo)x.modelo=v.modelo;if(!x.chassi&&v.chassi)x.chassi=v.chassi;if(!x.cliente&&f.cliente)x.cliente=f.cliente;}}));
+  return [...m.values()];
+}
+function sugCaminhoes(i,campo,val){
+  const q=campo==='modelo'?nomeKey(val):normPlaca(val);if(q.length<2)return '';
+  let l=todosCaminhoes().filter(x=>campo==='placa'?x.placa.includes(q):campo==='chassi'?normPlaca(x.chassi).includes(q):nomeKey(x.modelo).includes(q));
+  if(l.length===1&&(campo==='placa'?l[0].placa===q:campo==='chassi'?normPlaca(l[0].chassi)===q:false))return ''; // já achou: preenche sozinho
+  const v=F.veiculos[i]||{};if(l.length===1&&normPlaca(v.placa)===l[0].placa)return '';
+  if(!l.length)return '';
+  const tot=l.length;l=l.sort((a,b)=>fichasDoCaminhao(b.placa).length-fichasDoCaminhao(a.placa).length).slice(0,6);
+  return `<div class="sug"><p>🔎 Já cadastrado${tot>6?` (${tot}, mostrando 6)`:''} — toque no caminhão para puxar os dados e o histórico:</p>${l.map(x=>{const n=fichasDoCaminhao(x.placa).length;
+    return `<button type="button" class="sugi" data-act="usaCam" data-i="${i}" data-p="${esc(x.placa)}"><span class="placa">${esc(x.placa)}</span><span class="st"><b>${esc(x.modelo||'Caminhão')}</b><small>${esc(x.cliente||'')}${x.chassi?' · Chassi '+esc(x.chassi):''}${n?` · ${n} OS`:''}</small></span></button>`;}).join('')}</div>`;
+}
+function preencheCaminhao(i,x,trocar){
+  // trocar=true: a pessoa escolheu o caminhão (substitui placa/modelo/chassi); false: só completa o que está vazio
+  lerForm();const v=F.veiculos[i];if(!v)return;
+  if(trocar){v.placa=x.placa;v.modelo=x.modelo||'';v.chassi=x.chassi||'';}
+  else{if(!v.placa)v.placa=x.placa;if(!v.modelo)v.modelo=x.modelo||'';if(!v.chassi)v.chassi=x.chassi||'';}
+  if(x.cliente&&(!F.cliente.trim()||(trocar&&!cliByNome(F.cliente)))){F.cliente=x.cliente;$('#iCliente').value=x.cliente;}
+  const u=fichasDoCaminhao(x.placa)[0];if(u&&u.motorista&&!F.motorista.trim()){F.motorista=u.motorista;$('#iMotorista').value=u.motorista;}
+  redesenhaVeis();
 }
 function lerForm(){
   if(!$('#iCliente'))return;
@@ -702,7 +736,7 @@ function vSalvas(){
     <div class="s" style="color:#222;margin-top:6px">${esc(linhas(f.servico)[0]||'')}</div></div>`).join('')}
   <div class="h2">Clientes</div>`:''}
   <button class="B" data-act="novoCli" style="margin:0 0 14px">➕ CADASTRAR CLIENTE NOVO</button>
-  <input class="busca" id="busca" placeholder="🔍 Procurar cliente ou placa" autocomplete="off">
+  <input class="busca" id="busca" placeholder="🔍 Procurar cliente, placa, chassi ou modelo" autocomplete="off">
   <div id="lista">${listaClientes('')}</div>
   ${jaInstalado()?'':`<button class="B white" data-act="instalarApp" style="margin-top:18px">${ehCelular?'📱 Instalar no celular':'💻 Instalar no computador'}</button>`}
   ${db.config.estoque!=='bloqueado'?`<a class="B white" href="${LINK_ESTOQUE}" style="margin-top:12px">📦 Abrir o Controle de Estoque</a>`:''}
@@ -711,7 +745,7 @@ function vSalvas(){
 function listaClientes(q){
   const ql=nomeKey(q),qp=normPlaca(q);
   if(!db.clientes.length)return '<div class="empty">Nenhum cliente ainda.<br>Toque em <b>➕ CADASTRAR CLIENTE NOVO</b>.</div>';
-  const l=db.clientes.filter(c=>!ql||nomeKey(c.nome).includes(ql)||(qp&&(c.veiculos||[]).some(v=>v.placa.includes(qp)))).sort((a,b)=>a.nome.localeCompare(b.nome));
+  const l=db.clientes.filter(c=>!ql||nomeKey(c.nome).includes(ql)||(qp&&(c.veiculos||[]).some(v=>v.placa.includes(qp)||(qp.length>=4&&normPlaca(v.chassi).includes(qp))))||(c.veiculos||[]).some(v=>ql.length>=3&&nomeKey(v.modelo).includes(ql))).sort((a,b)=>a.nome.localeCompare(b.nome));
   return l.map(c=>{const n=db.fichas.filter(f=>f.cid===c.id).length,vs=c.veiculos||[];return `<div class="card" data-act="cliente" data-id="${c.id}"><b>${esc(c.nome)}</b>
     <div class="s">${vs.length} veículo${vs.length===1?'':'s'} · ${n} ficha${n===1?'':'s'}</div>
     <div class="placas">${vs.map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')}</div></div>`;}).join('')||'<div class="empty">Nada encontrado.</div>';
@@ -1084,6 +1118,7 @@ document.addEventListener('click',e=>{
     imprimirCurr:()=>imprimirA4(curriculoPrintHTML(d.p)),
     addVei:()=>{lerForm();F.veiculos.push({placa:'',modelo:'',chassi:'',km:''});redesenhaVeis();const ins=document.querySelectorAll('#veis input.pl');ins[ins.length-1].focus();},
     tiraVei:()=>{lerForm();F.veiculos.splice(+d.i,1);redesenhaVeis();},
+    usaCam:()=>{const x=todosCaminhoes().find(c=>c.placa===d.p);if(!x)return;preencheCaminhao(+d.i,x,true);toast(x.placa+' — dados e histórico puxados');},
     usaVei:()=>{lerForm();const c=cliByNome(F.cliente),v=c.veiculos.find(x=>x.placa===d.p);
       F.veiculos=[{placa:v.placa,modelo:v.modelo||'',chassi:v.chassi||'',km:''}];
       redesenhaVeis();toast(v.placa+' colocado na ficha');},
@@ -1140,13 +1175,15 @@ document.addEventListener('input',e=>{
   if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
   if(t.id==='busca'){$('#lista').innerHTML=listaClientes(t.value);return;}
   if(t.id==='buscaLemb'){$('#listaLemb').innerHTML=listaLemb(t.value);return;}
-  if(t.dataset&&t.dataset.k==='placa'){
-    const hb=t.closest('.vei').querySelector('.histbox');if(hb)hb.innerHTML=histHint(normPlaca(t.value));
-    const p=normPlaca(t.value);if(p.length!==7)return;const dono=donoDaPlaca(p);if(!dono)return;
-    const v=dono.veiculos.find(x=>x.placa===p),box=t.closest('.vei');
-    const m=box.querySelector('[data-k=modelo]'),c=box.querySelector('[data-k=chassi]');
-    if(!m.value)m.value=v.modelo||'';if(!c.value)c.value=v.chassi||'';
-    if(!$('#iCliente').value.trim()){$('#iCliente').value=dono.nome;F.cliente=dono.nome;$('#conhecidos').innerHTML=conhecidosHTML();}
+  if(t.dataset&&['modelo','chassi','placa'].includes(t.dataset.k)){
+    const box=t.closest('.vei'),i=+t.dataset.i,sb=box.querySelector('.sugbox');
+    if(sb)sb.innerHTML=sugCaminhoes(i,t.dataset.k,t.value);
+    if(t.dataset.k==='placa'){const hb=box.querySelector('.histbox');if(hb)hb.innerHTML=histHint(normPlaca(t.value));}
+    // placa completa ou chassi completo de um caminhão já cadastrado: puxa tudo sozinho
+    const q=normPlaca(t.value);let x=null;
+    if(t.dataset.k==='placa'&&q.length===7)x=todosCaminhoes().find(c=>c.placa===q);
+    if(t.dataset.k==='chassi'&&q.length>=8){const l=todosCaminhoes().filter(c=>normPlaca(c.chassi)===q);if(l.length===1)x=l[0];}
+    if(x){const pos=t.selectionStart;preencheCaminhao(i,x,false);const n=$(`#veis input[data-k="${t.dataset.k}"][data-i="${i}"]`);if(n){n.focus();try{n.setSelectionRange(pos,pos);}catch(_){}}}
   }
 });
 document.addEventListener('submit',async e=>{
@@ -1215,7 +1252,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v21';
+const APP_VERSAO='v22';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
