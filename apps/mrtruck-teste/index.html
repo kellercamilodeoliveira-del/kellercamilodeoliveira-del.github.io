@@ -1336,7 +1336,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v26';
+const APP_VERSAO='v27';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
@@ -1350,7 +1350,7 @@ function recarregar(){
   const go=()=>location.replace(location.pathname+'?v='+encodeURIComponent(versaoNova||Date.now()));
   if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}).finally(()=>setTimeout(go,300));else go();
 }
-function talvezAtualizar(){if(!attPendente)return;if(temDigitacao()){$('#attbar').style.display='block';return;}recarregar();}
+function talvezAtualizar(){if(!attPendente)return;if(temDigitacao())return;recarregar();} // sem aviso na tela: atualiza sozinho quando ninguém está escrevendo
 async function checaVersao(){
   if(APP_VERSAO.startsWith('__'))return;
   try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();

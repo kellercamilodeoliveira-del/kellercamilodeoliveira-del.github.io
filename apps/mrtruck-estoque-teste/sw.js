@@ -1,6 +1,6 @@
 // Controle de Estoque: funciona sem internet depois de aberto uma vez
 const PREFIXO='mrtruck-estoque-teste-';
-const VERSAO=PREFIXO+'e5';
+const VERSAO=PREFIXO+'e6';
 const ARQUIVOS=['./','./index.html','./manifest.json','./logo-mrtruck.svg','./icone-192.png','./icone-512.png','./icone-180.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSAO).then(c=>c.addAll(ARQUIVOS)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil((async()=>{for(const k of await caches.keys())if(k.startsWith(PREFIXO)&&k!==VERSAO)await caches.delete(k);await self.clients.claim();})());});
