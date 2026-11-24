@@ -22,10 +22,10 @@ button,input,textarea{font:inherit;color:inherit}
 @media(max-width:600px){.top{gap:4px;padding:6px}.top button{font-size:13.5px;height:52px;padding:0 3px;line-height:1.15}}
 .lembbox{margin-top:12px;background:#eef6ff;border:1.5px solid #9cc3ef;border-radius:10px;padding:10px 12px}
 .lembbox label{display:block;font-weight:800;font-size:15px;color:#0d3b78}.lembbox label small{font-weight:600;color:#4b6b93}
-.lembbox input{width:100%;margin-top:6px;border:none;border-bottom:2px solid #0d3b78;background:#fff;font-size:17px;padding:8px 6px;color:#0c2a80}
+.lembbox input,.lembbox textarea{width:100%;resize:none;overflow:hidden;font-family:inherit;line-height:1.35;margin-top:6px;border:none;border-bottom:2px solid #0d3b78;background:#fff;font-size:17px;padding:8px 6px;color:#0c2a80}
 .lcam{display:flex;gap:12px;align-items:center}.lcam .placa{font-size:18px}
 .lit{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:10px;border-left:6px solid #2d6fd2;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;gap:12px;align-items:flex-start}
-.lit .lt{font-size:20px;font-weight:800;color:#161616}.lit .ls{font-size:15px;color:#555;margin-top:4px}.lit .lkm{font-size:22px;font-weight:800;color:#0d3b78;white-space:nowrap;margin-left:auto;text-align:right}
+.lit .lt{font-size:20px;font-weight:800;color:#161616;white-space:pre-line}.lit .ls{font-size:15px;color:#555;margin-top:4px}.lit .lkm{font-size:22px;font-weight:800;color:#0d3b78;white-space:nowrap;margin-left:auto;text-align:right}
 .lit .lkm small{display:block;font-size:12px;color:#6b7f99;font-weight:700}.lit .x{border:none;background:none;color:#b3141b;font-size:22px;cursor:pointer;padding:0 0 0 6px}
 .lform{background:#fff;border-radius:14px;padding:14px 16px;margin-top:14px;border:2px dashed #9cc3ef}
 .lform .f input{font-size:17px}
@@ -252,6 +252,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .sugi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;border:1.5px solid #cfe0f7;border-radius:10px;padding:9px 10px;margin-top:6px;cursor:pointer;font:inherit;color:#161616}
 .sugi:hover{border-color:#0d3b78}.sugi .st{display:flex;flex-direction:column;min-width:0}.sugi .st b{font-size:16px}.sugi .st small{font-size:13.5px;color:#555}
 .conhecidos .chist{color:#5a4300;font-weight:400;font-size:15px}.conhecidos .chist button{margin-left:6px;background:#161616;color:#f6c418;border:none;border-radius:10px;padding:7px 12px;font-weight:800;font-size:14px;cursor:pointer}
+.hist.sobot{display:flex;flex-wrap:wrap;gap:8px;padding:8px 10px}.hist.sobot button{margin-top:0}.conhecidos .chist button{margin-left:0}
 </style>
 </head>
 <body>
@@ -575,7 +576,7 @@ function vNova(){
     <div class="pr"><div class="fx g3"><label>Nome do Motorista:</label><input id="iMotorista" value="${esc(F.motorista)}" autocomplete="off" autocapitalize="words"></div></div>
     <div class="veis" id="veis">${veisHTML()}</div>
     <div id="conhecidos">${conhecidosHTML()}</div>
-    ${orc?'':`<div class="lembbox"><label>📌 Lembrete do caminhão <small>(opcional — só o que for importante guardar)</small></label><input id="iLemb" value="${esc(F.lembrete||'')}" placeholder="Ex.: Motor feito · Embreagem trocada" autocomplete="off"><small style="display:block;color:#4b6b93;margin-top:4px;font-size:12.5px">Fica guardado com o km e a data desta ficha, na aba 📌 Lembretes.</small></div>`}
+    ${orc?'':`<div class="lembbox"><label>📌 Lembrete do caminhão <small>(opcional — só o que for importante guardar)</small></label><textarea id="iLemb" rows="${Math.max(2,String(F.lembrete||'').split('\n').length)}" placeholder="Ex.: Motor feito&#10;Embreagem trocada" autocomplete="off">${esc(F.lembrete||'')}</textarea><small style="display:block;color:#4b6b93;margin-top:4px;font-size:12.5px">Fica guardado com o km e a data desta ficha, na aba 📌 Lembretes.</small></div>`}
     <div class="sech"><span>Descrição do Serviço</span><small>Valor R$</small></div>
     <div id="L_servico">${linhasHTML('servico')}</div>
     <div class="grip"><span data-grip="servico" title="Arraste para cima ou para baixo para tirar ou pôr linhas">⇕ ═</span></div>
@@ -606,15 +607,14 @@ function veisHTML(){
 function histHint(p){
   if(p.length!==7)return'';const l=fichasDoCaminhao(p).filter(f=>f.id!==edit),nl=lembDe(p).length;if(!l.length&&!nl)return'';
   const u=l[0];
-  const uv=u?(u.veiculos||[]).find(x=>x.placa===p)||{}:{};
-  return `<div class="hist">${u?`🕘 Este caminhão já passou aqui <b>${l.length} vez${l.length>1?'es':''}</b>. Última entrada: <b>${dt(u.data)}</b> — ${esc(linhas(u.servico)[0]||'')}${uv.km?` · último km <b>${esc(uv.km)}</b>`:''}${u.motorista?` · motorista ${esc(u.motorista)}`:''}<br>`:''}${u?`<button type="button" data-act="curriculo" data-p="${p}">📋 Ver currículo do caminhão</button> `:''}${nl?`<button type="button" data-act="lembCam" data-p="${p}">📌 Lembretes (${nl})</button>`:''}</div>`;
+  return `<div class="hist sobot">${u?`<button type="button" data-act="curriculo" data-p="${p}">📋 Ver currículo do caminhão</button> `:''}${nl?`<button type="button" data-act="lembCam" data-p="${p}">📌 Lembretes (${nl})</button>`:''}</div>`;
 }
 function conhecidosHTML(){
   const c=cliByNome(F.cliente);if(!c)return'';
   const fs=db.fichas.filter(x=>x.cid===c.id&&x.id!==edit).sort((a,b)=>String(b.data).localeCompare(String(a.data))),u=fs[0];
   if(!(c.veiculos||[]).length&&!u)return'';
   const usadas=F.veiculos.map(v=>normPlaca(v.placa));
-  return `<div class="conhecidos">${u?`<p class="chist">🕘 Cliente já cadastrado: <b>${fs.length} ficha${fs.length>1?'s':''}</b>. Última: <b>${dt(u.data)}</b> — ${esc(linhas(u.servico)[0]||'')} <button type="button" data-act="cliente" data-id="${c.id}">📋 Ver histórico do cliente</button></p>`:''}
+  return `<div class="conhecidos">${u?`<p class="chist"><button type="button" data-act="cliente" data-id="${c.id}">📋 Ver histórico do cliente</button></p>`:''}
     ${(c.veiculos||[]).length?`<p>Caminhões deste cliente — toque no que chegou:</p><div class="chips">
     ${c.veiculos.map(v=>`<button class="cp ${usadas.includes(v.placa)?'usado':''}" data-act="usaVei" data-p="${v.placa}">${esc(v.placa)}<small>${esc(v.modelo||'')}</small></button>`).join('')}</div>`:''}</div>`;
 }
@@ -1172,6 +1172,7 @@ document.addEventListener('input',e=>{
     if(t.dataset.l==='pecas'){if(ligaPeca(t,false,true))return;
       const it=F.itens.pecas[+t.dataset.i];if(it&&it.cod&&t.value!==it.d){delete it.cod;delete it.prodId;delete it.q;const ln=t.parentElement;ln.classList.remove('ligada');const b=ln.querySelector('.pcod');if(b)b.remove();}}
     quebraLinha(t);return;}
+  if(t.id==='iLemb'){t.style.height='auto';t.style.height=t.scrollHeight+'px';return;}
   if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
   if(t.id==='busca'){$('#lista').innerHTML=listaClientes(t.value);return;}
   if(t.id==='buscaLemb'){$('#listaLemb').innerHTML=listaLemb(t.value);return;}
@@ -1252,7 +1253,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v22';
+const APP_VERSAO='v23';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
