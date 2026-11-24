@@ -196,8 +196,9 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .tli.ab:before{background:#e0a400}
 .tlh{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
 .tlh b{font-size:17px}
-.tls{margin-top:6px;white-space:pre-line;font-size:16px}
-.tlp{margin-top:6px;color:var(--mut);font-size:14.5px}
+.tls{margin-top:2px;white-space:pre-line;font-size:16px;font-weight:800;color:#161616}
+.tlp{margin-top:2px;white-space:pre-line;color:#161616;font-size:15.5px;font-weight:400}
+.tlk{margin-top:8px;font-size:12.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#6b7280}
 .tlf{margin-top:6px;color:var(--mut);font-size:13.5px}
 .abert{border-left:5px solid #e0a400}
 .ctab{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
@@ -952,8 +953,8 @@ function vCurriculo(){
   <div class="h2">Tudo que foi feito neste caminhão (${l.length})${fin<l.length?` · ${l.length-fin} em aberto`:''}</div>
   ${l.length?`<div class="tl">${l.map(f=>{const ab=statusDe(f)==='aberta';return `<div class="tli ${ab?'ab':''}" data-act="ver" data-id="${f.id}">
     <div class="tlh"><b>📅 ${dt(f.data)}</b>${ab?'<span class="st te">⏳ Em aberto</span>':`<span class="st ok">✅ Finalizada ${dt(f.fechamento)}</span>`}</div>
-    <div class="tls">${esc(linhas(f.servico).join('\n')||'Sem descrição')}</div>
-    ${f.pecas?`<div class="tlp"><b>Peças:</b> ${esc(linhas(f.pecas).join(', '))}</div>`:''}
+    <div class="tlk">Descrição do serviço</div><div class="tls">${esc(linhas(f.servico).join('\n')||'Sem descrição')}</div>
+    ${f.pecas?`<div class="tlk">Descrição de peças</div><div class="tlp">${esc(linhas(f.pecas).join('\n'))}</div>`:''}
     <div class="tlf">${totalFicha(f)?`<b style="color:#161616">R$ ${brl(totalFicha(f))}</b> · `:''}OS Nº ${esc(pad6(f.num))}${kmDe(f)?' · '+kmTxt(kmDe(f))+' km':''}${f.motorista?' · motorista '+esc(f.motorista):''}</div>
     ${ab?'':`<button class="ab" style="margin-top:8px" data-act="reabrirC" data-id="${f.id}">🔓 Reabrir esta ordem</button>`}</div>`;}).join('')}</div>`:'<div class="empty">Este caminhão ainda não tem ordem de serviço.</div>'}`;
 }
@@ -966,7 +967,7 @@ function curriculoPrintHTML(p){
     <div class="pnum"><span style="font-weight:700;font-size:14px">${C.fone?'Fone: '+esc(C.fone):''}</span><span style="font-size:15px;font-weight:700">Currículo do Veículo</span><span>${dt(hoje())}</span></div></div>
     <div class="prow"><label>Placa:</label><span class="v w2">${esc(p)}</span><label>Modelo:</label><span class="v grow">${esc(v.modelo||'')}</span><label>Chassi:</label><span class="v w2">${esc(v.chassi||'')}</span></div>
     <div class="prow"><label>Cliente:</label><span class="v grow">${esc(c.nome||'')}</span><label>Passagens:</label><span class="v w2">${l.length}</span></div>
-    <table class="ctab"><tr><th>Entrada</th><th>Finalizada</th><th>OS Nº</th><th>Km</th><th>Serviço</th><th>Peças</th><th>Total</th></tr>
+    <table class="ctab"><tr><th>Entrada</th><th>Finalizada</th><th>OS Nº</th><th>Km</th><th>Descrição do serviço</th><th>Descrição de peças</th><th>Total</th></tr>
     ${l.map(f=>`<tr><td>${dt(f.data)}</td><td>${statusDe(f)==='finalizada'?dt(f.fechamento):'em aberto'}</td><td>${esc(pad6(f.num))}</td><td>${kmDe(f)?kmTxt(kmDe(f)):''}</td><td>${esc(linhas(f.servico).join('\n'))}</td><td>${esc(linhas(f.pecas).join('\n'))}</td><td>${totalFicha(f)?'R$ '+brl(totalFicha(f)):''}</td></tr>`).join('')}</table></div>`;
 }
 
@@ -1007,8 +1008,8 @@ function waLink(f){
   const orc=f.tipo==='orc';
   let t=`*${db.config.nome}*\n${orc?'*ORÇAMENTO*':`Pré Ordem de Serviço Nº ${pad6(f.num)}`}\nCliente: ${f.cliente}\nEntrada: ${dt(f.data)} ${hr(f.data)}\nMotorista: ${f.motorista||'-'}\n\n*Veículo${vs.length>1?'s':''}:*\n`+vs.map(v=>`• ${v.placa} ${v.modelo||''}`).join('\n');
   const it=k=>itensDe(f,k).filter(x=>x.d||x.v).map(x=>'• '+(k==='pecas'?descPeca(x):x.d)+(money(x.v)?' — R$ '+brl(money(x.v)):'')).join('\n');
-  if(f.servico||somaItens(itensDe(f,'servico')))t+=`\n\n*Serviço:*\n`+it('servico');
-  if(f.pecas||somaItens(itensDe(f,'pecas')))t+=`\n\n*Peças:*\n`+it('pecas');
+  if(f.servico||somaItens(itensDe(f,'servico')))t+=`\n\n*Descrição do serviço:*\n`+it('servico');
+  if(f.pecas||somaItens(itensDe(f,'pecas')))t+=`\n\n*Descrição de peças:*\n`+it('pecas');
   if(totalFicha(f))t+=`\n\n*Total ${orc?'do orçamento':'da ordem'}: R$ ${brl(totalFicha(f))}*`;
   return `https://wa.me/${waNum(c.tel)}?text=${encodeURIComponent(t)}`;
 }
@@ -1327,7 +1328,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v24';
+const APP_VERSAO='v25';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
