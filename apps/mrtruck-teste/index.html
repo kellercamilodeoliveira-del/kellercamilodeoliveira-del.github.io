@@ -253,6 +253,13 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .sugi:hover{border-color:#0d3b78}.sugi .st{display:flex;flex-direction:column;min-width:0}.sugi .st b{font-size:16px}.sugi .st small{font-size:13.5px;color:#555}
 .conhecidos .chist{color:#5a4300;font-weight:400;font-size:15px}.conhecidos .chist button{margin-left:6px;background:#161616;color:#f6c418;border:none;border-radius:10px;padding:7px 12px;font-weight:800;font-size:14px;cursor:pointer}
 .hist.sobot{display:flex;flex-wrap:wrap;gap:8px;padding:8px 10px}.hist.sobot button{margin-top:0}.conhecidos .chist button{margin-left:0}
+.sugl{margin:4px 0 8px;background:#fff;border:2px solid #f6c418;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.15);padding:6px;position:relative;z-index:5}
+.sugl p{font-size:13px;font-weight:700;color:#6b5420;margin:2px 6px 4px}
+.sli{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;border-radius:8px;padding:10px 10px;font:inherit;font-size:17px;color:#0c2a80;cursor:pointer}
+.sli:hover,.sli.on{background:#fff4c2}.sli .slt{flex:1;min-width:0}.sli small{font-size:13px;color:#777;white-space:nowrap}.sli .slp{font-size:16px}
+.numex{margin:10px 0 2px;background:#e9f7ef;border:2px solid #1e9e5a;border-radius:12px;padding:10px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:16px;color:#14532d}
+.numex span{flex:1;min-width:220px}.numex button{background:#1e9e5a;color:#fff;border:none;border-radius:10px;padding:11px 16px;font-weight:800;font-size:16px;cursor:pointer}
+.juntabar{background:#e9f7ef!important;border-color:#1e9e5a!important;color:#14532d!important}
 </style>
 </head>
 <body>
@@ -566,11 +573,12 @@ const logoSrc=C=>C.logo||(/mr\s*truck/i.test(C.nome||'')?'logo-mrtruck.svg':'');
 function logoMini(){const C=db.config,src=logoSrc(C);return src?`<img src="${src}" alt="${esc(nomeCurto(C.nome))}">`:`<div class="alt">${truckSvg}<b>${esc(nomeCurto(C.nome)||'OFICINA')}</b></div>`;}
 function vNova(){
   const C=db.config,d=new Date(F.data),orc=F.tipo==='orc',prox=proxOS();
-  const numBox=orc?'':`<div><div class="nbox">Nº <input id="iNum" value="${esc(F.num)}" inputmode="numeric" autocomplete="off"${!edit&&prox?` placeholder="${prox}"`:''}></div><small>${!edit&&prox?`↑ próxima: ${prox}`:'↑ digite o Nº'}</small></div>`;
-  return `${orc?`<div class="orcbar">💰 ${edit?'Corrigindo orçamento':'Orçamento'} — não usa número de ordem de serviço</div>`:''}${!orc&&F.deOrc?`<div class="orcbar">📝 Virando ordem de serviço a partir do orçamento — digite o Nº</div>`:''}<div class="sheet">
+  const numBox=orc?'':`<div><div class="nbox">Nº <input id="iNum" value="${esc(F.num)}" inputmode="numeric" autocomplete="off"${!edit&&prox?` placeholder="${prox}"`:''}></div><small>${!edit&&prox?`↑ próxima: ${prox}<br>ou o nº de uma antiga`:'↑ digite o Nº'}</small></div>`;
+  return `${orc?`<div class="orcbar">💰 ${edit?'Corrigindo orçamento':'Orçamento'} — não usa número de ordem de serviço</div>`:''}${!orc&&F.deOrc?`<div class="orcbar">📝 Virando ordem de serviço a partir do orçamento — digite o Nº</div>`:''}${!orc&&F.juntando?`<div class="orcbar juntabar">➕ Juntando na OS Nº ${esc(pad6(F.num))} — confira e toque em <b>SALVAR</b></div>`:''}${!orc&&edit&&!F.juntando?`<div class="orcbar juntabar">📂 OS Nº ${esc(pad6(F.num))} reaberta — acrescente o que precisar e toque em <b>SALVAR</b></div>`:''}<div class="sheet">
     <div class="hd"><div class="hlogo">${logoMini()}</div>
       <div class="hinfo"><b>${esc(C.nome)}</b>${C.end1?`<span>${esc(C.end1)}</span>`:''}${C.end2?`<span>${esc(C.end2)}</span>`:''}${C.end3?`<span>${esc(C.end3)}</span>`:''}${C.cnpj?`<span>CNPJ ${esc(C.cnpj)}</span>`:''}${C.ie?`<span>IE: ${esc(C.ie)}</span>`:''}</div>
       <div class="hnum">${C.fone?`<div class="fone">Fone: ${esc(C.fone)}</div>`:''}<div class="pre">${orc?'<b class="orct">ORÇAMENTO</b>':'Pré Ordem de Serviço'}</div>${numBox}</div></div>
+    <div id="numInfo">${numInfoHTML()}</div>
     <div class="pr"><div class="fx g3"><label>Cliente:</label><input id="iCliente" list="lClientes" value="${esc(F.cliente)}" autocomplete="off" autocapitalize="words"></div><div class="fx wdt"><label>Data entrada:</label><input value="${dt(F.data)} ${hr(F.data)}" readonly style="color:#444"></div></div>
     <datalist id="lClientes">${db.clientes.map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>
     <div class="pr"><div class="fx g3"><label>Nome do Motorista:</label><input id="iMotorista" value="${esc(F.motorista)}" autocomplete="off" autocapitalize="words"></div></div>
@@ -593,6 +601,21 @@ function vNova(){
   <div id="erro"></div>
   <button class="B" data-act="salvar">💾 ${orc?'SALVAR ORÇAMENTO':'SALVAR FICHA'}</button>
   ${edit?`<button class="lnk" data-act="cancelarEd">Cancelar alteração</button>`:`<button class="lnk" data-act="limparForm">Limpar tudo e começar outra</button>`}`;
+}
+const fichaDoNum=n=>n?db.fichas.find(x=>numInt(x.num)===n&&x.id!==edit):null;
+function numInfoHTML(){
+  if(edit||F.tipo==='orc')return '';const f=fichaDoNum(numInt(F.num));if(!f)return '';
+  return `<div class="numex"><span>📂 A OS Nº <b>${esc(pad6(f.num))}</b> já existe — <b>${esc(f.cliente)}</b>, ${dt(f.data)}${statusDe(f)==='finalizada'?' (finalizada)':''}</span><button type="button" data-act="abrirOS" data-id="${f.id}">ABRIR A OS Nº ${esc(pad6(f.num))}</button></div>`;
+}
+function formTemAlgo(){lerForm();return !!(F.cliente.trim()||F.motorista.trim()||String(F.lembrete||'').trim()||F.veiculos.some(v=>v.placa||v.modelo||v.chassi)||['servico','pecas'].some(k=>F.itens[k].some(x=>String(x.d||'').trim()||String(x.v||'').trim())));}
+function juntarNaOS(f){ // põe o que está escrito agora dentro da OS antiga e abre ela para conferir
+  lerForm();const novo=F;F=formDe(f,'os');edit=f.id;F.juntando=true;
+  ['servico','pecas'].forEach(k=>{const tem=x=>String(x.d||'').trim()||String(x.v||'').trim();
+    const base=F.itens[k].slice();let n=base.length;while(n&&!tem(base[n-1]))n--;const a=base.slice(0,n).concat(novo.itens[k].filter(tem).map(x=>({...x})));
+    const alvo=Math.max(NL,a.length+2);while(a.length<alvo)a.push({d:'',v:''});F.itens[k]=a;});
+  const l1=String(F.lembrete||'').trim(),l2=String(novo.lembrete||'').trim();F.lembrete=[l1,l2].filter(Boolean).join('\n');
+  if(!F.motorista.trim()&&novo.motorista.trim())F.motorista=novo.motorista;
+  tela={v:'nova'};render();scrollTo(0,0);
 }
 function veisHTML(){
   return F.veiculos.map((v,i)=>`<div class="vei vlin" data-i="${i}"><div class="pr">
@@ -651,7 +674,7 @@ function lerForm(){
 }
 function estDicaHTML(){return estoqueAtivo()?`<datalist id="lProd">${prodOpts()}</datalist><div class="dica">📦 Digite o <b>código da peça</b> do estoque (ex.: 15) e aperte Enter — o nome entra sozinho e, ao finalizar a OS, sai do estoque. Para 2 peças: <b>2x15</b>.</div>`:'';}
 function prodOpts(){return db.produtos.map(p=>`<option value="${esc(p.codigo)} — ${esc(p.nome)}">`).join('');}
-function linhasHTML(k){const pe=k==='pecas'&&estoqueAtivo();return F.itens[k].map((x,i)=>`<div class="ln${x.cod?' ligada':''}"><input class="ld" data-l="${k}" data-i="${i}" value="${esc(x.d)}" autocomplete="off" enterkeyhint="next"${pe?' list="lProd"':''}>${x.cod?`<button type="button" class="pcod" data-act="qtdPeca" data-i="${i}" title="Peça do estoque — toque para mudar a quantidade">📦 ${esc(x.cod)} · ${qtxt(x.q||1)}un</button>`:''}<input class="lv" data-l="${k}" data-i="${i}" data-v="1" value="${esc(x.v)}" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>`).join('');}
+function linhasHTML(k){const pe=k==='pecas'&&estoqueAtivo();return F.itens[k].map((x,i)=>`<div class="ln${x.cod?' ligada':''}"><input class="ld" data-l="${k}" data-i="${i}" value="${esc(x.d)}" autocomplete="off" enterkeyhint="next">${x.cod?`<button type="button" class="pcod" data-act="qtdPeca" data-i="${i}" title="Peça do estoque — toque para mudar a quantidade">📦 ${esc(x.cod)} · ${qtxt(x.q||1)}un</button>`:''}<input class="lv" data-l="${k}" data-i="${i}" data-v="1" value="${esc(x.v)}" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>`).join('');}
 function totTxt(k){const t=somaItens(F.itens[k]);return t?`Total ${k==='servico'?'serviço':'peças'}: R$ ${brl(t)}`:'';}
 function totGeralTxt(){const t=somaItens(F.itens.servico)+somaItens(F.itens.pecas);return t?`${F.tipo==='orc'?'TOTAL DO ORÇAMENTO':'TOTAL DA ORDEM'}: R$ ${brl(t)}`:'';}
 function lerItens(){document.querySelectorAll('input[data-l]').forEach(el=>{const it=F.itens[el.dataset.l][+el.dataset.i];if(it)it[el.dataset.v?'v':'d']=el.value;});}
@@ -709,6 +732,48 @@ function baixaHTML(f){
   return `<div class="baixa">📦 <b>Vai sair do estoque:</b><ul>${l.map(({x,p})=>{if(!p)return `<li class="neg">Código ${esc(x.cod)} não existe mais no estoque — não sai nada</li>`;const fica=qtdEst(p.id)-(x.q||1);
     return `<li>${qtxt(x.q||1)} × ${esc(p.nome)} (cód ${esc(p.codigo)}) — fica ${qtxt(fica)}${fica<0?' <span class="neg">⚠️ estoque negativo</span>':''}</li>`;}).join('')}</ul></div>`;
 }
+/* ====== sugestões ao digitar na Descrição do Serviço / Peças ======
+   Usa tudo o que a oficina já escreveu (fichas e orçamentos) + as peças do estoque.
+   Ex.: "substituir e" → Substituir embreagem, Substituir eixo… ; "e" → tudo que tem palavra com E. */
+let SUG=null;
+function vocab(k){
+  const m=new Map();
+  [...db.fichas,...db.orcamentos].sort((a,b)=>String(a.data).localeCompare(String(b.data))).forEach(f=>itensDe(f,k).forEach(x=>{
+    if(x.cod)return;const t=String(x.d||'').trim();if(t.length<2)return;const key=nomeKey(t);
+    const e=m.get(key)||{t,key,n:0,v:''};e.n++;e.t=t;if(x.v)e.v=x.v;m.set(key,e);}));
+  return [...m.values()];
+}
+function sugLinha(k,q){
+  const qn=nomeKey(q);if(!qn)return [];
+  const ws=qn.split(' ').filter(Boolean),ult=ws[ws.length-1],ant=ws.slice(0,-1);
+  const casa=key=>{if(key===qn)return 0;if(key.startsWith(qn))return 3;const pw=key.split(' ');
+    if(!pw.some(w=>w.startsWith(ult)))return 0;return ant.every(a=>pw.includes(a)||pw.some(w=>w.startsWith(a)))?2:0;};
+  let l=vocab(k).map(e=>({...e,s:casa(e.key)})).filter(e=>e.s);
+  if(k==='pecas'&&estoqueAtivo())db.produtos.forEach(p=>{const key=nomeKey(p.nome),c=String(p.codigo);let sc=casa(key);if(!sc&&c.toLowerCase().startsWith(qn))sc=4;
+    if(sc){const q2=qtdEst(p.id);l.push({t:p.nome,key,n:999,prod:p,s:sc+0.5,info:`cód ${p.codigo} · tem ${qtxt(q2)} no estoque`});}});
+  l.sort((a,b)=>b.s-a.s||b.n-a.n||a.t.localeCompare(b.t));
+  const vistos=new Set();return l.filter(e=>{const z=(e.prod?'p':'')+e.key;if(vistos.has(z))return false;vistos.add(z);return true;}).slice(0,8);
+}
+function fechaSug(){const b=document.getElementById('sugL');if(b)b.remove();SUG=null;}
+function abreSug(el){
+  const k=el.dataset.l,l=sugLinha(k,el.value);fechaSug();if(!l.length)return;
+  SUG={el,k,i:+el.dataset.i,l,at:-1};
+  const box=document.createElement('div');box.id='sugL';box.className='sugl';
+  box.innerHTML=`<p>Já usado na oficina — toque para escolher:</p>`+l.map((e,j)=>`<button type="button" class="sli" data-j="${j}">${e.prod?'<span class="slp">📦</span>':''}<span class="slt">${esc(e.t)}</span><small>${e.prod?e.info:`${e.n}× usado${e.v?` · R$ ${esc(e.v)}`:''}`}</small></button>`).join('');
+  el.closest('.ln').insertAdjacentElement('afterend',box);
+}
+function marcaSug(d){if(!SUG)return;let a=SUG.at+d;if(a<-1)a=SUG.l.length-1;if(a>=SUG.l.length)a=-1;SUG.at=a;
+  document.querySelectorAll('#sugL .sli').forEach((b,j)=>b.classList.toggle('on',j===SUG.at));}
+function escolheSug(j){
+  if(!SUG)return;const e=SUG.l[j],{el,k,i}=SUG;fechaSug();if(!e||!el.isConnected)return;
+  if(e.prod){el.value=`${e.prod.codigo} — ${e.prod.nome}`;ligaPeca(el,true,true);return;}
+  el.value=e.t;lerItens();const it=F.itens[k][i];
+  if(e.v&&!String(it.v||'').trim()){it.v=e.v;const vi=document.querySelector(`#L_${k} .lv[data-i="${i}"]`);if(vi)vi.value=e.v;pintaTotais();}
+  if(i+1>=F.itens[k].length){F.itens[k].push({d:'',v:''});$('#L_'+k).innerHTML=linhasHTML(k);}
+  const nx=document.querySelector(`#L_${k} .ld[data-i="${i+1}"]`);if(nx)nx.focus();
+}
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('#sugL .sli');if(!b)return;e.preventDefault();escolheSug(+b.dataset.j);},true);
+document.addEventListener('focusout',e=>{if(SUG&&e.target===SUG.el)setTimeout(()=>{if(SUG&&document.activeElement!==SUG.el)fechaSug();},120);});
 function quebraLinha(el){
   const v=el.value;if(cabe(el,v)||el.selectionStart!==v.length)return;
   const k=el.dataset.l,i=+el.dataset.i;
@@ -869,11 +934,6 @@ function vLembCam(){
     <div class="cvh" style="margin-top:10px"><span class="placa">${esc(p)}</span><div><b>${esc(modelo)}</b><span class="s">${chassi?'Chassi '+esc(chassi):'Chassi não informado'}</span><span class="s">Cliente: ${esc(c.nome||(cliById(u.cid)||{}).nome||'—')}</span></div></div></div>
   <div class="h2">O que já foi feito (${l.length})</div>
   ${l.map(x=>`<div class="lit"><div><div class="lt">${esc(x.item)}</div><div class="ls">📅 ${dt(x.data)}${x.numOS?` · OS Nº ${esc(pad6(x.numOS))}`:''}</div></div><div class="lkm">${x.km?kmTxt(x.km):'—'}<small>km</small></div><button class="x" data-act="lembDel" data-id="${x.id}" title="Apagar este lembrete">✕</button></div>`).join('')||'<div class="empty">Nenhum lembrete ainda para este caminhão.</div>'}
-  <div class="lform"><div style="font-weight:800;font-size:17px">➕ Anotar um lembrete</div><p class="s" style="margin:4px 0 0">Serve também para coisas antigas, de anos atrás.</p>
-    <div class="f"><label>O que foi feito:</label><input id="lItem" placeholder="Ex.: Motor feito" autocomplete="off"></div>
-    <div class="f"><label>Km:</label><input id="lKm" inputmode="numeric" placeholder="Ex.: 120000" autocomplete="off"></div>
-    <div class="f"><label>Data:</label><input id="lData" type="date" value="${hoje().slice(0,10)}"></div>
-    <div id="erro"></div><button class="B" data-act="lembAdd">💾 GUARDAR LEMBRETE</button></div>
   ${fichasDoCaminhao(p).length?`<button class="B white" data-act="curriculo" data-p="${esc(p)}">📋 Ver o currículo completo (todas as ordens)</button>`:''}`;
 }
 
@@ -1013,6 +1073,8 @@ function salvar(){
     if(!edit||n!==antes){
       const u=ultimaOS(),prox=proxOS();
       const rep=db.fichas.find(x=>numInt(x.num)===n&&x.id!==edit);
+      if(rep&&!edit){modal(`<h3>A OS Nº ${esc(pad6(rep.num))} já existe</h3><p style="font-size:17px;margin:6px 0 12px">Cliente <b>${esc(rep.cliente)}</b>, aberta em ${dt(rep.data)}${statusDe(rep)==='finalizada'?' (finalizada)':''}.<br>Quer colocar o que você escreveu aqui <b>dentro dela</b>?</p>
+        <button class="B" data-act="juntarOS" data-id="${rep.id}">➕ SIM, JUNTAR NA OS Nº ${esc(pad6(rep.num))}</button>${prox?`<button class="B white" data-act="usarProx">Não, usar a próxima: Nº ${prox}</button>`:''}<button class="lnk" data-act="fechar">Cancelar</button>`);return;}
       if(rep||(u.n&&n<=u.n&&!edit)){er(`A ordem Nº <b>${esc(num)}</b> já foi aberta${rep?` (cliente ${esc(rep.cliente)})`:''}. Número usado não se repete.${prox?` A próxima é a Nº <b>${prox}</b>.`:''}`);foco();return;}
       if(u.n&&n>u.n+1){er(`Não dá para pular número. A próxima ordem de serviço é a Nº <b>${prox}</b>.`);foco();return;}
     }
@@ -1128,6 +1190,11 @@ document.addEventListener('click',e=>{
     limparForm:()=>{novoForm(F.tipo);render();},
     cancelarEd:()=>{const id=edit,t=F.tipo;novoForm(t);tela=t==='orc'?{v:'verOrc',id}:{v:'ver',id};render();},
     fichaPara:()=>{if(tela.v==='cliente'&&!cadSalvar(true))return;const c=cliById(d.id)||cliById(CAD.id);novoForm(d.orc?'orc':'os');F.cliente=c.nome;if((c.veiculos||[]).length===1)F.veiculos=[{placa:c.veiculos[0].placa,modelo:c.veiculos[0].modelo||'',chassi:c.veiculos[0].chassi||'',km:''}];tela={v:d.orc?'orc':'nova'};render();},
+    abrirOS:()=>{const f=fichaById(d.id);if(!f)return;if(formTemAlgo()){modal(`<h3>Abrir a OS Nº ${esc(pad6(f.num))}</h3><p style="font-size:17px;margin:6px 0 12px">Você já escreveu nesta folha. Quer colocar isso <b>dentro da OS Nº ${esc(pad6(f.num))}</b>?</p>
+      <button class="B" data-act="juntarOS" data-id="${f.id}">➕ SIM, JUNTAR NA OS Nº ${esc(pad6(f.num))}</button><button class="B white" data-act="editar" data-id="${f.id}">Só abrir a OS (deixar de lado o que escrevi)</button><button class="lnk" data-act="fechar">Cancelar</button>`);return;}
+      edit=f.id;F=formDe(f,'os');tela={v:'nova'};render();scrollTo(0,0);toast('OS Nº '+pad6(f.num)+' reaberta');},
+    juntarOS:()=>{closeModal();const f=fichaById(d.id);if(f){juntarNaOS(f);toast('Juntado — confira e toque em SALVAR');}},
+    usarProx:()=>{closeModal();const p=proxOS();F.num=String(p);const i=$('#iNum');if(i)i.value=p;salvar();},
     editar:()=>{closeModal();const f=fichaById(d.id);edit=f.id;F=formDe(f,'os');tela={v:'nova'};render();},
     imprimir:()=>imprimirA4(paperHTML(fichaById(tela.id))),
     apagar:()=>modal(`<h3>Apagar esta ficha?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
@@ -1150,6 +1217,12 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{
   const t=e.target;
+  if(SUG&&t===SUG.el){
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();marcaSug(e.key==='ArrowDown'?1:-1);return;}
+    if(e.key==='Escape'){fechaSug();return;}
+    if(e.key==='Enter'&&SUG.at>=0){e.preventDefault();escolheSug(SUG.at);return;}
+    if(e.key==='Enter'||e.key==='Tab')fechaSug();
+  }
   if(e.key==='Backspace'&&t.dataset&&t.dataset.l&&!t.dataset.v&&t.value===''&&+t.dataset.i>0){e.preventDefault();const pv=document.querySelector(`#L_${t.dataset.l} .ld[data-i="${+t.dataset.i-1}"]`);if(pv){pv.focus();const n=pv.value.length;pv.setSelectionRange(n,n);}return;}
   if(e.key==='Enter'&&t.dataset&&t.dataset.l==='pecas'&&!t.dataset.v&&ligaPeca(t,true,true)){e.preventDefault();return;}
   if(e.key!=='Enter'||!t.dataset||!t.dataset.l)return;e.preventDefault();
@@ -1169,9 +1242,10 @@ document.addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset&&t.dataset.v){lerItens();pintaTotais();return;}
   if(t.dataset&&t.dataset.l){
-    if(t.dataset.l==='pecas'){if(ligaPeca(t,false,true))return;
+    if(t.dataset.l==='pecas'){if(ligaPeca(t,false,true)){fechaSug();return;}
       const it=F.itens.pecas[+t.dataset.i];if(it&&it.cod&&t.value!==it.d){delete it.cod;delete it.prodId;delete it.q;const ln=t.parentElement;ln.classList.remove('ligada');const b=ln.querySelector('.pcod');if(b)b.remove();}}
-    quebraLinha(t);return;}
+    quebraLinha(t);const at=document.activeElement;if(at&&at.dataset&&at.dataset.l&&!at.dataset.v)abreSug(at);else fechaSug();return;}
+  if(t.id==='iNum'){F.num=t.value;const ni=$('#numInfo');if(ni)ni.innerHTML=numInfoHTML();return;}
   if(t.id==='iLemb'){t.style.height='auto';t.style.height=t.scrollHeight+'px';return;}
   if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
   if(t.id==='busca'){$('#lista').innerHTML=listaClientes(t.value);return;}
@@ -1253,7 +1327,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v23';
+const APP_VERSAO='v24';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;

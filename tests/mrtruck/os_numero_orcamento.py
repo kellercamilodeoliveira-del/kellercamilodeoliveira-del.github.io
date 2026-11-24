@@ -42,9 +42,25 @@ async def main():
         print('hint depois de 5:', await pg.inner_text('.hnum small'))
         for n in ['5', '10', '4']:
             await ficha(n); await pg.click('[data-act=salvar]'); await pg.wait_for_timeout(300)
-            print(f'tentou {n}:', await erro())
+            if await pg.locator('#modal.show').count():
+                print(f'tentou {n}: (janela) ', (await pg.inner_text('#modal')).replace(chr(10),' | ')); await pg.click('#modal [data-act=fechar]'); await pg.wait_for_timeout(200)
+            else: print(f'tentou {n}:', await erro())
         await ficha('6'); await pg.click('[data-act=salvar]'); await pg.wait_for_timeout(500)
         print('salvou 6:', await pg.locator('.ok').count())
+        # reaproveitar a OS 5: digita 5 numa folha nova -> aviso -> abrir -> juntar
+        await pg.click('[data-act=nova]'); await pg.wait_for_timeout(300)
+        await pg.fill('.ld[data-l=servico][data-i="0"]','Regular freio'); await pg.fill('.lv[data-l=servico][data-i="0"]','80')
+        await pg.locator('#iNum').fill(''); await pg.locator('#iNum').press_sequentially('5'); await pg.wait_for_timeout(200)
+        print('aviso nº antigo:', (await pg.inner_text('#numInfo')).replace(chr(10),' | '))
+        await pg.click('#numInfo [data-act=abrirOS]'); await pg.wait_for_timeout(200)
+        print('pergunta:', (await pg.inner_text('#modal')).replace(chr(10),' | ')[:140])
+        await pg.click('#modal [data-act=juntarOS]'); await pg.wait_for_timeout(300)
+        print('faixa:', await pg.inner_text('.juntabar'), '| linhas:', [await pg.input_value(f'.ld[data-l=servico][data-i="{i}"]') for i in range(3)], '| cliente:', await pg.input_value('#iCliente'))
+        nf=await pg.evaluate("document.querySelectorAll('.card').length")
+        await pg.click('[data-act=salvar]'); await pg.wait_for_timeout(500)
+        print('salvou junto:', await pg.locator('.ok').count(), '| erro:', await erro())
+        await pg.click('[data-act=nova]'); await pg.wait_for_timeout(300)
+        print('próxima continua:', await pg.inner_text('.hnum small'))
 
         # orçamento
         await pg.click('#tOrc'); await pg.wait_for_timeout(300)

@@ -39,7 +39,7 @@ async def main():
         await pg.fill('#buscaLemb','868123');await pg.wait_for_timeout(200)
         print('busca chassi:',await pg.locator('#listaLemb [data-act=lembCam]').count())
         await pg.click('#listaLemb [data-act=lembCam]');await pg.wait_for_timeout(300)
-        await pg.fill('#lItem','Câmbio revisado');await pg.fill('#lKm','80000');await pg.fill('#lData','2022-05-10');await pg.click('[data-act=lembAdd]');await pg.wait_for_timeout(400)
+        print('tem campo anotar lembrete?',await pg.locator('#lItem').count(),'| botão currículo:',await pg.locator('[data-act=curriculo]').count())
         print('itens:',[t.replace('\n',' ') for t in await pg.locator('.lit').all_inner_texts()])
         await pg.screenshot(path=f'{D}/lembcam.png',full_page=True)
         await pg.locator('[data-act=lembDel]').last.click();await pg.click('[data-act=lembDelOk]');await pg.wait_for_timeout(300)
