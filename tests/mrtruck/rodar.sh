@@ -9,7 +9,7 @@ python3 -m playwright install chromium >/dev/null 2>&1 || true
 curl -s -o /dev/null http://localhost:8765/ || { nohup python3 -m http.server 8765 >/tmp/mrtruck-servidor.log 2>&1 & sleep 1; }
 mkdir -p /tmp/mrtruck-testes
 falhou=0
-for t in os_numero_orcamento lembretes busca_caminhao sugestoes estoque_integrado abrindo_travado; do
+for t in os_numero_orcamento lembretes busca_caminhao sugestoes pagamento estoque_integrado abrindo_travado; do
   echo "===== $t"
   saida=$(timeout 300 python3 "tests/mrtruck/$t.py" 2>&1); cod=$?
   echo "$saida"

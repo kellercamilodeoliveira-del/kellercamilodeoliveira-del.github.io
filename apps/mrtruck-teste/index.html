@@ -261,6 +261,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .numex{margin:10px 0 2px;background:#e9f7ef;border:2px solid #1e9e5a;border-radius:12px;padding:10px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:16px;color:#14532d}
 .numex span{flex:1;min-width:220px}.numex button{background:#1e9e5a;color:#fff;border:none;border-radius:10px;padding:11px 16px;font-weight:800;font-size:16px;cursor:pointer}
 .juntabar{background:#e9f7ef!important;border-color:#1e9e5a!important;color:#14532d!important}
+.ld.pag,.pl .pd.pag{color:#c8102e!important;font-weight:800}.tlpag{color:#c8102e;font-weight:800}.pagc{color:#c8102e;font-weight:800;font-size:15px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -360,6 +361,12 @@ const money=v=>{v=String(v??'').trim();if(!v)return 0;v=v.replace(/[^\d,.-]/g,''
 const brl=n=>(+n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const novasLinhas=n=>Array.from({length:n},()=>({d:'',v:''}));
 const itensDe=(f,k)=>{const it=f[k+'Itens'];if(Array.isArray(it)&&it.length)return it.map(x=>({d:x.d||'',v:x.v||'',...(x.cod?{cod:x.cod,prodId:x.prodId||null,q:x.q||1}:{})}));return linhas(f[k]).map(d=>({d,v:''}));};
+/* "pagamento" escrito numa linha (ex.: Pagamento em 3x: 24/11, 24/12, 24/01) fica em VERMELHO.
+   A linha de baixo também, se o texto continuou nela (sem valor). */
+const ehPag=t=>/\b(pagamento|pagto|pgto)\b/.test(nomeKey(t));
+const marcaPag=a=>{let ant=false;return a.map(x=>{const d=String(x.d||'').trim(),v=String(x.v||'').trim();const m=!!d&&(ehPag(d)||(ant&&!v));ant=m&&!v;if(!d)ant=false;return m;});};
+const pagDe=f=>{const a=itensDe(f,'servico').concat(itensDe(f,'pecas')),m=marcaPag(a);return a.filter((x,i)=>m[i]).map(x=>x.d.trim());};
+const pagCard=f=>{const p=pagDe(f);return p.length?`<div class="pagc">💳 ${esc(p.join(' '))}</div>`:'';};
 const descPeca=x=>(x.cod&&(x.q||1)!==1?qtxt(x.q)+'× ':'')+(x.d||'');
 const somaItens=it=>it.reduce((t,x)=>t+money(x.v),0);
 const totalFicha=f=>somaItens(itensDe(f,'servico'))+somaItens(itensDe(f,'pecas'));
@@ -675,7 +682,7 @@ function lerForm(){
 }
 function estDicaHTML(){return estoqueAtivo()?`<datalist id="lProd">${prodOpts()}</datalist><div class="dica">📦 Digite o <b>código da peça</b> do estoque (ex.: 15) e aperte Enter — o nome entra sozinho e, ao finalizar a OS, sai do estoque. Para 2 peças: <b>2x15</b>.</div>`:'';}
 function prodOpts(){return db.produtos.map(p=>`<option value="${esc(p.codigo)} — ${esc(p.nome)}">`).join('');}
-function linhasHTML(k){const pe=k==='pecas'&&estoqueAtivo();return F.itens[k].map((x,i)=>`<div class="ln${x.cod?' ligada':''}"><input class="ld" data-l="${k}" data-i="${i}" value="${esc(x.d)}" autocomplete="off" enterkeyhint="next">${x.cod?`<button type="button" class="pcod" data-act="qtdPeca" data-i="${i}" title="Peça do estoque — toque para mudar a quantidade">📦 ${esc(x.cod)} · ${qtxt(x.q||1)}un</button>`:''}<input class="lv" data-l="${k}" data-i="${i}" data-v="1" value="${esc(x.v)}" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>`).join('');}
+function linhasHTML(k){const pe=k==='pecas'&&estoqueAtivo(),mp=marcaPag(F.itens[k]);return F.itens[k].map((x,i)=>`<div class="ln${x.cod?' ligada':''}"><input class="ld${mp[i]?' pag':''}" data-l="${k}" data-i="${i}" value="${esc(x.d)}" autocomplete="off" enterkeyhint="next">${x.cod?`<button type="button" class="pcod" data-act="qtdPeca" data-i="${i}" title="Peça do estoque — toque para mudar a quantidade">📦 ${esc(x.cod)} · ${qtxt(x.q||1)}un</button>`:''}<input class="lv" data-l="${k}" data-i="${i}" data-v="1" value="${esc(x.v)}" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>`).join('');}
 function totTxt(k){const t=somaItens(F.itens[k]);return t?`Total ${k==='servico'?'serviço':'peças'}: R$ ${brl(t)}`:'';}
 function totGeralTxt(){const t=somaItens(F.itens.servico)+somaItens(F.itens.pecas);return t?`${F.tipo==='orc'?'TOTAL DO ORÇAMENTO':'TOTAL DA ORDEM'}: R$ ${brl(t)}`:'';}
 function lerItens(){document.querySelectorAll('input[data-l]').forEach(el=>{const it=F.itens[el.dataset.l][+el.dataset.i];if(it)it[el.dataset.v?'v':'d']=el.value;});}
@@ -775,6 +782,7 @@ function escolheSug(j){
 }
 document.addEventListener('pointerdown',e=>{const b=e.target.closest('#sugL .sli');if(!b)return;e.preventDefault();escolheSug(+b.dataset.j);},true);
 document.addEventListener('focusout',e=>{if(SUG&&e.target===SUG.el)setTimeout(()=>{if(SUG&&document.activeElement!==SUG.el)fechaSug();},120);});
+function pintaPag(k){lerItens();const m=marcaPag(F.itens[k]);document.querySelectorAll(`#L_${k} .ld`).forEach(el=>el.classList.toggle('pag',!!m[+el.dataset.i]));}
 function quebraLinha(el){
   const v=el.value;if(cabe(el,v)||el.selectionStart!==v.length)return;
   const k=el.dataset.l,i=+el.dataset.i;
@@ -799,7 +807,7 @@ function vSalvas(){
   ${ab.length?`<div class="h2" style="margin-top:4px">⏳ Ordens de serviço em aberto (${ab.length})</div>
   ${ab.map(f=>`<div class="card abert" data-act="ver" data-id="${f.id}"><div class="fic"><span class="n">Nº ${esc(pad6(f.num))}</span><span class="s" style="margin:0">entrou ${dt(f.data)}</span></div>
     <div class="placas">${(f.veiculos||[]).map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')} <b style="font-size:16px;margin-left:4px">${esc(f.cliente)}</b></div>
-    <div class="s" style="color:#222;margin-top:6px">${esc(linhas(f.servico)[0]||'')}</div></div>`).join('')}
+    <div class="s" style="color:#222;margin-top:6px">${esc(linhas(f.servico)[0]||'')}</div>${pagCard(f)}</div>`).join('')}
   <div class="h2">Clientes</div>`:''}
   <button class="B" data-act="novoCli" style="margin:0 0 14px">➕ CADASTRAR CLIENTE NOVO</button>
   <input class="busca" id="busca" placeholder="🔍 Procurar cliente, placa, chassi ou modelo" autocomplete="off">
@@ -836,7 +844,7 @@ function vCliente(){
   <div class="h2">Fichas deste cliente (${lf.length})</div>
   ${lf.map(f=>`<div class="card" data-act="ver" data-id="${f.id}"><div class="fic"><span class="n">Nº ${esc(pad6(f.num))}</span><span class="s" style="margin:0">${dt(f.data)}</span></div>
     <div class="placas">${(f.veiculos||[]).map(v=>`<span class="placa">${esc(v.placa)}</span>`).join('')}</div>
-    <div class="s" style="color:#222;margin-top:8px">${esc(linhas(f.servico)[0]||'')}</div></div>`).join('')||'<div class="empty">Nenhuma ficha ainda.</div>'}
+    <div class="s" style="color:#222;margin-top:8px">${esc(linhas(f.servico)[0]||'')}</div>${pagCard(f)}</div>`).join('')||'<div class="empty">Nenhuma ficha ainda.</div>'}
   ${(()=>{const lo=db.orcamentos.filter(o=>o.cid===c.id).sort((a,b)=>String(b.data).localeCompare(String(a.data)));return lo.length?`<div class="h2">Orçamentos deste cliente (${lo.length})</div>${lo.map(cardOrc).join('')}`:'';})()}`:''}`;
 }
 function cadVeisHTML(){
@@ -953,8 +961,8 @@ function vCurriculo(){
   <div class="h2">Tudo que foi feito neste caminhão (${l.length})${fin<l.length?` · ${l.length-fin} em aberto`:''}</div>
   ${l.length?`<div class="tl">${l.map(f=>{const ab=statusDe(f)==='aberta';return `<div class="tli ${ab?'ab':''}" data-act="ver" data-id="${f.id}">
     <div class="tlh"><b>📅 ${dt(f.data)}</b>${ab?'<span class="st te">⏳ Em aberto</span>':`<span class="st ok">✅ Finalizada ${dt(f.fechamento)}</span>`}</div>
-    <div class="tlk">Descrição do serviço</div><div class="tls">${esc(linhas(f.servico).join('\n')||'Sem descrição')}</div>
-    ${f.pecas?`<div class="tlk">Descrição de peças</div><div class="tlp">${esc(linhas(f.pecas).join('\n'))}</div>`:''}
+    <div class="tlk">Descrição do serviço</div><div class="tls">${(()=>{const a=itensDe(f,'servico').filter(x=>String(x.d||'').trim()),m=marcaPag(a);return a.map((x,i)=>m[i]?`<span class="tlpag">${esc(x.d.trim())}</span>`:esc(x.d.trim())).join('\n')||'Sem descrição';})()}</div>
+    ${f.pecas?`<div class="tlk">Descrição de peças</div><div class="tlp">${(()=>{const a=itensDe(f,'pecas').filter(x=>String(x.d||'').trim()),m=marcaPag(a);return a.map((x,i)=>m[i]?`<span class="tlpag">${esc(descPeca(x).trim())}</span>`:esc(descPeca(x).trim())).join('\n');})()}</div>`:''}
     <div class="tlf">${totalFicha(f)?`<b style="color:#161616">R$ ${brl(totalFicha(f))}</b> · `:''}OS Nº ${esc(pad6(f.num))}${kmDe(f)?' · '+kmTxt(kmDe(f))+' km':''}${f.motorista?' · motorista '+esc(f.motorista):''}</div>
     ${ab?'':`<button class="ab" style="margin-top:8px" data-act="reabrirC" data-id="${f.id}">🔓 Reabrir esta ordem</button>`}</div>`;}).join('')}</div>`:'<div class="empty">Este caminhão ainda não tem ordem de serviço.</div>'}`;
 }
@@ -974,7 +982,7 @@ function curriculoPrintHTML(p){
 /* ====== folha A4 ====== */
 function paperHTML(f){
   const C=db.config,d=new Date(f.data),vsF=f.veiculos||[],orc=f.tipo==='orc';
-  const L=(k,n)=>{const a=itensDe(f,k);while(a.length<n)a.push({d:'',v:''});return a.map(x=>`<div class="pl"><span class="pd">${esc(k==='pecas'?descPeca(x):x.d)||'&nbsp;'}</span><span class="pv">${money(x.v)?'R$ '+brl(money(x.v)):''}</span></div>`).join('');};
+  const L=(k,n)=>{const a=itensDe(f,k);while(a.length<n)a.push({d:'',v:''});const mp=marcaPag(a);return a.map((x,i)=>`<div class="pl"><span class="pd${mp[i]?' pag':''}">${esc(k==='pecas'?descPeca(x):x.d)||'&nbsp;'}</span><span class="pv">${money(x.v)?'R$ '+brl(money(x.v)):''}</span></div>`).join('');};
   const tS=somaItens(itensDe(f,'servico')),tP=somaItens(itensDe(f,'pecas'));
   const logo=logoSrc(C)?`<img src="${logoSrc(C)}" alt="">`:`<div class="defmark">${truckSvg}<div class="t"><span>${esc(nomeCurto(C.nome)||'OFICINA')}</span></div>${C.slogan?`<small>${esc(C.slogan)}</small>`:''}</div>`;
   const jn=k=>vsF.map(v=>k==='km'?kmTxt(v.km):(v[k]||'')).filter(Boolean).join(' / ');
@@ -1241,11 +1249,11 @@ document.addEventListener('pointerup',()=>{arr=null;});
 document.addEventListener('pointercancel',()=>{arr=null;});
 document.addEventListener('input',e=>{
   const t=e.target;
-  if(t.dataset&&t.dataset.v){lerItens();pintaTotais();return;}
+  if(t.dataset&&t.dataset.v){lerItens();pintaTotais();pintaPag(t.dataset.l);return;}
   if(t.dataset&&t.dataset.l){
     if(t.dataset.l==='pecas'){if(ligaPeca(t,false,true)){fechaSug();return;}
       const it=F.itens.pecas[+t.dataset.i];if(it&&it.cod&&t.value!==it.d){delete it.cod;delete it.prodId;delete it.q;const ln=t.parentElement;ln.classList.remove('ligada');const b=ln.querySelector('.pcod');if(b)b.remove();}}
-    quebraLinha(t);const at=document.activeElement;if(at&&at.dataset&&at.dataset.l&&!at.dataset.v)abreSug(at);else fechaSug();return;}
+    quebraLinha(t);pintaPag(t.dataset.l);const at=document.activeElement;if(at&&at.dataset&&at.dataset.l&&!at.dataset.v)abreSug(at);else fechaSug();return;}
   if(t.id==='iNum'){F.num=t.value;const ni=$('#numInfo');if(ni)ni.innerHTML=numInfoHTML();return;}
   if(t.id==='iLemb'){t.style.height='auto';t.style.height=t.scrollHeight+'px';return;}
   if(t.id==='iCliente'){F.cliente=t.value;$('#conhecidos').innerHTML=conhecidosHTML();return;}
@@ -1328,7 +1336,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v25';
+const APP_VERSAO='v26';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;

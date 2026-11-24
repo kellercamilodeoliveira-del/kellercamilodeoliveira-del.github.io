@@ -1,0 +1,23 @@
+import os,asyncio
+AQUI=os.path.dirname(os.path.abspath(__file__))
+__file__=os.path.join(AQUI,'busca_caminhao.py')
+exec(open(__file__,encoding='utf-8').read().split('async def main():')[0])
+D='/tmp/mrtruck-testes/pagamento';os.makedirs(D,exist_ok=True)
+async def main():
+    async with async_playwright() as p:
+        b=await p.chromium.launch()
+        pg,errs=await setup(b,{'width':1200,'height':900})
+        await pg.fill('#iNum','9');await pg.fill('#iCliente','LUIS FERNANDO');await pg.fill('#veis [data-k=placa]','BZF4545')
+        await pg.fill('.ld[data-l=servico][data-i="0"]','Substituição da embreagem completa');await pg.fill('.lv[data-l=servico][data-i="0"]','1500')
+        l1=pg.locator('.ld[data-l=servico][data-i="1"]');await l1.press_sequentially('Pagamento em 3 vezes: 24/11, 24/12 e 24/01 no cartão',delay=5)
+        await pg.keyboard.press('Escape')
+        cls=await pg.evaluate("[...document.querySelectorAll('#L_servico .ld')].slice(0,3).map(e=>e.className+' | '+e.value)")
+        print('form:',cls)
+        await pg.screenshot(path=f'{D}/form.png',clip={'x':180,'y':600,'width':840,'height':160})
+        await pg.click('[data-act=salvar]');await pg.wait_for_timeout(500)
+        print('folha (vermelho):',await pg.evaluate("[...document.querySelectorAll('.pl .pd.pag')].map(e=>e.textContent)"))
+        await pg.click('[data-act=curriculo]');await pg.wait_for_timeout(300)
+        print('currículo:',await pg.evaluate("[...document.querySelectorAll('.tlpag')].map(e=>e.textContent)"))
+        await pg.locator('.tli').first.screenshot(path=f'{D}/curriculo.png')
+        print('errs',errs);await b.close()
+asyncio.run(main())
