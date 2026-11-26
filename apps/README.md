@@ -91,6 +91,7 @@ Abre as Fichas (../mrtruck/) e o Controle de Estoque (../mrtruck-estoque/) lado 
 
 ## Prospecção Keller IA (uso interno do Keller — não é app de cliente)
 - App: https://kellercamilodeoliveira-del.github.io/apps/prospeccao/ (PWA, instala no computador pelo botão "Instalar no computador").
-- Lista de empresas encontradas: `apps/prospeccao/leads.json` (um objeto por empresa: id, n, f = oficina|logistica|estoque, c, e, t, w, p, o, x, s, ad). A busca automática diária ("Prospecção da região – oficinas, transporte e estoque") acrescenta empresas novas nesse arquivo e faz push; nunca apaga nem repete (confere nome e telefone).
+- Lista de empresas encontradas: `apps/prospeccao/leads.json` (um objeto por empresa: id, n, f = oficina|logistica|estoque, c, e, t, w, p, o, x, s, ad, e pt = "grande" só nas empresas grandes). A busca automática diária ("Prospecção da região – oficinas, transporte e estoque") acrescenta empresas novas nesse arquivo e faz push; nunca apaga nem repete (confere nome e telefone).
+- O app tem o Roteiro de abordagem (empresa pequena x empresa grande) e o filtro por porte (Todos / Pequenas / Grandes).
 - Status (contatada / descartada) e empresas adicionadas à mão ficam no Firebase `escritorio-c3acb`, no documento `os_oficinas/keller-ia-prospeccao` (subcoleções `status` e `extras`). Usa as mesmas regras das Fichas de Serviço: o administrador é o mesmo do Ponto; cada pessoa liberada é um `os_usuarios/{uid}` com `oficinaId: 'keller-ia-prospeccao'`. Esse documento aparece na lista de oficinas do painel do MR Truck como "Keller IA – Prospecção (não é oficina)": não mexer nele por lá.
 - Quem libera acesso: o Keller, na parte "Quem tem acesso" do próprio app.
