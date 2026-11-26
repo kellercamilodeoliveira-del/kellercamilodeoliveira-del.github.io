@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prospecção · Keller IA</title>
+<meta name="theme-color" content="#07090d">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07090d;--panel:#0f131b;--card:#121722;--line:#232a38;--ink:#eef2f8;--mute:#8d97a8;--g:#5fd4b0;--b:#5aa9f0;--p:#9b8cf0;--y:#e8b94a;--r:#f07a8a}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Outfit,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{margin:0;line-height:1.1;font-weight:700}
+.nav{display:flex;gap:8px;align-items:center;background:var(--panel);padding:14px max(4vw,14px);position:sticky;top:0;z-index:6;overflow-x:auto}
+.logo{flex:none;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:18px;color:#fff;background:linear-gradient(135deg,#5fd4b0,#8f9cf5)}
+.nav button.ic2{flex:none;width:52px;height:52px;border-radius:14px;border:0;background:transparent;color:var(--mute);display:grid;place-items:center;cursor:pointer}
+.nav button.ic2[aria-pressed=true]{background:#1e2430;color:var(--b)}
+.nav svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.navR{margin-left:auto;display:flex;gap:8px;align-items:center}
+.wrap{max-width:1180px;margin:0 auto;padding:22px max(4vw,14px) 40px}
+.hd h1{font-size:clamp(26px,5vw,40px)}
+.hd p{margin:6px 0 14px;color:var(--mute);font-size:17px}
+.pills{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.pill{border:1.5px solid var(--line);border-radius:999px;padding:8px 16px;display:flex;align-items:center;gap:10px;color:var(--mute);font-size:15px}
+.pill i{width:12px;height:12px;border-radius:50%;background:var(--g);box-shadow:0 0 10px var(--g)}
+.pill b{color:var(--ink);font-family:"JetBrains Mono",monospace;font-weight:500}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.k{background:var(--card);border:1.5px solid var(--line);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:10px;cursor:pointer;text-align:left;color:inherit;font:inherit}
+.k[aria-pressed=true]{border-color:var(--b)}
+.k.hot{border-color:#7a6332}
+.k .top{display:flex;justify-content:space-between;gap:8px;color:var(--mute);font-size:15px}
+.ic{flex:none;width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-weight:700;color:#0b0e14;font-size:18px}
+.k b{font-size:clamp(30px,6vw,44px);line-height:1;font-weight:700}
+.k small{font-family:"JetBrains Mono",monospace;font-size:13px;padding:5px 10px;border-radius:999px;align-self:flex-start}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:22px;padding:20px;margin-top:16px}
+.card h2{font-size:22px;margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:1.5px solid var(--line);background:#0b0f16;color:var(--ink);border-radius:999px;padding:8px 14px;font:500 14px Outfit,sans-serif;cursor:pointer;min-height:40px}
+.chips button[aria-pressed=true]{border-color:var(--b);color:var(--b)}
+.tools{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+input,select{font:16px Outfit,sans-serif;color:var(--ink);background:#0b0f16;border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;min-height:44px;width:100%}
+.tools input{flex:1 1 220px;width:auto}
+.btn{font:600 14px Outfit,sans-serif;border:1.5px solid var(--line);background:#1a2030;color:var(--ink);border-radius:12px;padding:0 14px;min-height:42px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn.wa{background:#1f8f5f;border-color:#1f8f5f;color:#fff}
+.btn.call{background:#1d3550;border-color:#2a4c72;color:#cfe6ff}
+.btn.ghost{background:transparent;color:var(--mute)}
+.btn.big{min-height:50px;font-size:16px;width:100%}
+:focus-visible{outline:3px solid var(--b);outline-offset:2px}
+.banner{margin-top:16px;padding:12px 16px;border-radius:14px;background:#16283d;color:#cfe6ff;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px;margin-top:16px}
+.c{background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:9px}
+.c.p1{border-color:#2f5d52}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:12px;padding:3px 9px;border-radius:999px;background:#1a2030;color:var(--mute);white-space:nowrap}
+.tag.of{color:var(--y)}.tag.lo{color:var(--b)}.tag.es{color:var(--p)}.tag.hi{background:#173a31;color:var(--g)}.tag.nv{background:#3a2f17;color:var(--y)}
+.c h3{font-size:20px}
+.phone{font-family:"JetBrains Mono",monospace;font-size:18px;letter-spacing:.3px}
+.addr{font-size:14px;color:var(--mute)}
+.of2{font-size:14px;color:#c9d1de}.of2 b{color:var(--g);font-weight:600}
+.x{font-size:13px;background:#1a1f2b;border-radius:10px;padding:7px 10px;color:#c9d1de}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.src{font-size:12px;color:var(--mute)}.src a{color:inherit}
+details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center;color:var(--b)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:8px}
+.empty{color:var(--mute);padding:30px 0}
+.login{max-width:400px;margin:8vh auto;padding:28px;background:var(--card);border:1.5px solid var(--line);border-radius:22px;display:flex;flex-direction:column;gap:12px}
+.login h1{font-size:28px}
+.login p{margin:0;color:var(--mute)}
+.err{background:#3a1720;color:#ffc9d1;border-radius:12px;padding:10px 12px;font-size:15px}
+.ok{background:#173a31;color:#c8f5e6;border-radius:12px;padding:10px 12px;font-size:15px}
+.users{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.users div{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#0b0f16;border-radius:12px;padding:8px 12px;flex-wrap:wrap}
+.ex{font-family:"JetBrains Mono",monospace;font-size:14px;background:#0b0f16;border-radius:12px;padding:12px;user-select:all;white-space:pre-wrap}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#0b0e14;padding:10px 18px;border-radius:12px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
+#toast.on{opacity:1}
+@media(max-width:820px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.k{padding:14px}.ic{width:38px;height:38px}}
+</style>
+</head>
+<body>
+<div id="vLogin" hidden>
+  <form class="login" id="fLogin">
+    <div class="logo">KI</div>
+    <h1>Prospecção · Keller IA</h1>
+    <p>Entre com o e-mail e a senha que você recebeu.</p>
+    <input name="email" type="email" placeholder="E-mail" autocomplete="username" required>
+    <input name="senha" type="password" placeholder="Senha" autocomplete="current-password" required>
+    <div id="lErro"></div>
+    <button class="btn wa big" type="submit">Entrar</button>
+    <button class="btn ghost" type="button" id="esqueci">Esqueci a senha</button>
+  </form>
+</div>
+
+<div id="vMsg" hidden><div class="login"><div class="logo">KI</div><h1 id="msgT">Carregando…</h1><p id="msgP"></p><button class="btn" id="sair2" hidden>Sair</button></div></div>
+
+<div id="vApp" hidden>
+<nav class="nav" id="nav" aria-label="Frentes">
+  <div class="logo">KI</div>
+  <button class="ic2" data-f="" aria-pressed="true" title="Todas" aria-label="Todas"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></button>
+  <button class="ic2" data-f="oficina" aria-pressed="false" title="Oficinas de caminhão" aria-label="Oficinas de caminhão"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg></button>
+  <button class="ic2" data-f="logistica" aria-pressed="false" title="Transporte e logística" aria-label="Transporte e logística"><svg viewBox="0 0 24 24"><path d="M2 6h11v10H2zM13 9h4l4 4v3h-8z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></button>
+  <button class="ic2" data-f="estoque" aria-pressed="false" title="Estoque e almoxarifado" aria-label="Estoque e almoxarifado"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></button>
+  <div class="navR">
+    <button class="btn wa" id="inst" hidden>Instalar no computador</button>
+    <button class="btn" id="sair">Sair</button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="hd">
+    <h1 id="title">Empresas para contatar</h1>
+    <p>Areiópolis, Botucatu, Bauru e região · oficinas de caminhão, transporte e logística, estoque. Quando alguém chama no WhatsApp ou liga, a empresa sai da lista de todos.</p>
+    <div class="pills"><div class="pill"><i></i> atualizado há <b id="ago">–</b></div><div class="pill" id="state">Carregando…</div></div>
+  </header>
+
+  <section class="kpis">
+    <button class="k" data-v="fila" aria-pressed="true"><div class="top"><span>Para contatar</span><span class="ic" style="background:var(--g)">#</span></div><b id="kFila">–</b><small style="background:#173a31;color:var(--g)" id="kFilaS">–</small></button>
+    <button class="k" data-v="wa" aria-pressed="false"><div class="top"><span>Com WhatsApp</span><span class="ic" style="background:var(--b)">W</span></div><b id="kWa">–</b><small style="background:#16283d;color:var(--b)" id="kWaS">–</small></button>
+    <button class="k" data-v="feitos" aria-pressed="false"><div class="top"><span>Já contatadas</span><span class="ic" style="background:var(--p)">✓</span></div><b id="kFeito">–</b><small style="background:#241f3d;color:var(--p)" id="kFeitoS">–</small></button>
+    <button class="k hot" data-v="novos" aria-pressed="false"><div class="top"><span>Novas da busca</span><span class="ic" style="background:var(--y)">!</span></div><b id="kNovo">–</b><small style="background:#3a2f17;color:var(--y)">últimos 7 dias</small></button>
+  </section>
+
+  <div class="banner" id="feitoBanner" hidden><span>Empresas que já foram contatadas. Elas não voltam para a lista nem são buscadas de novo.</span><button class="btn" data-v="fila">Voltar para a lista</button></div>
+
+  <section class="card">
+    <h2>Por cidade</h2>
+    <div class="chips" id="cid"></div>
+    <div class="tools">
+      <input id="q" type="search" placeholder="Buscar empresa ou rua…" aria-label="Buscar">
+      <button class="btn" id="csv">Copiar lista</button>
+    </div>
+  </section>
+
+  <div class="list" id="list"></div>
+  <div class="empty" id="empty" hidden>Nenhuma empresa aqui.</div>
+
+  <section class="card">
+    <details><summary>+ Adicionar empresa</summary>
+      <form class="form" id="addForm">
+        <input name="n" placeholder="Nome da empresa" required>
+        <select name="f"><option value="oficina">Oficina de caminhão</option><option value="logistica">Transporte / logística</option><option value="estoque">Estoque / almoxarifado</option></select>
+        <input name="c" placeholder="Cidade" required>
+        <input name="e" placeholder="Endereço">
+        <input name="t" placeholder="Telefone">
+        <input name="w" placeholder="Celular / WhatsApp">
+        <button class="btn wa" type="submit">Salvar</button>
+      </form>
+    </details>
+  </section>
+
+  <section class="card" id="admin" hidden>
+    <h2>Quem tem acesso</h2>
+    <p class="addr" style="margin:0 0 10px">Só você (administrador) vê esta parte. Cada pessoa liberada entra com o próprio e-mail e senha e vê a mesma lista.</p>
+    <form class="form" id="fAcesso">
+      <input name="email" type="email" placeholder="E-mail da pessoa" required>
+      <input name="senha" type="text" placeholder="Senha (mín. 6)" minlength="6" required>
+      <button class="btn wa" type="submit" id="bAcesso">Liberar acesso</button>
+    </form>
+    <div id="aMsg"></div>
+    <div class="users" id="users"></div>
+  </section>
+</div>
+</div>
+<div id="toast" role="status"></div>
+
+<script type="module">
+import {initializeApp,deleteApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getFirestore,doc,getDoc,setDoc,deleteDoc,addDoc,collection,onSnapshot,query,where,serverTimestamp,Timestamp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+/* Firebase: mesmo projeto do Ponto e das Fichas de Serviço (escritorio-c3acb).
+   Os dados ficam em os_oficinas/keller-ia-prospeccao (status e empresas adicionadas à mão).
+   A lista de empresas encontradas pela busca automática fica em leads.json, nesta pasta. */
+const firebaseConfig={apiKey:'AIzaSyBZyZ4Dqs0BI5VSsm3HB2TNGpk7Z7330CE',authDomain:'escritorio-c3acb.firebaseapp.com',projectId:'escritorio-c3acb',storageBucket:'escritorio-c3acb.firebasestorage.app',messagingSenderId:'752996396852',appId:'1:752996396852:web:13569631f01d301d5a3f61'};
+const OF_PADRAO='keller-ia-prospeccao';
+const app=initializeApp(firebaseConfig);const auth=getAuth(app);const fs=getFirestore(app);
+
+const FR={oficina:["Oficina de caminhão","of"],logistica:["Transporte / logística","lo"],estoque:["Estoque / almoxarifado","es"]};
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const dig=v=>String(v||"").replace(/\D/g,"");
+const isCel=d=>d.length===11&&d[2]==="9";
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const weekAgo=()=>iso(new Date(Date.now()-7*864e5));
+const erroTxt=e=>{const c=(e&&e.code)||'';
+  if(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c))return 'E-mail ou senha errados.';
+  if(/invalid-email/.test(c))return 'Esse e-mail não está certo.';
+  if(/too-many-requests/.test(c))return 'Muitas tentativas. Espere uns minutos e tente de novo.';
+  if(/network|unavailable/.test(c))return 'Sem internet. Confira a conexão.';
+  if(/email-already-in-use/.test(c))return 'Esse e-mail já tem conta em outro app seu. Use outro e-mail.';
+  if(/weak-password/.test(c))return 'A senha precisa ter pelo menos 6 letras ou números.';
+  if(/permission/.test(c))return 'Sem permissão para isso.';
+  return 'Não deu certo ('+(c||'erro')+').';};
+
+let CAT=[],EXTRA=[],STATUS={},OF=null,MODO=null,USER=null,last=0,unsubs=[],F={f:"",c:"",q:"",v:"fila"};
+let leads=[];
+
+function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),2200)}
+function tela(v,t,p){for(const id of ["vLogin","vMsg","vApp"])$("#"+id).hidden=id!==v;if(v==="vMsg"){$("#msgT").textContent=t||"";$("#msgP").textContent=p||"";$("#sair2").hidden=!USER}}
+function waNum(l){const w=dig(l.w);if(isCel(w))return w;const t=dig(l.t);return isCel(t)?t:""}
+const stOf=l=>(STATUS[l.id]&&STATUS[l.id].st)||"novo";
+const done=l=>stOf(l)!=="novo";
+function junta(){leads=CAT.concat(EXTRA)}
+const base=()=>leads.filter(l=>!F.f||l.f===F.f);
+function view(){
+  const q=F.q.toLowerCase(),wk=weekAgo();
+  return base().filter(l=>{
+    if(F.v==="feitos"){if(!done(l))return false}else{if(done(l))return false;if(F.v==="wa"&&!waNum(l))return false;if(F.v==="novos"&&!(l.ad&&l.ad>=wk))return false}
+    return (!F.c||l.c===F.c)&&(!q||[l.n,l.e,l.c,l.x].join(" ").toLowerCase().includes(q));
+  }).sort(F.v==="feitos"?(a,b)=>String((STATUS[b.id]||{}).ct||"").localeCompare(String((STATUS[a.id]||{}).ct||"")):(a,b)=>(b.ad||"").localeCompare(a.ad||"")||(a.p||2)-(b.p||2)||a.c.localeCompare(b.c)||a.n.localeCompare(b.n));
+}
+function renderTop(){
+  const b=base(),fila=b.filter(l=>!done(l)),wk=weekAgo(),hj=iso(new Date());
+  $("#kFila").textContent=fila.length;$("#kFilaS").textContent=fila.filter(l=>l.p===1).length+" prioridade alta";
+  const wa=fila.filter(waNum).length;$("#kWa").textContent=wa;$("#kWaS").textContent=Math.round(wa/(fila.length||1)*100)+"% da lista";
+  const feitos=b.filter(done);$("#kFeito").textContent=feitos.length;$("#kFeitoS").textContent=feitos.filter(l=>String((STATUS[l.id]||{}).ct||"").startsWith(hj)).length+" hoje";
+  $("#kNovo").textContent=fila.filter(l=>l.ad&&l.ad>=wk).length;
+  for(const k of document.querySelectorAll(".k"))k.setAttribute("aria-pressed",k.dataset.v===F.v);
+  $("#feitoBanner").hidden=F.v!=="feitos";
+  const pool=F.v==="feitos"?feitos:fila;
+  const cities=[...new Set(pool.map(l=>l.c))].sort((x,y)=>pool.filter(l=>l.c===y).length-pool.filter(l=>l.c===x).length);
+  $("#cid").innerHTML=`<button data-c="" aria-pressed="${!F.c}">Todas</button>`+cities.map(c=>`<button data-c="${esc(c)}" aria-pressed="${F.c===c}">${esc(c)} · ${pool.filter(l=>l.c===c).length}</button>`).join("");
+  $("#title").textContent=F.v==="feitos"?"Empresas já contatadas":F.f?FR[F.f][0]+" · para contatar":"Empresas para contatar";
+  $("#state").textContent=leads.filter(l=>!done(l)).length+" para contatar · "+(USER?USER.email:"");
+}
+function card(l){
+  const w=waNum(l),t=dig(l.t),fr=FR[l.f]||FR.logistica,wk=weekAgo(),s=STATUS[l.id]||{};
+  const maps="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([l.n,l.e,l.c,"SP"].filter(Boolean).join(" "));
+  const shown=[l.t,l.w].filter(Boolean).map(esc).join(" · ");
+  const quando=s.ct?new Date(s.ct).toLocaleDateString("pt-BR"):"";
+  const acts=done(l)
+    ?`<span class="addr">${s.st==="descartado"?"Descartada":"Contatada"} em ${esc(quando)}${s.por?" por "+esc(s.por):""}</span><button class="btn ghost" data-undo>Voltar para a lista</button>`
+    :`${w?`<a class="btn wa" data-go href="https://wa.me/55${w}" target="_blank" rel="noopener">WhatsApp</a>`:""}${t?`<a class="btn call" data-go href="tel:+55${t}">Ligar</a>`:""}<a class="btn" href="${maps}" target="_blank" rel="noopener">Mapa</a><button class="btn ghost" data-drop>Descartar</button>`;
+  return `<article class="c ${l.p===1?"p1":""}" data-id="${esc(l.id)}">
+   <div class="meta"><span class="tag ${fr[1]}">${fr[0]}</span><span class="tag">${esc(l.c)}</span>${l.ad&&l.ad>=wk?'<span class="tag nv">Nova</span>':""}${l.p===1?'<span class="tag hi">Prioridade alta</span>':""}</div>
+   <h3>${esc(l.n)}</h3>
+   <div class="phone">${shown||'<span class="addr">Telefone: abra a fonte abaixo</span>'}</div>
+   ${l.e?`<div class="addr">${esc(l.e)}</div>`:""}
+   ${l.o?`<div class="of2"><b>Oferecer:</b> ${esc(l.o)}</div>`:""}
+   ${l.x?`<div class="x">${esc(l.x)}</div>`:""}
+   <div class="acts">${acts}</div>
+   ${typeof l.s==="string"&&l.s.startsWith("https://")?`<div class="src">Fonte: <a href="${esc(l.s)}" target="_blank" rel="noopener">${esc(l.s.split("/")[2].replace("www.",""))}</a></div>`:""}
+  </article>`;
+}
+function render(){if(!OF)return;renderTop();const v=view();$("#list").innerHTML=v.map(card).join("");$("#empty").hidden=v.length>0}
+setInterval(()=>{if(!last)return;const s=Math.round((Date.now()-last)/1000);$("#ago").textContent=s<60?s+"s":Math.round(s/60)+"min"},1000);
+
+async function marca(id,st){
+  const ref=doc(fs,"os_oficinas",OF,"status",id);
+  if(st==="novo"){delete STATUS[id];render();try{await deleteDoc(ref);toast("Voltou para a lista")}catch(e){toast(erroTxt(e))}return}
+  STATUS[id]={st,ct:new Date().toISOString(),por:USER.email};render();
+  try{await setDoc(ref,STATUS[id]);toast(st==="descartado"?"Descartada":"Saiu da lista: contatada")}catch(e){toast(erroTxt(e))}
+}
+async function carregaCatalogo(){
+  try{const r=await fetch("leads.json?v="+Date.now(),{cache:"no-store"});if(r.ok){CAT=await r.json();junta();last=Date.now();render()}}catch(e){}
+}
+
+/* ====== entrar ====== */
+$("#fLogin").addEventListener("submit",async e=>{
+  e.preventDefault();const fd=new FormData(e.target);$("#lErro").innerHTML="";
+  try{await signInWithEmailAndPassword(auth,String(fd.get("email")).trim(),String(fd.get("senha")))}catch(er){$("#lErro").innerHTML=`<div class="err">${esc(erroTxt(er))}</div>`}
+});
+$("#esqueci").addEventListener("click",async()=>{
+  const em=String(new FormData($("#fLogin")).get("email")||"").trim();
+  if(!em){$("#lErro").innerHTML='<div class="err">Digite seu e-mail acima e toque de novo.</div>';return}
+  try{await sendPasswordResetEmail(auth,em);$("#lErro").innerHTML='<div class="ok">Mandamos um e-mail para criar uma senha nova.</div>'}catch(er){$("#lErro").innerHTML=`<div class="err">${esc(erroTxt(er))}</div>`}
+});
+const sair=()=>signOut(auth);$("#sair").addEventListener("click",sair);$("#sair2").addEventListener("click",sair);
+
+onAuthStateChanged(auth,async u=>{
+  unsubs.forEach(f=>{try{f()}catch(_){}});unsubs=[];USER=u;OF=null;MODO=null;STATUS={};EXTRA=[];
+  if(!u){tela("vLogin");return}
+  tela("vMsg","Abrindo…","");
+  try{
+    const p=await getDoc(doc(fs,"os_usuarios",u.uid));
+    if(p.exists()&&p.data().oficinaId===OF_PADRAO){MODO="usuario";return abrir(OF_PADRAO)}
+  }catch(e){}
+  try{ // administrador: consegue ler a ficha da prospecção (regra do Ponto/Fichas)
+    const ref=doc(fs,"os_oficinas",OF_PADRAO);const s=await getDoc(ref);
+    if(!s.exists())await setDoc(ref,{nome:"Keller IA – Prospecção (não é oficina)",tipo:"prospeccao",status:"ativo",email:"",donoUid:"",estoque:"bloqueado",fimTeste:Timestamp.fromDate(new Date(Date.now()+3650*864e5)),criadoEm:serverTimestamp()});
+    MODO="master";return abrir(OF_PADRAO);
+  }catch(e){tela("vMsg","Sem acesso",'Seu e-mail ainda não foi liberado. Peça ao Keller para liberar seu acesso.')}
+});
+function abrir(id){
+  OF=id;tela("vApp");$("#admin").hidden=MODO!=="master";render();carregaCatalogo();
+  unsubs.push(onSnapshot(collection(fs,"os_oficinas",id,"status"),s=>{STATUS={};s.forEach(d=>STATUS[d.id]=d.data());last=Date.now();render()},e=>toast(erroTxt(e))));
+  unsubs.push(onSnapshot(collection(fs,"os_oficinas",id,"extras"),s=>{EXTRA=s.docs.map(d=>({...d.data(),id:"x-"+d.id}));junta();render()},e=>{}));
+  if(MODO==="master")unsubs.push(onSnapshot(query(collection(fs,"os_usuarios"),where("oficinaId","==",id)),s=>{
+    $("#users").innerHTML=s.docs.length?s.docs.map(d=>`<div><span>${esc(d.data().email)}</span><button class="btn ghost" data-tira="${esc(d.id)}">Tirar acesso</button></div>`).join(""):'<span class="addr">Ninguém liberado ainda.</span>';
+  },e=>{}));
+}
+setInterval(()=>{if(OF)carregaCatalogo()},10*60*1000);
+window.addEventListener("focus",()=>{if(OF)carregaCatalogo()});
+
+/* ====== lista ====== */
+$("#nav").addEventListener("click",e=>{const b=e.target.closest("button[data-f]");if(!b)return;F.f=b.dataset.f;F.c="";for(const x of $("#nav").querySelectorAll("button[data-f]"))x.setAttribute("aria-pressed",x===b);render()});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-v]");if(!b)return;F.v=F.v===b.dataset.v&&b.dataset.v!=="fila"?"fila":b.dataset.v;F.c="";render()});
+$("#cid").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;F.c=b.dataset.c;render()});
+$("#q").addEventListener("input",e=>{F.q=e.target.value;render()});
+$("#list").addEventListener("click",e=>{
+  const c=e.target.closest(".c");if(!c)return;const id=c.dataset.id;
+  if(e.target.closest("[data-go]"))marca(id,"contatado");
+  else if(e.target.closest("[data-drop]"))marca(id,"descartado");
+  else if(e.target.closest("[data-undo]"))marca(id,"novo");
+});
+$("#csv").addEventListener("click",async()=>{
+  const rows=[["Empresa","Tipo","Cidade","Endereço","Telefone","WhatsApp"]].concat(view().map(l=>[l.n,(FR[l.f]||FR.logistica)[0],l.c,l.e,l.t,waNum(l)]));
+  try{await navigator.clipboard.writeText(rows.map(r=>r.map(v=>String(v??"").replace(/[\t\n]/g," ")).join("\t")).join("\n"));toast("Lista copiada")}catch(err){toast("Não consegui copiar")}
+});
+$("#addForm").addEventListener("submit",async e=>{
+  e.preventDefault();const fd=Object.fromEntries(new FormData(e.target));
+  const of={oficina:"Ficha/OS do caminhão + Controle de Estoque",logistica:"Checklist de Frota + abastecimento por placa",estoque:"Controle de Estoque/Almoxarifado com mínimo e alerta"};
+  const d={n:fd.n.trim(),f:fd.f,c:fd.c.trim(),e:fd.e.trim(),t:fd.t.trim(),w:fd.w.trim(),x:"",p:2,o:of[fd.f],s:"",ad:iso(new Date()),por:USER.email};
+  if(!d.n||!d.c)return;
+  try{await addDoc(collection(fs,"os_oficinas",OF,"extras"),d);e.target.reset();toast("Empresa adicionada")}catch(er){toast(erroTxt(er))}
+});
+
+/* ====== acessos (só administrador) ====== */
+$("#fAcesso").addEventListener("submit",async e=>{
+  e.preventDefault();const fd=new FormData(e.target);const email=String(fd.get("email")).trim().toLowerCase(),senha=String(fd.get("senha"));
+  const b=$("#bAcesso"),out=$("#aMsg");out.innerHTML="";
+  if(senha.length<6){out.innerHTML='<div class="err">A senha precisa ter pelo menos 6 letras ou números.</div>';return}
+  b.disabled=true;b.textContent="Liberando…";let app2;
+  try{
+    app2=initializeApp(firebaseConfig,"cad"+Date.now());const a2=getAuth(app2);
+    const cr=await createUserWithEmailAndPassword(a2,email,senha);const uid=cr.user.uid;await signOut(a2);
+    await setDoc(doc(fs,"os_usuarios",uid),{email,oficinaId:OF,papel:"dono"});
+    const link=location.origin+location.pathname;
+    const txt="Seu acesso ao painel de prospecção da Keller IA:\n"+link+"\nE-mail: "+email+"\nSenha: "+senha+"\nAbra no Chrome e toque em \"Instalar no computador\".";
+    out.innerHTML=`<div class="ok" style="margin-top:10px">Acesso liberado. Mande para a pessoa:</div><div class="ex" style="margin-top:8px">${esc(txt)}</div><div class="acts" style="margin-top:8px"><button class="btn" id="cpAcesso">Copiar</button><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(txt)}">Mandar no WhatsApp</a></div>`;
+    $("#cpAcesso").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(txt);toast("Copiado")}catch(_){toast("Selecione o texto e copie")}});
+    e.target.reset();
+  }catch(er){out.innerHTML=`<div class="err">${esc(erroTxt(er))}</div>`}
+  finally{b.disabled=false;b.textContent="Liberar acesso";if(app2)deleteApp(app2).catch(()=>{})}
+});
+$("#users").addEventListener("click",async e=>{const b=e.target.closest("[data-tira]");if(!b)return;
+  try{await deleteDoc(doc(fs,"os_usuarios",b.dataset.tira));toast("Acesso retirado")}catch(er){toast(erroTxt(er))}});
+
+/* ====== instalar no computador ====== */
+let pedido=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();pedido=e;$("#inst").hidden=false});
+$("#inst").addEventListener("click",async()=>{if(!pedido)return;pedido.prompt();await pedido.userChoice;pedido=null;$("#inst").hidden=true});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
