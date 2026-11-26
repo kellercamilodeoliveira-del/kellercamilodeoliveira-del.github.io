@@ -56,7 +56,7 @@ input,select{font:16px Outfit,sans-serif;color:var(--ink);background:#0b0f16;bor
 .c.p1{border-color:#2f5d52}
 .meta{display:flex;flex-wrap:wrap;gap:6px}
 .tag{font-size:12px;padding:3px 9px;border-radius:999px;background:#1a2030;color:var(--mute);white-space:nowrap}
-.tag.of{color:var(--y)}.tag.lo{color:var(--b)}.tag.es{color:var(--p)}.tag.hi{background:#173a31;color:var(--g)}.tag.nv{background:#3a2f17;color:var(--y)}
+.tag.of{color:var(--y)}.tag.lo{color:var(--b)}.tag.es{color:var(--p)}.tag.hi{background:#173a31;color:var(--g)}.tag.nv{background:#3a2f17;color:var(--y)}.tag.gr{background:#2a2140;color:var(--p)}
 .c h3{font-size:20px}
 .phone{font-family:"JetBrains Mono",monospace;font-size:18px;letter-spacing:.3px}
 .addr{font-size:14px;color:var(--mute)}
@@ -104,6 +104,7 @@ details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;alig
   <button class="ic2" data-f="oficina" aria-pressed="false" title="Oficinas de caminhão" aria-label="Oficinas de caminhão"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg></button>
   <button class="ic2" data-f="logistica" aria-pressed="false" title="Transporte e logística" aria-label="Transporte e logística"><svg viewBox="0 0 24 24"><path d="M2 6h11v10H2zM13 9h4l4 4v3h-8z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></button>
   <button class="ic2" data-f="estoque" aria-pressed="false" title="Estoque e almoxarifado" aria-label="Estoque e almoxarifado"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/></svg></button>
+  <button class="ic2" data-go="roteiro" aria-pressed="false" title="Roteiro de abordagem" aria-label="Roteiro de abordagem"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M8 7h7M8 11h7"/></svg></button>
   <div class="navR">
     <button class="btn wa" id="inst" hidden>Instalar no computador</button>
     <button class="btn" id="sair">Sair</button>
@@ -113,7 +114,7 @@ details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;alig
 <div class="wrap">
   <header class="hd">
     <h1 id="title">Empresas para contatar</h1>
-    <p>Areiópolis, Botucatu, Bauru e região · oficinas de caminhão, transporte e logística, estoque. Quando alguém chama no WhatsApp ou liga, a empresa sai da lista de todos.</p>
+    <p>Areiópolis, Botucatu, Bauru e região · oficinas de caminhão, transporte e logística, estoque e almoxarifado · empresas pequenas e grandes. Quando alguém chama no WhatsApp ou liga, a empresa sai da lista de todos.</p>
     <div class="pills"><div class="pill"><i></i> atualizado há <b id="ago">–</b></div><div class="pill" id="state">Carregando…</div></div>
   </header>
 
@@ -129,6 +130,7 @@ details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;alig
   <section class="card">
     <h2>Por cidade</h2>
     <div class="chips" id="cid"></div>
+    <div class="chips" id="porte" style="margin-top:12px"><button data-pt="" aria-pressed="true">Todos os portes</button><button data-pt="pequena" aria-pressed="false">Empresas pequenas</button><button data-pt="grande" aria-pressed="false">Empresas grandes</button></div>
     <div class="tools">
       <input id="q" type="search" placeholder="Buscar empresa ou rua…" aria-label="Buscar">
       <button class="btn" id="csv">Copiar lista</button>
@@ -150,6 +152,28 @@ details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;alig
         <button class="btn wa" type="submit">Salvar</button>
       </form>
     </details>
+  </section>
+
+  <section class="card" id="roteiro">
+    <h2>Roteiro de abordagem · logística e almoxarifado</h2>
+    <p class="addr" style="margin:0 0 14px">Comece sempre igual: “Trabalhei 15 anos no almoxarifado e na logística da Embraer. Hoje monto sistemas simples para empresas da região controlarem estoque e frota sem planilha.”</p>
+    <div class="list" style="margin-top:0">
+      <div class="c"><div class="meta"><span class="tag hi">Empresa pequena</span></div>
+        <h3>Fale de tranquilidade, não de sistema</h3>
+        <p class="addr" style="margin:0"><b>Com quem:</b> o dono, direto.</p>
+        <p class="addr" style="margin:0"><b>Dor:</b> o estoque mora na cabeça do dono; compra o que já tinha, falta na hora, caminhão quebra sem aviso.</p>
+        <p class="of2" style="margin:0">1. “Hoje como vocês sabem o que tem no estoque? Caderno, planilha ou de cabeça?”<br>2. “Já comprou algo que tinha, ou faltou bem na hora do cliente?”<br>3. “Quando falta, você perde a venda ou o caminhão para?”<br>4. “Se o celular avisasse antes de acabar, ajudaria?”</p>
+        <div class="x">Fechamento: “Deixo funcionando no seu celular em poucos dias. Você testa de graça.”</div>
+      </div>
+      <div class="c"><div class="meta"><span class="tag gr">Empresa grande</span></div>
+        <h3>Fale a língua do supervisor</h3>
+        <p class="addr" style="margin:0"><b>Com quem:</b> supervisor de almoxarifado, logística ou manutenção. Na portaria, peça por ele.</p>
+        <p class="addr" style="margin:0"><b>Dor:</b> o sistema da empresa não enxerga o chão: saldo diferente da prateleira, checklist e EPI no papel, ferramental sem rastreio.</p>
+        <p class="of2" style="margin:0">1. “Qual a diferença entre o sistema e o físico no último inventário?”<br>2. “O que ainda roda em papel ou planilha no almoxarifado?”<br>3. “Quem cobra esse número de você?”<br>Palavras dele: acuracidade, inventário rotativo, endereçamento, FIFO, rastreabilidade.</p>
+        <div class="x">Fechamento: “Não troco nada do seu sistema. Piloto de 30 dias em uma área, medimos antes e depois, e você leva o resultado para a diretoria.”</div>
+      </div>
+    </div>
+    <p class="addr" style="margin:14px 0 0"><b>Objeções:</b> “Já temos sistema” → “Não é para trocar, é para a parte que ainda roda no papel.” · “Está caro” → pequena: teste grátis; grande: piloto pequeno. · “Sem tempo” → “São 15 minutos, mostro no seu celular.” · “Meu pessoal não sabe mexer” → “Botões grandes, poucas telas, eu treino a equipe.”</p>
   </section>
 
   <section class="card" id="admin" hidden>
@@ -196,7 +220,7 @@ const erroTxt=e=>{const c=(e&&e.code)||'';
   if(/permission/.test(c))return 'Sem permissão para isso.';
   return 'Não deu certo ('+(c||'erro')+').';};
 
-let CAT=[],EXTRA=[],STATUS={},OF=null,MODO=null,USER=null,last=0,unsubs=[],F={f:"",c:"",q:"",v:"fila"};
+let CAT=[],EXTRA=[],STATUS={},OF=null,MODO=null,USER=null,last=0,unsubs=[],F={f:"",c:"",q:"",v:"fila",pt:""};
 let leads=[];
 
 function toast(t){const el=$("#toast");el.textContent=t;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),2200)}
@@ -205,7 +229,8 @@ function waNum(l){const w=dig(l.w);if(isCel(w))return w;const t=dig(l.t);return 
 const stOf=l=>(STATUS[l.id]&&STATUS[l.id].st)||"novo";
 const done=l=>stOf(l)!=="novo";
 function junta(){leads=CAT.concat(EXTRA)}
-const base=()=>leads.filter(l=>!F.f||l.f===F.f);
+const porte=l=>l.pt==="grande"?"grande":"pequena";
+const base=()=>leads.filter(l=>(!F.f||l.f===F.f)&&(!F.pt||porte(l)===F.pt));
 function view(){
   const q=F.q.toLowerCase(),wk=weekAgo();
   return base().filter(l=>{
@@ -236,7 +261,7 @@ function card(l){
     ?`<span class="addr">${s.st==="descartado"?"Descartada":"Contatada"} em ${esc(quando)}${s.por?" por "+esc(s.por):""}</span><button class="btn ghost" data-undo>Voltar para a lista</button>`
     :`${w?`<a class="btn wa" data-go href="https://wa.me/55${w}" target="_blank" rel="noopener">WhatsApp</a>`:""}${t?`<a class="btn call" data-go href="tel:+55${t}">Ligar</a>`:""}<a class="btn" href="${maps}" target="_blank" rel="noopener">Mapa</a><button class="btn ghost" data-drop>Descartar</button>`;
   return `<article class="c ${l.p===1?"p1":""}" data-id="${esc(l.id)}">
-   <div class="meta"><span class="tag ${fr[1]}">${fr[0]}</span><span class="tag">${esc(l.c)}</span>${l.ad&&l.ad>=wk?'<span class="tag nv">Nova</span>':""}${l.p===1?'<span class="tag hi">Prioridade alta</span>':""}</div>
+   <div class="meta"><span class="tag ${fr[1]}">${fr[0]}</span><span class="tag">${esc(l.c)}</span>${l.ad&&l.ad>=wk?'<span class="tag nv">Nova</span>':""}${porte(l)==="grande"?'<span class="tag gr">Empresa grande</span>':""}${l.p===1?'<span class="tag hi">Prioridade alta</span>':""}</div>
    <h3>${esc(l.n)}</h3>
    <div class="phone">${shown||'<span class="addr">Telefone: abra a fonte abaixo</span>'}</div>
    ${l.e?`<div class="addr">${esc(l.e)}</div>`:""}
@@ -299,6 +324,8 @@ window.addEventListener("focus",()=>{if(OF)carregaCatalogo()});
 /* ====== lista ====== */
 $("#nav").addEventListener("click",e=>{const b=e.target.closest("button[data-f]");if(!b)return;F.f=b.dataset.f;F.c="";for(const x of $("#nav").querySelectorAll("button[data-f]"))x.setAttribute("aria-pressed",x===b);render()});
 document.addEventListener("click",e=>{const b=e.target.closest("[data-v]");if(!b)return;F.v=F.v===b.dataset.v&&b.dataset.v!=="fila"?"fila":b.dataset.v;F.c="";render()});
+$("#porte").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;F.pt=b.dataset.pt;F.c="";for(const x of $("#porte").children)x.setAttribute("aria-pressed",x===b);render()});
+$("#nav").addEventListener("click",e=>{const b=e.target.closest("button[data-go]");if(b)$("#"+b.dataset.go).scrollIntoView({behavior:"smooth"})});
 $("#cid").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;F.c=b.dataset.c;render()});
 $("#q").addEventListener("input",e=>{F.q=e.target.value;render()});
 $("#list").addEventListener("click",e=>{
