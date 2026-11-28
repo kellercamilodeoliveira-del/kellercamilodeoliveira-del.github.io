@@ -240,6 +240,7 @@ textarea.ruled:focus{background-color:#f5f8ff}
 .paper.imp .pl .pd,.paper.imp .pl .pv{padding-top:calc(var(--lh,27px) - 21px);padding-bottom:1px}
 .paper.imp .prow{margin:7px 0}.paper.imp .psec{margin-top:9px}.paper.imp .pfoot{margin-top:44px}.paper.imp .ph{margin-bottom:8px;padding-bottom:8px}.paper.imp .ptot{padding-top:2px;font-size:12.5px}.paper.imp .ptot.g{margin-top:5px;padding-top:3px}
 #printArea.medindo{display:block!important;position:absolute;left:-10000px;top:0;visibility:hidden}
+#printArea.gerando{display:block!important;position:absolute;left:-10000px;top:0;background:#fff}
 @page{size:A4 portrait;margin:0}
 @media print{
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -890,6 +891,7 @@ function vVer(){
   ${aberta?`<button class="B" data-act="finalizar" style="margin-top:0;min-height:80px;font-size:22px">✅ FINALIZAR ORDEM DE SERVIÇO</button>`:`<div class="okbar" style="margin-top:0">✅ OS finalizada em ${dt(f.fechamento)} ${hr(f.fechamento)}</div><button class="B white" data-act="reabrir">🔓 REABRIR ORDEM DE SERVIÇO</button>`}
   ${pl?`<button class="B white" data-act="curriculo" data-p="${pl}">📋 CURRÍCULO DO CAMINHÃO ${esc(pl)}</button>`:''}
   <button class="B blue" data-act="imprimir">🖨️ IMPRIMIR</button>
+  <button class="B blue" data-act="pdf">📄 GERAR PDF</button>
   ${c.tel?`<a class="B wa" href="${waLink(f)}" target="_blank" rel="noopener">📲 MANDAR NO WHATSAPP</a>`:''}
   <button class="B white" data-act="editar" data-id="${f.id}">✏️ COMPLETAR / CORRIGIR</button>
   <div class="paperBox" id="pbox" style="margin-top:14px"><div class="paperScale" id="pscale">${paperHTML(f)}</div></div>
@@ -905,6 +907,7 @@ function vVerOrc(){
   ${vf?`<div class="okbar" style="margin-top:0">✅ Virou a ordem de serviço Nº ${esc(pad6(vf.num))}</div><button class="B white" data-act="ver" data-id="${vf.id}">📄 ABRIR A ORDEM Nº ${esc(pad6(vf.num))}</button>`
      :`<button class="B" data-act="virarOS" style="margin-top:0;min-height:80px;font-size:21px">📝 CLIENTE APROVOU: VIRAR ORDEM DE SERVIÇO</button>`}
   <button class="B blue" data-act="imprimirOrc">🖨️ IMPRIMIR ORÇAMENTO</button>
+  <button class="B blue" data-act="pdfOrc">📄 GERAR PDF DO ORÇAMENTO</button>
   ${c.tel?`<a class="B wa" href="${waLink(o)}" target="_blank" rel="noopener">📲 MANDAR NO WHATSAPP</a>`:''}
   <button class="B white" data-act="editarOrc" data-id="${o.id}">✏️ COMPLETAR / CORRIGIR</button>
   <div class="paperBox" id="pbox" style="margin-top:14px"><div class="paperScale" id="pscale">${paperHTML(o)}</div></div>
@@ -999,15 +1002,48 @@ function paperHTML(f){
     <div class="pfoot"><div class="pdate">${esc(C.cidade)} <u>${d.getDate()}</u> de <u style="min-width:110px">${MESES[d.getMonth()]}</u> de <u>${d.getFullYear()}</u></div>
       <div class="psig">${f.assinatura?`<img src="${f.assinatura}" alt="">`:''}<div class="sl"></div><span>Assinatura do Motorista</span></div></div></div>`;
 }
-function imprimirA4(html){
+function montaA4(html){
   const pa=$('#printArea');pa.innerHTML=html;const pp=pa.firstElementChild;pp.classList.add('imp');
   pa.classList.add('medindo');const lim=1118; // 297 mm em px
   // se não couber, aperta as linhas (até 18px); só em último caso diminui a folha toda
   let lh=27;pp.style.setProperty('--lh',lh+'px');
   while(pp.scrollHeight>lim&&lh>18){lh-=1;pp.style.setProperty('--lh',lh+'px');}
   if(pp.scrollHeight>lim)pp.style.zoom=(lim/pp.scrollHeight).toFixed(4);
-  pa.classList.remove('medindo');setTimeout(()=>window.print(),150);
+  pa.classList.remove('medindo');return pp;
 }
+function imprimirA4(html){montaA4(html);setTimeout(()=>window.print(),150);}
+/* PDF: a mesma folha A4 da impressão vira um arquivo .pdf (no celular abre o "compartilhar" para mandar no WhatsApp) */
+const carregaJS=src=>new Promise((ok,erro)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=erro;document.head.appendChild(s);});
+let gerandoPDF=false;
+async function gerarPDF(f){
+  if(!f||gerandoPDF)return;gerandoPDF=true;toast('⏳ Fazendo o PDF...');
+  const pa=$('#printArea');
+  try{
+    if(!window.html2canvas)await carregaJS('html2canvas.min.js');
+    if(!window.jspdf)await carregaJS('jspdf.min.js');
+    const pp=montaA4(paperHTML(f));pa.classList.add('gerando');
+    await Promise.all([...pp.querySelectorAll('img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r;})));
+    for(const i of pp.querySelectorAll('img')){ // logo em SVG: vira imagem comum para sair no PDF
+      if(!/\.svg($|\?)|^data:image\/svg/i.test(i.src)||!i.offsetWidth)continue;
+      const w=i.offsetWidth*3,h=i.offsetHeight*3,c=document.createElement('canvas');c.width=w;c.height=h;
+      try{c.getContext('2d').drawImage(i,0,0,w,h);const u=c.toDataURL('image/png');await new Promise(r=>{i.onload=i.onerror=r;i.src=u;});}catch(e){}
+    }
+    const cv=await window.html2canvas(pp,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const h=Math.min(297,210*cv.height/cv.width);
+    pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,h);
+    const orc=f.tipo==='orc',cli=String(f.cliente||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40);
+    const nome=(orc?'Orcamento':'OS-'+pad6(f.num))+(cli?'-'+cli:'')+'.pdf';
+    const arq=new File([pdf.output('blob')],nome,{type:'application/pdf'});
+    window.__ultimoPDF=arq;
+    if(ehCelular&&navigator.canShare&&navigator.canShare({files:[arq]})){
+      try{await navigator.share({files:[arq],title:nome});}catch(e){if(e&&e.name!=='AbortError')baixaArq(arq);}
+    }else baixaArq(arq);
+    toast('✅ PDF pronto');
+  }catch(e){console.warn(e);toast(navigator.onLine?'Não deu para fazer o PDF. Tente de novo.':'Para fazer o PDF precisa de internet.');}
+  finally{pa.classList.remove('gerando');gerandoPDF=false;}
+}
+function baixaArq(arq){const u=URL.createObjectURL(arq),a=document.createElement('a');a.href=u;a.download=arq.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);}
 function fitPaper(){const b=$('#pbox'),s=$('#pscale');if(!b||!s)return;const sc=Math.min(1,(b.clientWidth-16)/760);s.style.transform=`scale(${sc})`;b.style.height=(s.firstElementChild.offsetHeight*sc+16)+'px';}
 window.addEventListener('resize',fitPaper);
 function waNum(t){let d=soNum(t);if(d&&!d.startsWith('55'))d='55'+d;return d;}
@@ -1165,6 +1201,7 @@ document.addEventListener('click',e=>{
     lembDelOk:()=>{db.lembretes=db.lembretes.filter(x=>x.id!==d.id);apagaLemb(d.id);closeModal();const y=scrollY;render();scrollTo(0,y);toast('Lembrete apagado');},
     verOrc:()=>{tela={v:'verOrc',id:d.id,volta:['cliente','salvas'].includes(tela.v)?tela:null};render();},
     imprimirOrc:()=>imprimirA4(paperHTML(orcById(tela.id))),
+    pdfOrc:()=>gerarPDF(orcById(tela.id)),
     editarOrc:()=>{const o=orcById(d.id);F=formDe(o,'orc');edit=o.id;tela={v:'orc'};render();},
     virarOS:()=>{const o=orcById(tela.id);F=formDe(o,'os');F.data=hoje();F.deOrc=o.id;edit=null;tela={v:'nova'};render();toast('Digite o número da ordem de serviço');setTimeout(()=>{const i=$('#iNum');if(i)i.focus();},300);},
     apagarOrc:()=>modal(`<h3>Apagar este orçamento?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOrcOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
@@ -1206,6 +1243,7 @@ document.addEventListener('click',e=>{
     usarProx:()=>{closeModal();const p=proxOS();F.num=String(p);const i=$('#iNum');if(i)i.value=p;salvar();},
     editar:()=>{closeModal();const f=fichaById(d.id);edit=f.id;F=formDe(f,'os');tela={v:'nova'};render();},
     imprimir:()=>imprimirA4(paperHTML(fichaById(tela.id))),
+    pdf:()=>gerarPDF(fichaById(tela.id)),
     apagar:()=>modal(`<h3>Apagar esta ficha?</h3><p style="color:var(--mut);margin-bottom:6px">Não dá para desfazer.</p><button class="B" style="background:var(--red)" data-act="apagarOk">SIM, APAGAR</button><button class="B white" data-act="fechar">NÃO</button>`),
     apagarOk:()=>{const f=fichaById(tela.id);estornar(f,'apagada');db.fichas=db.fichas.filter(x=>x.id!==f.id);apagaFicha(f.id);closeModal();const c=cliById(f.cid);if(c){CAD=cadDoCliente(c);tela={v:'cliente',id:f.cid};}else tela={v:'salvas'};render();toast('Ficha apagada');},
     fechar:()=>closeModal(),
@@ -1336,7 +1374,7 @@ setTimeout(()=>{if(!pedidoInstalar&&!jaInstalado()&&!ehIOS)mostraBotaoInstalar()
 /* ====== atualização automática ======
    Cada publicação muda APP_VERSAO e o arquivo version.json. O sistema aberto confere de tempos em tempos
    e se recarrega sozinho; se houver uma ficha sendo preenchida, espera ela ser salva. */
-const APP_VERSAO='v27';
+const APP_VERSAO='v28';
 let attPendente=false;
 function temDigitacao(){
   if($('#modal').classList.contains('show'))return true;
